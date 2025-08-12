@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, name, password } = body;
+    const { email, name, password, role } = body; // Destructure the new role field
 
-    if (!email || !name || !password) {
-      return new NextResponse('Missing name, email, or password', { status: 400 });
+    if (!email || !name || !password || !role) {
+      return new NextResponse('Missing name, email, password, or role', { status: 400 });
     }
 
     const existingUser = await prisma.user.findUnique({
@@ -27,7 +27,10 @@ export async function POST(request: Request) {
       data: {
         name,
         email,
-        password: hashedPassword, // Storing in the 'password' field
+        password: hashedPassword,
+        role: role, // Assign the role from the form
+        // Set status based on the selected role
+        status: role === UserRole.GROWTH_TEAM ? UserStatus.PENDING : UserStatus.APPROVED,
       },
     });
 

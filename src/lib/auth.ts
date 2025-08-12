@@ -1,9 +1,9 @@
 import { PrismaAdapter } from '@auth/prisma-adapter';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserStatus, UserRole } from '@prisma/client'; // Import enums
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from 'bcrypt';
-import GoogleProvider from "next-auth/providers/google";
 
 const prisma = new PrismaClient();
 
@@ -11,9 +11,9 @@ export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
-        clientId: process.env.GOOGLE_CLIENT_ID!,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      }),
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
     CredentialsProvider({
       name: 'credentials',
       credentials: {
@@ -37,12 +37,21 @@ export const authOptions: NextAuthOptions = {
         if (!passwordsMatch) {
           throw new Error('Incorrect password');
         }
+
+        // --- ADD THIS APPROVAL CHECK ---
+        // If the user is a Growth Team member, ensure their account is approved.
+        if (user.role === UserRole.GROWTH_TEAM && user.status !== UserStatus.APPROVED) {
+          throw new Error('Your account is pending approval by an administrator.');
+        }
+        // --- END APPROVAL CHECK ---
+
         return user;
       },
     }),
   ],
   session: {
     strategy: 'jwt',
+    maxAge: 15 * 60,
   },
   callbacks: {
     async jwt({ token, user }) {
