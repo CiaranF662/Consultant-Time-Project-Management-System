@@ -18,6 +18,7 @@ model User {
   image         String?
   password      String? // This field will store the hashed password
   role          UserRole  @default(CONSULTANT)
+  status        UserStatus @default(APPROVED)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -179,6 +180,11 @@ enum ChangeStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum UserStatus {
+  PENDING
+  APPROVED
 }
 
 enum TaskStatus {

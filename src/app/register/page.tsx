@@ -4,12 +4,16 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
+// Import the UserRole enum from Prisma to ensure type safety
+import { UserRole } from '@prisma/client';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  // Add state to manage the selected role, defaulting to CONSULTANT
+  const [role, setRole] = useState<UserRole>(UserRole.CONSULTANT);
   const [error, setError] = useState('');
   const router = useRouter();
 
@@ -28,12 +32,21 @@ export default function RegisterPage() {
     }
 
     try {
+      // Pass the selected role in the API request body
       await axios.post('/api/register', {
         name,
         email,
         password,
+        role,
       });
-      router.push('/login?status=registered');
+
+      // Redirect based on the role selected
+      if (role === UserRole.GROWTH_TEAM) {
+        // This is the only line that has been changed
+        router.push('/pending-approval');
+      } else {
+        router.push('/login?status=registered');
+      }
     } catch (err: any) {
       if (err.response && err.response.data) {
         setError(err.response.data);
@@ -57,6 +70,36 @@ export default function RegisterPage() {
         )}
 
         <form onSubmit={handleSubmit}>
+          {/* --- NEW ROLE SELECTION --- */}
+          <div className="mb-4">
+            <label className="mb-2 block text-sm font-medium text-gray-700">I am a...</label>
+            <div className="flex items-center space-x-6 rounded-md border border-gray-300 p-2">
+              <label className="flex flex-1 cursor-pointer items-center justify-center rounded-md p-2 transition-colors hover:bg-gray-100 has-[:checked]:bg-blue-50 has-[:checked]:text-blue-700">
+                <input
+                  type="radio"
+                  name="role"
+                  value={UserRole.CONSULTANT}
+                  checked={role === UserRole.CONSULTANT}
+                  onChange={() => setRole(UserRole.CONSULTANT)}
+                  className="sr-only" // Hide the default radio button
+                />
+                <span className="text-sm font-medium">Consultant</span>
+              </label>
+              <label className="flex flex-1 cursor-pointer items-center justify-center rounded-md p-2 transition-colors hover:bg-gray-100 has-[:checked]:bg-blue-50 has-[:checked]:text-blue-700">
+                <input
+                  type="radio"
+                  name="role"
+                  value={UserRole.GROWTH_TEAM}
+                  checked={role === UserRole.GROWTH_TEAM}
+                  onChange={() => setRole(UserRole.GROWTH_TEAM)}
+                  className="sr-only"
+                />
+                <span className="text-sm font-medium">Growth Team</span>
+              </label>
+            </div>
+          </div>
+          {/* --- END NEW ROLE SELECTION --- */}
+
           <div className="mb-4">
             <label
               htmlFor="name"
