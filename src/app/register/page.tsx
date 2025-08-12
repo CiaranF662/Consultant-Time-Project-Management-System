@@ -42,7 +42,8 @@ export default function RegisterPage() {
 
       // Redirect based on the role selected
       if (role === UserRole.GROWTH_TEAM) {
-        router.push('/login?status=pending_approval');
+        // This is the only line that has been changed
+        router.push('/pending-approval');
       } else {
         router.push('/login?status=registered');
       }
