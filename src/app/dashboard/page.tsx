@@ -1,39 +1,75 @@
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
-import { authOptions } from '@/lib/auth'; // <--- CORRECT IMPORT PATH
+import { authOptions } from '@/lib/auth';
+import { PrismaClient } from '@prisma/client';
+import Link from 'next/link';
+import { FaPlus } from 'react-icons/fa';
 import SignOutButton from '@/app/components/SignOutButton';
-// You can add Prisma and other imports back here when you build out the full dashboard
-// import { PrismaClient } from '@prisma/client';
-// import Link from 'next/link';
-// import ProjectCard from '@/app/components/ProjectCard';
-// import { FaPlus } from "react-icons/fa";
+import ProjectCard from '@/app/components/ProjectCard';
 
-// const prisma = new PrismaClient();
+const prisma = new PrismaClient();
+
+// Fetches all projects assigned to the current user, including their tasks
+async function getProjectsForDashboard(userId: string) {
+  const projects = await prisma.project.findMany({
+    where: { consultantId: userId },
+    include: {
+      tasks: true, // Include tasks to calculate progress
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  return projects;
+}
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user) {
+  if (!session?.user?.id) {
     redirect('/login');
   }
 
-  // For now, we are just displaying a welcome message.
-  // We will add the project fetching logic back in later.
+  const projects = await getProjectsForDashboard(session.user.id);
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50">
-      <div className="w-full max-w-2xl rounded-lg bg-white p-8 text-center shadow-lg">
-        <h1 className="text-3xl font-bold text-gray-800">
-          Welcome to the Dashboard
-        </h1>
-        <p className="mt-4 text-lg text-gray-600">
-          You are signed in as{' '}
-          <span className="font-semibold">{session.user.name || session.user.email}</span>.
-        </p>
-        <p className="mt-2 text-sm text-gray-500">
-          Your role is: <span className="font-medium uppercase">{session.user.role}</span>
-        </p>
-        <div className="mt-8">
-          <SignOutButton />
+    <div className="bg-gray-50 min-h-screen">
+      <div className="container mx-auto p-4 md:p-8">
+        {/* Page Header */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
+            <p className="text-lg text-gray-600">
+              Welcome back, {session.user.name || session.user.email}.
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/dashboard/create-project"
+              className="inline-flex items-center justify-center gap-2 py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <FaPlus />
+              Create New Project
+            </Link>
+            <SignOutButton />
+          </div>
+        </div>
+
+        {/* Projects Grid */}
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Your Projects</h2>
+          {projects.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {projects.map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 px-6 bg-white rounded-lg shadow-md border">
+              <h3 className="text-xl font-semibold text-gray-800">No Projects Yet</h3>
+              <p className="text-gray-500 mt-2">
+                Click the "Create New Project" button to get started.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

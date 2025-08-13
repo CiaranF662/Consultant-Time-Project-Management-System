@@ -11,94 +11,115 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  password      String? // This field will store the hashed password
-  role          UserRole  @default(CONSULTANT)
+  id              String                 @id @default(cuid())
+  name            String?
+  email           String?                @unique
+  emailVerified   DateTime?
+  image           String?
+  password        String?
+  role            UserRole               @default(CONSULTANT)
   status        UserStatus @default(APPROVED)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
+  accounts        Account[]
+  sessions        Session[]
 
   projects        Project[]
-  assignedTasks   Task[] // Tasks this user is assigned to
+  assignedTasks   Task[]
   sprintHours     ConsultantSprintHours[]
-  changeRequests  HourChangeRequest[] @relation("ChangeRequestRequester")
-  approvedChanges HourChangeRequest[] @relation("ChangeRequestApprover")
+  changeRequests  HourChangeRequest[]    @relation("ChangeRequestRequester")
+  approvedChanges HourChangeRequest[]    @relation("ChangeRequestApprover")
 }
 
 model Project {
-  id           String    @id @default(cuid())
+  id           String                  @id @default(cuid())
   title        String
   description  String?
   startDate    DateTime
   endDate      DateTime?
   consultantId String
-  consultant   User      @relation(fields: [consultantId], references: [id])
+  consultant   User                    @relation(fields: [consultantId], references: [id])
+  
+  // CHANGE: A project now has a direct list of its own sprints.
+  sprints      Sprint[]
+  
+  phases       Phase[]
+  tasks        Task[]
+  sprintHours  ConsultantSprintHours[]
 
-  phases      Phase[] // A project has many phases
-  tasks       Task[] // A project has many tasks
-  sprintHours ConsultantSprintHours[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
 }
 
-// NEW MODEL: For project phases
 model Phase {
   id          String   @id @default(cuid())
   name        String
   description String?
   startDate   DateTime
   endDate     DateTime
+  
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  // CHANGE: A phase now contains a list of sprints.
+  sprints     Sprint[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Sprint {
-  id            String   @id @default(cuid())
-  name          String
-  startDate     DateTime @unique
-  endDate       DateTime @unique
-  expectedHours Int      @default(80)
+  id            String    @id @default(cuid())
+  // CHANGE: 'name' is replaced with a number for easier sequence tracking within a project.
+  sprintNumber  Int
+  startDate     DateTime
+  endDate       DateTime
+  expectedHours Int       @default(80)
 
-  tasks          Task[] // A sprint contains tasks from various projects
+  // CHANGE: Sprint is now a child of Project. This is the most critical change.
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // CHANGE: A sprint can optionally belong to a phase.
+  phaseId       String?
+  phase         Phase?    @relation(fields: [phaseId], references: [id])
+
+  tasks          Task[]
   sprintHours    ConsultantSprintHours[]
   changeRequests HourChangeRequest[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // CHANGE: The unique constraint is now on the combination of project and sprint number,
+  // not on the dates. This allows different projects to have sprints with overlapping dates.
+  @@unique([projectId, sprintNumber])
 }
 
-// NEW MODEL: For tasks within a sprint for a project
+// The Task model does not need changes. Its existing links to Sprint and Project
+// work perfectly with the new structure.
 model Task {
   id          String     @id @default(cuid())
   title       String
   description String?
   status      TaskStatus @default(TODO)
-
-  sprintId String
-  sprint   Sprint     @relation(fields: [sprintId], references: [id])
-
-  projectId String
-  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  assigneeId String?
-  assignee   User?      @relation(fields: [assigneeId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  
+  sprintId    String
+  sprint      Sprint     @relation(fields: [sprintId], references: [id])
+  
+  projectId   String
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  assigneeId  String?
+  assignee    User?      @relation(fields: [assigneeId], references: [id])
+  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
+// No changes needed for ConsultantSprintHours or HourChangeRequest.
+// Their relationships remain valid.
 model ConsultantSprintHours {
   id           String @id @default(cuid())
   hours        Float
@@ -128,14 +149,16 @@ model HourChangeRequest {
   sprintId       String
   projectId      String
 
-  requester  User     @relation("ChangeRequestRequester", fields: [consultantId], references: [id])
-  sprint     Sprint   @relation(fields: [sprintId], references: [id])
-  approverId String?
-  approver   User?    @relation("ChangeRequestApprover", fields: [approverId], references: [id])
+  requester      User         @relation("ChangeRequestRequester", fields: [consultantId], references: [id])
+  sprint         Sprint       @relation(fields: [sprintId], references: [id])
+  approverId     String?
+  approver       User?        @relation("ChangeRequestApprover", fields: [approverId], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
+
+// --- Authentication and other models remain unchanged ---
 
 model Account {
   id                String  @id @default(cuid())
@@ -191,4 +214,4 @@ enum TaskStatus {
   TODO
   IN_PROGRESS
   DONE
-} 
+}
