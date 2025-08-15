@@ -11,45 +11,47 @@ datasource db {
 }
 
 model User {
-  id              String                 @id @default(cuid())
+  id              String    @id @default(cuid())
   name            String?
-  email           String?                @unique
+  email           String?   @unique
   emailVerified   DateTime?
   image           String?
   password        String?
-  role            UserRole               @default(CONSULTANT)
-  status        UserStatus @default(APPROVED)
-  createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @updatedAt
+  role            UserRole  @default(CONSULTANT)
+  status          UserStatus @default(APPROVED)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   accounts        Account[]
   sessions        Session[]
 
-  projects        Project[]
+  // CHANGE: This is now a relation through the join table
+  projects        ConsultantsOnProjects[]
+
   assignedTasks   Task[]
   sprintHours     ConsultantSprintHours[]
-  changeRequests  HourChangeRequest[]    @relation("ChangeRequestRequester")
-  approvedChanges HourChangeRequest[]    @relation("ChangeRequestApprover")
+  changeRequests  HourChangeRequest[]   @relation("ChangeRequestRequester")
+  approvedChanges HourChangeRequest[]   @relation("ChangeRequestApprover")
 }
 
-model Project {
-  id           String                  @id @default(cuid())
-  title        String
-  description  String?
-  startDate    DateTime
-  endDate      DateTime?
-  consultantId String
-  consultant   User                    @relation(fields: [consultantId], references: [id])
-  
-  // CHANGE: A project now has a direct list of its own sprints.
-  sprints      Sprint[]
-  
-  phases       Phase[]
-  tasks        Task[]
-  sprintHours  ConsultantSprintHours[]
 
-  createdAt    DateTime                @default(now())
-  updatedAt    DateTime                @updatedAt
+model Project {
+  id            String    @id @default(cuid())
+  title         String
+  description   String?
+  startDate     DateTime
+  endDate       DateTime?
+  
+  // CHANGE: The direct consultant link is replaced by the join table
+  consultants   ConsultantsOnProjects[]
+
+  sprints       Sprint[]
+  phases        Phase[]
+  tasks         Task[]
+  sprintHours   ConsultantSprintHours[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 model Phase {
@@ -117,6 +119,17 @@ model Task {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }
+
+model ConsultantsOnProjects {
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  project    Project  @relation(fields: [projectId], references: [id])
+  projectId  String
+  assignedAt DateTime @default(now())
+
+  @@id([userId, projectId])
+}
+
 
 // No changes needed for ConsultantSprintHours or HourChangeRequest.
 // Their relationships remain valid.

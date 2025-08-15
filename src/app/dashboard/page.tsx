@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole } from '@prisma/client';
 import Link from 'next/link';
 import { FaPlus } from 'react-icons/fa';
 import SignOutButton from '@/app/components/SignOutButton';
@@ -9,12 +9,18 @@ import ProjectCard from '@/app/components/ProjectCard';
 
 const prisma = new PrismaClient();
 
-// Fetches all projects assigned to the current user, including their tasks
-async function getProjectsForDashboard(userId: string) {
+// CORRECTED: This function now fetches projects correctly for both roles
+async function getProjectsForDashboard(userId: string, userRole: UserRole) {
+  // The 'where' clause now correctly uses the many-to-many relationship
+  const whereClause =
+    userRole === UserRole.GROWTH_TEAM
+      ? {} // An empty 'where' fetches all projects
+      : { consultants: { some: { userId: userId } } }; // Filters for projects a consultant is assigned to
+
   const projects = await prisma.project.findMany({
-    where: { consultantId: userId },
+    where: whereClause,
     include: {
-      tasks: true, // Include tasks to calculate progress
+      tasks: true, // CORRECTED: This now includes the tasks needed by ProjectCard
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -28,7 +34,7 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
-  const projects = await getProjectsForDashboard(session.user.id);
+  const projects = await getProjectsForDashboard(session.user.id, session.user.role as UserRole);
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -55,7 +61,9 @@ export default async function DashboardPage() {
 
         {/* Projects Grid */}
         <div>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Your Projects</h2>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+            {session.user.role === UserRole.GROWTH_TEAM ? 'All Projects' : 'Your Projects'}
+          </h2>
           {projects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {projects.map((project) => (

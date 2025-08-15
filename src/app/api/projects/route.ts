@@ -14,12 +14,12 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { title, description, startDate, durationInWeeks } = body;
-    const userId = session.user.id;
+    // CHANGED: We now receive an array of 'consultantIds' instead of using the session user's ID.
+    const { title, description, startDate, durationInWeeks, consultantIds } = body;
 
-    // --- Validation ---
-    if (!title || !startDate || !durationInWeeks) {
-      return new NextResponse(JSON.stringify({ error: 'Missing required fields: title, startDate, durationInWeeks' }), { status: 400 });
+    // --- UPDATED Validation ---
+    if (!title || !startDate || !durationInWeeks || !consultantIds || consultantIds.length === 0) {
+      return new NextResponse(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
     }
     if (isNaN(parseInt(durationInWeeks, 10)) || parseInt(durationInWeeks, 10) <= 0) {
       return new NextResponse(JSON.stringify({ error: 'Duration must be a positive number.' }), { status: 400 });
@@ -29,52 +29,49 @@ export async function POST(request: Request) {
     const projectEndDate = new Date(projectStartDate);
     projectEndDate.setDate(projectEndDate.getDate() + durationInWeeks * 7);
 
-    // --- Sprint Generation Logic ---
+    // --- Sprint Generation Logic (This part is unchanged) ---
     const sprintsToCreate = [];
     let currentSprintStartDate = new Date(projectStartDate);
 
-    // Handle "Sprint 0" if the project doesn't start on a Monday
     if (projectStartDate.getDay() !== 1) { // 0 = Sunday, 1 = Monday, etc.
       const sprint0EndDate = new Date(currentSprintStartDate);
-      // Find the next Sunday
       sprint0EndDate.setDate(sprint0EndDate.getDate() + (7 - sprint0EndDate.getDay()));
-      
       sprintsToCreate.push({
         sprintNumber: 0,
         startDate: currentSprintStartDate,
         endDate: sprint0EndDate,
       });
-      
-      // The first "real" sprint starts on the Monday after Sprint 0 ends
       currentSprintStartDate = new Date(sprint0EndDate);
       currentSprintStartDate.setDate(currentSprintStartDate.getDate() + 1);
     }
 
-    // Generate the rest of the sprints
     let sprintCounter = 1;
     while (currentSprintStartDate < projectEndDate) {
       const sprintEndDate = new Date(currentSprintStartDate);
-      sprintEndDate.setDate(sprintEndDate.getDate() + 13); // 14 days total (inclusive)
-
+      sprintEndDate.setDate(sprintEndDate.getDate() + 13);
       sprintsToCreate.push({
         sprintNumber: sprintCounter,
         startDate: new Date(currentSprintStartDate),
         endDate: sprintEndDate,
       });
-
-      // Move to the next sprint start date (the next Monday)
       currentSprintStartDate.setDate(currentSprintStartDate.getDate() + 14);
       sprintCounter++;
     }
 
-    // --- Database Transaction ---
+    // --- UPDATED Database Transaction ---
     const newProject = await prisma.project.create({
       data: {
         title: title.trim(),
         description,
         startDate: projectStartDate,
         endDate: projectEndDate,
-        consultantId: userId,
+        // CHANGED: We now create records in the 'ConsultantsOnProjects' join table.
+        // The old 'consultantId' field is gone.
+        consultants: {
+          create: consultantIds.map((id: string) => ({
+            userId: id,
+          })),
+        },
         sprints: {
           create: sprintsToCreate,
         },
