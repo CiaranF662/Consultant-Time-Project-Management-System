@@ -9,7 +9,12 @@ import axios from 'axios';
 interface AssignSprintsModalProps {
   phaseId: string;
   unassignedSprints: Sprint[];
-  onClose: () => void;
+  onClose: () => void; // This function will trigger the page refresh
+}
+
+// A simple date formatting utility
+function formatDate(date: string | Date) {
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(date));
 }
 
 export default function AssignSprintsModal({
@@ -33,22 +38,17 @@ export default function AssignSprintsModal({
   const handleSubmit = async () => {
     setError(null);
     setIsLoading(true);
-
     try {
-      await axios.patch(`/api/phases/${phaseId}/sprints`, {
+      await axios.patch(`/api/phases/${phaseId}`, {
         sprintIds: selectedSprintIds,
       });
-      onClose();
-      router.refresh();
+      onClose(); // This calls the refresh function passed from the parent page
     } catch (err: any) {
-      // --- THIS IS THE UPDATED ERROR HANDLING LOGIC ---
-      // It now checks if a specific error message was sent from the API
       if (err.response && err.response.data && err.response.data.error) {
         setError(err.response.data.error);
       } else {
         setError('Failed to save assignments. Please try again.');
       }
-      // --- END OF UPDATE ---
     } finally {
       setIsLoading(false);
     }
@@ -79,7 +79,13 @@ export default function AssignSprintsModal({
                   onChange={() => handleCheckboxChange(sprint.id)}
                   className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="font-medium text-gray-700">Sprint {sprint.sprintNumber}</span>
+                <div className="flex justify-between w-full">
+                    <span className="font-medium text-gray-700">Sprint {sprint.sprintNumber}</span>
+                    {/* --- NEW: Display Sprint Dates --- */}
+                    <span className="text-sm text-gray-500">
+                        {formatDate(sprint.startDate)} - {formatDate(sprint.endDate)}
+                    </span>
+                </div>
               </label>
             ))
           ) : (

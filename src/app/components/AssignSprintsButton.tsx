@@ -3,14 +3,15 @@
 import { useState } from 'react';
 import { FaPlus } from 'react-icons/fa';
 import type { Sprint } from '@prisma/client';
-import AssignSprintsModal from './AssignSprintsModal'; // Import the new modal
+import AssignSprintsModal from './AssignSprintsModal';
 
 interface AssignSprintsButtonProps {
   phaseId: string;
   unassignedSprints: Sprint[];
+  onAssignment: () => void; // This will be our refresh function
 }
 
-export default function AssignSprintsButton({ phaseId, unassignedSprints }: AssignSprintsButtonProps) {
+export default function AssignSprintsButton({ phaseId, unassignedSprints, onAssignment }: AssignSprintsButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
@@ -27,7 +28,10 @@ export default function AssignSprintsButton({ phaseId, unassignedSprints }: Assi
         <AssignSprintsModal
           phaseId={phaseId}
           unassignedSprints={unassignedSprints}
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => {
+            setIsModalOpen(false);
+            onAssignment(); // Call the refresh function when the modal closes
+          }}
         />
       )}
     </>

@@ -9,18 +9,20 @@ import ProjectCard from '@/app/components/ProjectCard';
 
 const prisma = new PrismaClient();
 
-// CORRECTED: This function now fetches projects correctly for both roles
 async function getProjectsForDashboard(userId: string, userRole: UserRole) {
-  // The 'where' clause now correctly uses the many-to-many relationship
   const whereClause =
-    userRole === UserRole.GROWTH_TEAM
-      ? {} // An empty 'where' fetches all projects
-      : { consultants: { some: { userId: userId } } }; // Filters for projects a consultant is assigned to
+    userRole === UserRole.GROWTH_TEAM ? {} : { consultants: { some: { userId } } };
 
   const projects = await prisma.project.findMany({
     where: whereClause,
     include: {
-      tasks: true, // CORRECTED: This now includes the tasks needed by ProjectCard
+      sprints: true, // For sprint progress calculation
+      tasks: true, // For task count
+      consultants: { // For listing consultant names
+        include: {
+          user: { select: { name: true } }
+        }
+      }
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -29,7 +31,6 @@ async function getProjectsForDashboard(userId: string, userRole: UserRole) {
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
-
   if (!session?.user?.id) {
     redirect('/login');
   }
@@ -39,7 +40,6 @@ export default async function DashboardPage() {
   return (
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto p-4 md:p-8">
-        {/* Page Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
@@ -48,18 +48,13 @@ export default async function DashboardPage() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <Link
-              href="/dashboard/create-project"
-              className="inline-flex items-center justify-center gap-2 py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-            >
+            <Link href="/dashboard/create-project" className="inline-flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
               <FaPlus />
               Create New Project
             </Link>
             <SignOutButton />
           </div>
         </div>
-
-        {/* Projects Grid */}
         <div>
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">
             {session.user.role === UserRole.GROWTH_TEAM ? 'All Projects' : 'Your Projects'}
@@ -73,9 +68,7 @@ export default async function DashboardPage() {
           ) : (
             <div className="text-center py-12 px-6 bg-white rounded-lg shadow-md border">
               <h3 className="text-xl font-semibold text-gray-800">No Projects Yet</h3>
-              <p className="text-gray-500 mt-2">
-                Click the "Create New Project" button to get started.
-              </p>
+              <p className="text-gray-500 mt-2">Click "Create New Project" to get started.</p>
             </div>
           )}
         </div>
