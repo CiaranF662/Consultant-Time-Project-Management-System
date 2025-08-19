@@ -1,20 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { FaPlus } from 'react-icons/fa';
 
 interface AddTaskFormProps {
   sprintId: string;
   projectId: string;
+  onTaskCreated: () => void; // Add this new prop
 }
 
-export default function AddTaskForm({ sprintId, projectId }: AddTaskFormProps) {
-  const router = useRouter();
+export default function AddTaskForm({ sprintId, projectId, onTaskCreated }: AddTaskFormProps) {
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState(''); // Add state for description
+  const [description, setDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,14 +29,14 @@ export default function AddTaskForm({ sprintId, projectId }: AddTaskFormProps) {
     try {
       await axios.post(`/api/tasks`, {
         title,
-        description, // Send description to the API
+        description,
         sprintId,
         projectId,
       });
       setTitle('');
-      setDescription(''); // Reset description field
+      setDescription('');
       setIsFormVisible(false);
-      router.refresh();
+      onTaskCreated(); // Call the function to trigger a refresh
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to create task.');
     } finally {
@@ -72,7 +71,6 @@ export default function AddTaskForm({ sprintId, projectId }: AddTaskFormProps) {
           autoFocus
         />
       </div>
-      {/* --- NEW DESCRIPTION FIELD --- */}
       <div>
         <label htmlFor={`description-${sprintId}`} className="block text-sm font-medium text-gray-700">Description (Optional)</label>
         <textarea
