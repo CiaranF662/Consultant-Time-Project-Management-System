@@ -1,5 +1,7 @@
 'use client';
 
+import { GalleryVerticalEnd } from "lucide-react"
+
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';

@@ -6,7 +6,7 @@ import AuthProvider from './components/AuthProvider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Consultant PM',
+  title: 'AgilePM',
   description: 'Project Management System',
 };
 
