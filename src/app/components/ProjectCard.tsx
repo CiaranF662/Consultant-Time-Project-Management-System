@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Project, Task, Sprint, ConsultantsOnProjects } from '@prisma/client';
 import { FaUsers, FaTasks, FaCalendarAlt, FaClock } from 'react-icons/fa';
-import { generateColorFromString } from '@/lib/colors';
+import { generateColorFromString } from '../../lib/colors';
 
 type ProjectWithDetails = Project & {
   sprints: Sprint[];

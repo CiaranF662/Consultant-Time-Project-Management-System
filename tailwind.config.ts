@@ -26,7 +26,12 @@ const config: Config = {
     'bg-gray-200', 'text-gray-800',
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors:{
+        'bg-azure-light': '#ADD8E6',
+        'bg-azure-dark': '#0047AB',
+      }
+    },
   },
   plugins: [],
 };

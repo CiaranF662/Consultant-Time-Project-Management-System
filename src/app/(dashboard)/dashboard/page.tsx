@@ -1,11 +1,11 @@
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '../../../lib/auth';
 import { PrismaClient, UserRole, UserStatus, ChangeStatus } from '@prisma/client';
 import Link from 'next/link';
 import { FaPlus, FaUsers, FaClock } from 'react-icons/fa';
-import SignOutButton from '@/app/components/SignOutButton';
-import ProjectCard from '@/app/components/ProjectCard';
+import SignOutButton from '../../components/SignOutButton';
+import ProjectCard from '../../components/ProjectCard';
 
 const prisma = new PrismaClient();
 
