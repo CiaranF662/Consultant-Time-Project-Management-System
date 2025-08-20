@@ -1,9 +1,13 @@
 import React from 'react'
 
-export default function Tasks() {
+const AdminPage = () => {
   return (
-    <div>
-        Tasks Page
-    </div>
+    <>
+      <span className="font-bold text4xl">Tasks</span>
+      <div className="border-dashed border border-zinc-500 w-full h12 rounded-lg"></div>
+      <div className="border-dashed border border-zinc-500 w-full h64 rounded-lg"></div>
+    </>
   )
 }
+
+export default AdminPage
