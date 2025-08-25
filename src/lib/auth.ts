@@ -3,7 +3,7 @@ import { PrismaClient, UserStatus, UserRole } from '@prisma/client'; // Import e
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
-import bcrypt from 'bcrypt';
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -20,6 +20,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
+
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Missing email or password');
@@ -45,7 +46,12 @@ export const authOptions: NextAuthOptions = {
         }
         // --- END APPROVAL CHECK ---
 
-        return user;
+        return {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          status: user.status,
+        };
       },
     }),
   ],

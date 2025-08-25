@@ -1,3 +1,4 @@
+"use client"
 import { Calendar, Home, Inbox, Search, Settings } from "lucide-react"
 
 import {
@@ -9,6 +10,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarProvider,
 } from "@/app/components/ui/sidebar"
 
 // Menu items.
@@ -40,8 +42,9 @@ const items = [
   },
 ]
 
-export function AppSidebar() {
+export default function AppSidebar() {
   return (
+    <SidebarProvider>
     <Sidebar>
       <SidebarContent>
         <SidebarGroup>
@@ -63,5 +66,6 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
+    </SidebarProvider>
   )
 }
