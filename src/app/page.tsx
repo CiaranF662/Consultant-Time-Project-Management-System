@@ -15,7 +15,7 @@ export default async function HomePage() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
       <div className="text-center p-8 max-w-2xl">
         <h1 className="text-5xl font-bold text-gray-800">
-          Consultant Time & Project Management
+          AgilePM
         </h1>
         <p className="mt-4 text-lg text-gray-600">
           A streamlined system for consultants and growth teams to manage projects, sprints, and time allocation with precision.

@@ -1,4 +1,3 @@
-"use client"
 import { cn } from "@/lib/utils";
 
 interface LoadingProps {
@@ -7,7 +6,7 @@ interface LoadingProps {
   fullScreen?: boolean;
 }
 
-export function Loading({ className, size = "md", fullScreen = false }: LoadingProps) {
+export default function Loading({ className, size = "md", fullScreen = false }: LoadingProps) {
   const sizeClasses = {
     sm: "w-8 h-8",
     md: "w-12 h-12", 
@@ -72,7 +71,7 @@ export function Loading({ className, size = "md", fullScreen = false }: LoadingP
   );
 }
 
-export default function PageLoading() {
+export function PageLoading() {
   return <Loading fullScreen size="lg" />;
 }
 

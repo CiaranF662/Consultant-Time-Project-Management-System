@@ -1,12 +1,11 @@
-"use client";
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, UserStatus, ChangeStatus } from '@prisma/client';
 import Link from 'next/link';
 import { FaPlus, FaUsers, FaClock } from 'react-icons/fa';
-import SignOutButton from '@/app/components/SignOutButton';
 import ProjectCard from '@/app/components/ProjectCard';
+import DashboardLayout from '@/app/components/DashboardLayout';
 
 const prisma = new PrismaClient();
 
@@ -52,8 +51,9 @@ export default async function DashboardPage() {
   const isGrowthTeam = session.user.role === UserRole.GROWTH_TEAM;
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="container mx-auto p-4 md:p-8">
+    <DashboardLayout>
+    <div className="flex bg-gray-50 min-h-screen p-4 md:p-8">
+      <div className="container mx-auto p-4 md:p-8 flex justify-between items-center mb-8">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
@@ -68,7 +68,6 @@ export default async function DashboardPage() {
                   Create New Project
                 </Link>
             )}
-            <SignOutButton />
           </div>
         </div>
 
@@ -130,5 +129,6 @@ export default async function DashboardPage() {
         </div>
       </div>
     </div>
+    </DashboardLayout>
   );
 }
