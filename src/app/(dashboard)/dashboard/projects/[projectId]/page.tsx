@@ -15,6 +15,8 @@ import TaskItem from '@/app/components/TaskItem';
 import LogHoursModal from '@/app/components/LogHoursModal';
 import EditPhaseModal from '@/app/components/EditPhaseModal';
 
+import DashboardLayout from '@/app/components/DashboardLayout';
+
 // --- DEFINE COMPREHENSIVE TYPES ---
 type SprintHourWithConsultant = ConsultantSprintHours & { consultant: { name: string | null } };
 type TaskWithAssignee = Task & { assignee: User | null };
@@ -162,6 +164,7 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
   );
 
   return (
+    <DashboardLayout>
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto p-4 md:p-8">
         <div className="flex justify-between items-center mb-6">
@@ -250,5 +253,6 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
         />
       )}
     </div>
+    </DashboardLayout>
   );
 }

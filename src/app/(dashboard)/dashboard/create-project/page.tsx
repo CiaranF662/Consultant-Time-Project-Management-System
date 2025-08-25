@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import axios from 'axios';
 import { User } from '@prisma/client';
+import DashboardLayout from '@/app/components/DashboardLayout';
 
 // Helper function to get today's date in YYYY-MM-DD format
 const getTodayString = () => {
@@ -75,6 +76,7 @@ export default function CreateProjectPage() {
   };
 
   return (
+    <DashboardLayout>
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto p-4 md:p-8">
         <div className="max-w-2xl mx-auto">
@@ -155,5 +157,6 @@ export default function CreateProjectPage() {
         </div>
       </div>
     </div>
+    </DashboardLayout>
   );
 }

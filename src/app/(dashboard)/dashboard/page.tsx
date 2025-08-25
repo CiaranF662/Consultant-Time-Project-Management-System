@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, UserStatus, ChangeStatus } from '@prisma/client';
 import Link from 'next/link';
-import { FaPlus, FaUsers, FaClock } from 'react-icons/fa';
+import { FaPlus } from 'react-icons/fa';
 import ProjectCard from '@/app/components/ProjectCard';
 import DashboardLayout from '@/app/components/DashboardLayout';
 
@@ -18,7 +18,16 @@ async function getProjectsForDashboard(userId: string, userRole: UserRole) {
     include: {
       sprints: true,
       tasks: true,
-      consultants: { include: { user: { select: { name: true } } } },
+      consultants: { 
+        include: { 
+          user: { 
+            select: { 
+              id: true,
+              name: true 
+            } 
+          } 
+        } 
+      },
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -33,7 +42,6 @@ async function getAdminDashboardData() {
     });
     return { pendingUserCount, pendingHoursCount };
 }
-
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -52,11 +60,12 @@ export default async function DashboardPage() {
 
   return (
     <DashboardLayout>
-    <div className="flex bg-gray-50 min-h-screen p-4 md:p-8">
-      <div className="container mx-auto p-4 md:p-8 flex justify-between items-center mb-8">
+      <div className="p-4 md:p-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-800">
+              {isGrowthTeam ? 'Growth Team Dashboard' : 'Consultant Dashboard'}
+            </h1>
             <p className="text-lg text-gray-600">
               Welcome back, {session.user.name || session.user.email}.
             </p>
@@ -71,11 +80,8 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* --- THIS IS THE FIX: The grid now correctly spans 3 columns only for Growth Team --- */}
         <div className={`grid grid-cols-1 ${isGrowthTeam ? 'lg:grid-cols-3' : ''} gap-8`}>
 
-          {/* Main Content: Projects List */}
-          {/* --- THIS IS THE FIX: The projects list now spans 2 or all columns depending on the role --- */}
           <div className={isGrowthTeam ? 'lg:col-span-2' : ''}>
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">
               {isGrowthTeam ? 'All Projects' : 'Your Projects'}
@@ -96,39 +102,37 @@ export default async function DashboardPage() {
             )}
           </div>
 
-          {/* Sidebar: Admin Section */}
-          {/* --- THIS IS THE FIX: This entire block is now conditionally rendered --- */}
           {isGrowthTeam && (
             <div className="lg:col-span-1">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">Admin Panel</h2>
-              <div className="space-y-6">
-                <Link href="/dashboard/admin/manage-users" className="block p-6 bg-white rounded-lg shadow-md border hover:border-blue-500 transition-colors">
-                    <div className="flex justify-between items-center">
-                        <h3 className="font-bold text-lg text-gray-800">Manage Users</h3>
-                        <FaUsers className="text-gray-400" />
-                    </div>
-                    <p className="text-sm text-gray-500 mt-2">Promote consultants and manage user roles.</p>
-                </Link>
-                <Link href="/dashboard/admin/user-approvals" className="block p-6 bg-white rounded-lg shadow-md border hover:border-blue-500 transition-colors">
-                    <div className="flex justify-between items-center">
-                        <h3 className="font-bold text-lg text-gray-800">Sign-up Approvals</h3>
-                        <p className="text-3xl font-bold text-blue-600">{adminData.pendingUserCount}</p>
-                    </div>
-                    <p className="text-sm text-gray-500">pending sign-ups</p>
-                </Link>
-                <Link href="/dashboard/admin/hour-changes" className="block p-6 bg-white rounded-lg shadow-md border hover:border-blue-500 transition-colors">
-                    <div className="flex justify-between items-center">
-                        <h3 className="font-bold text-lg text-gray-800">Hour Requests</h3>
-                         <p className="text-3xl font-bold text-blue-600">{adminData.pendingHoursCount}</p>
-                    </div>
-                    <p className="text-sm text-gray-500">pending hour changes</p>
-                </Link>
+              <div className="border-t-2 border-gray-200 lg:border-t-0 lg:border-l-2 lg:pl-8 lg:ml-8">
+                <h2 className="text-2xl font-semibold text-gray-800 mb-4">Admin Panel</h2>
+                <div className="space-y-6">
+                  <Link href="/dashboard/admin/manage-users" className="block p-6 bg-white rounded-lg shadow-md border hover:border-blue-500 transition-colors">
+                      <div className="flex justify-between items-center">
+                          <h3 className="font-bold text-lg text-gray-800">Manage Users</h3>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-2">Promote consultants and manage user roles.</p>
+                  </Link>
+                  <Link href="/dashboard/admin/user-approvals" className="block p-6 bg-white rounded-lg shadow-md border hover:border-blue-500 transition-colors">
+                      <div className="flex justify-between items-center">
+                          <h3 className="font-bold text-lg text-gray-800">Sign-up Approvals</h3>
+                          <p className="text-3xl font-bold text-blue-600">{adminData.pendingUserCount}</p>
+                      </div>
+                      <p className="text-sm text-gray-500">pending sign-ups</p>
+                  </Link>
+                  <Link href="/dashboard/admin/hour-changes" className="block p-6 bg-white rounded-lg shadow-md border hover:border-blue-500 transition-colors">
+                      <div className="flex justify-between items-center">
+                          <h3 className="font-bold text-lg text-gray-800">Hour Requests</h3>
+                           <p className="text-3xl font-bold text-blue-600">{adminData.pendingHoursCount}</p>
+                      </div>
+                      <p className="text-sm text-gray-500">pending hour changes</p>
+                  </Link>
+                </div>
               </div>
             </div>
           )}
         </div>
       </div>
-    </div>
     </DashboardLayout>
   );
 }

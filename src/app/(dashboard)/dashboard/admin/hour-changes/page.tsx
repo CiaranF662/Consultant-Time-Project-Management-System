@@ -5,6 +5,7 @@ import axios from 'axios';
 import type { HourChangeRequest, User, Project, Sprint } from '@prisma/client';
 import Link from 'next/link';
 import { FaArrowLeft } from 'react-icons/fa';
+import DashboardLayout from '@/app/components/DashboardLayout';
 
 type ExtendedHourChangeRequest = HourChangeRequest & {
     requester: User;
@@ -47,6 +48,7 @@ export default function HourChangeApprovalsPage() {
   if (error) return <div className="text-center p-12 text-red-500">{error}</div>;
 
   return (
+    <DashboardLayout>
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto p-4 md:p-8">
         <div className="mb-6">
@@ -91,5 +93,6 @@ export default function HourChangeApprovalsPage() {
         </div>
       </div>
     </div>
+    </DashboardLayout>
   );
 }

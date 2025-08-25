@@ -3,10 +3,18 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import DashSidebar from './add-sidebar';
+import Sidebar from '@/app/components/add-sidebar';
+import Loading from '@/app/loading';
+import { cn } from '@/lib/utils';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+}
+
+interface LoadingProps {
+  className?: string;
+  size?: "sm" | "md" | "lg";
+  fullScreen?: boolean;
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
@@ -20,14 +28,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [status, router]);
 
   if (status === 'loading') {
+    const sizeClasses = {
+    sm: "w-8 h-8",
+    md: "w-12 h-12", 
+    lg: "w-16 h-16"
+  };
+
+  const dotSizes = {
+    sm: "w-2 h-2",
+    md: "w-3 h-3",
+    lg: "w-4 h-4"
+  };
+
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+      <Loading className={cn("min-h-screen flex items-center justify-center", sizeClasses["lg"])} fullScreen />
+    )
   }
 
   if (!session) {
@@ -35,8 +50,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <DashSidebar>
+    <Sidebar>
       {children}
-    </DashSidebar>
+    </Sidebar>
   );
 }
