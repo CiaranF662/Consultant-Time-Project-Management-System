@@ -43,7 +43,7 @@ const navItems: NavItem[] = [
   },
   {
     label: 'My Projects',
-    href: '/dashboard/my-projects',
+    href: '/projects',
     icon: FaProjectDiagram,
     roles: [UserRole.CONSULTANT]
   },
@@ -61,7 +61,7 @@ const navItems: NavItem[] = [
   },
   {
     label: 'My Tasks',
-    href: '/dashboard/my-tasks',
+    href: '/my-tasks',
     icon: FaTasks,
     roles: [UserRole.CONSULTANT]
   },
@@ -149,6 +149,7 @@ export default function Sidebar({ children }: SidebarProps) {
           {!isCollapsed && (
             <div className="p-4 border-b border-gray-200">
               <div className="flex items-center space-x-3">
+                <Link href="/profile" className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-medium text-sm">
                     {session.user.name?.charAt(0) || session.user.email?.charAt(0)}
@@ -162,6 +163,7 @@ export default function Sidebar({ children }: SidebarProps) {
                     {userRole === UserRole.GROWTH_TEAM ? 'Growth Team' : 'Consultant'}
                   </p>
                 </div>
+                </Link>
               </div>
             </div>
           )}

@@ -60,21 +60,13 @@ export default async function DashboardPage() {
 
   return (
     <DashboardLayout>
-          <div className="p-4 md:p-8">
-            <div className="flex justify-between items-center mb-8 w-fit">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">
-              All Projects
-            </h1>
-          </div>
-        </div>
-
+        <div className="p-4 md:p-8">
         <div className={`grid grid-cols-1 ${isGrowthTeam ? 'lg:grid-cols-3' : ''} gap-8`}>
 
           <div className={isGrowthTeam ? 'lg:col-span-2' : ''}>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+            <h1 className="text-3xl font-semibold text-gray-800 mb-4">
               {isGrowthTeam ? 'All Projects' : 'Your Projects'}
-            </h2>
+            </h1>
             {projects.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {projects.map((project) => (

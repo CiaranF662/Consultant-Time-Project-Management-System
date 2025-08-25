@@ -165,13 +165,8 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
 
   return (
     <DashboardLayout>
-    <div className="bg-gray-50 min-h-screen">
-      <div className="container mx-auto p-4 md:p-8">
-        <div className="flex justify-between items-center mb-6">
-          <Link href="/dashboard" className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600">
-            <FaArrowLeft /> Back to Dashboard
-          </Link>
-        </div>
+    <div className="bg-gray-50 min-h-screen w-full">
+      <div className="container mx-auto p-4 md:p-2">
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-8">
             <div className="flex justify-between items-start">
                 <div>

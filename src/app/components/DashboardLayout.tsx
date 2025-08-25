@@ -41,7 +41,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
     return (
-      <Loading className={cn("min-h-screen flex items-center justify-center", sizeClasses["lg"])} fullScreen />
+      <Loading className={cn("min-h-screen flex items-center justify-center", sizeClasses["lg"])} />
     )
   }
 
