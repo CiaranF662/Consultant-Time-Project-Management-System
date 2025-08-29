@@ -1,3 +1,5 @@
+'use client';
+import { useEffect, useState, useCallback } from 'react';
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';

@@ -43,7 +43,7 @@ const navItems: NavItem[] = [
   },
   {
     label: 'My Projects',
-    href: '/projects',
+    href: '/dashboard/projects',
     icon: FaProjectDiagram,
     roles: [UserRole.CONSULTANT]
   },
