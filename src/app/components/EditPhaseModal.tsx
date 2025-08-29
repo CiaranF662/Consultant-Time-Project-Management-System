@@ -3,14 +3,15 @@
 import { useState } from 'react';
 import type { Phase } from '@prisma/client';
 import axios from 'axios';
-import { FaTimes } from 'react-icons/fa';
+import { FaTimes, FaTrash } from 'react-icons/fa';
 
 interface EditPhaseModalProps {
   phase: Phase;
-  onClose: () => void; // This will trigger the page refresh
+  onClose: () => void;
+  onDelete: () => void;
 }
 
-export default function EditPhaseModal({ phase, onClose }: EditPhaseModalProps) {
+export default function EditPhaseModal({ phase, onClose, onDelete }: EditPhaseModalProps) {
   const [name, setName] = useState(phase.name);
   const [description, setDescription] = useState(phase.description || '');
   const [startDate, setStartDate] = useState(new Date(phase.startDate).toISOString().split('T')[0]);
@@ -22,7 +23,7 @@ export default function EditPhaseModal({ phase, onClose }: EditPhaseModalProps) 
     setIsLoading(true);
     setError(null);
     try {
-      await axios.patch(`/api/phases/${phase.id}`, { name, description, startDate, endDate });
+      await axios.patch(`/api/phases/${phase.id}/sprints`, { name, description, startDate, endDate });
       onClose();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to save changes.');
@@ -53,11 +54,21 @@ export default function EditPhaseModal({ phase, onClose }: EditPhaseModalProps) 
             </div>
         </div>
         {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
-        <div className="flex justify-end items-center mt-6 pt-4 border-t">
-          <button type="button" onClick={onClose} className="py-2 px-4 text-sm font-medium rounded-md hover:bg-gray-100">Cancel</button>
-          <button onClick={handleSave} disabled={isLoading} className="ml-4 py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400">
-            {isLoading ? 'Saving...' : 'Save Changes'}
-          </button>
+        <div className="flex justify-between items-center mt-6 pt-4 border-t">
+            <button
+                onClick={onDelete}
+                disabled={isLoading}
+                className="flex items-center gap-2 py-2 px-4 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400"
+                >
+                <FaTrash />
+                {isLoading ? 'Deleting...' : 'Delete Phase'}
+            </button>
+            <div className='flex items-center'>
+                <button type="button" onClick={onClose} className="py-2 px-4 text-sm font-medium rounded-md hover:bg-gray-100">Cancel</button>
+                <button onClick={handleSave} disabled={isLoading} className="ml-4 py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400">
+                    {isLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+            </div>
         </div>
       </div>
     </div>

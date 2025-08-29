@@ -10,10 +10,11 @@ import EditTaskModal from './EditTaskModal';
 
 interface TaskItemProps {
   task: Task & { assignee: User | null };
-  currentUserRole: UserRole; // Prop to pass the current user's role
+  currentUserRole: UserRole;
+  currentUserId: string; // ID of the logged-in user
 }
 
-export default function TaskItem({ task, currentUserRole }: TaskItemProps) {
+export default function TaskItem({ task, currentUserRole, currentUserId }: TaskItemProps) {
   const router = useRouter();
   const [currentStatus, setCurrentStatus] = useState<TaskStatus>(task.status);
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +28,7 @@ export default function TaskItem({ task, currentUserRole }: TaskItemProps) {
       router.refresh();
     } catch (error) {
       console.error("Failed to update task status", error);
+      // Revert on error
       setCurrentStatus(task.status);
     } finally {
       setIsLoading(false);
@@ -54,9 +56,10 @@ export default function TaskItem({ task, currentUserRole }: TaskItemProps) {
       case 'TODO': default: return 'bg-gray-100 text-gray-800';
     }
   };
-  
+
   if (!task.assignee) return null;
 
+  const isAssignee = task.assignee.id === currentUserId;
   const assigneeColorClass = generateColorFromString(task.assignee.id);
 
   return (
@@ -67,8 +70,7 @@ export default function TaskItem({ task, currentUserRole }: TaskItemProps) {
           {task.description && <p className="text-xs text-gray-500 mt-1">{task.description}</p>}
         </div>
         <div className="flex items-center gap-2">
-          {/* Only consultants can edit or delete tasks */}
-          {currentUserRole === 'CONSULTANT' && (
+          {isAssignee && (
             <>
               <button onClick={() => setIsEditModalOpen(true)} className="p-1 text-gray-400 hover:text-blue-600">
                 <FaEdit />
@@ -78,12 +80,14 @@ export default function TaskItem({ task, currentUserRole }: TaskItemProps) {
               </button>
             </>
           )}
-          <span className={`text-xs font-semibold ${assigneeColorClass}`}>
+          <span className={`rounded-md px-2 py-1 text-xs font-semibold ${assigneeColorClass}`}>
             {task.assignee.name}
           </span>
 
-          {/* --- CONDITIONAL STATUS DISPLAY --- */}
-          {currentUserRole === 'CONSULTANT' ? (
+          {/* --- THIS IS THE NEW SEPARATOR LINE --- */}
+          <div className="h-5 border-l border-gray-300"></div>
+
+          {isAssignee ? (
             <select
               value={currentStatus}
               onChange={(e) => handleStatusChange(e.target.value as TaskStatus)}

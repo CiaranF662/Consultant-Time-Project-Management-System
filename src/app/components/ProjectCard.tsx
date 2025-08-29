@@ -1,11 +1,12 @@
 import Link from 'next/link';
-import type { Project, Task, Sprint, ConsultantsOnProjects, User } from '@prisma/client';
+import type { Project, Task, Sprint, ConsultantsOnProjects } from '@prisma/client';
 import { FaUsers, FaTasks, FaCalendarAlt, FaClock } from 'react-icons/fa';
+import { generateColorFromString } from '@/lib/colors';
 
 type ProjectWithDetails = Project & {
   sprints: Sprint[];
   tasks: Task[];
-  consultants: (ConsultantsOnProjects & { user: { name: string | null } })[];
+  consultants: (ConsultantsOnProjects & { user: { id: string; name: string | null } })[];
 };
 
 interface ProjectCardProps {
@@ -37,9 +38,6 @@ export default function ProjectCard({ project }: ProjectCardProps) {
   // 2. Task Count
   const totalTasks = project.tasks.length;
   const completedTasks = project.tasks.filter(task => task.status === 'DONE').length;
-  
-  // 3. Consultant Names
-  const consultantNames = project.consultants.map(c => c.user.name).join(', ');
 
   return (
     <Link href={`/dashboard/projects/${project.id}`}>
@@ -65,7 +63,18 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             </div>
             <div className="flex items-center">
                 <FaUsers className="mr-2 text-gray-400 flex-shrink-0" />
-                <span className="truncate"><strong>Consultants:</strong> {consultantNames || 'N/A'}</span>
+                <div className="flex flex-wrap gap-1 items-center">
+                    <strong>Consultants:</strong>
+                    {project.consultants.length > 0 ? (
+                        project.consultants.map(c => (
+                            <span key={c.userId} className={`rounded-md px-2 py-0.5 text-xs font-semibold ${generateColorFromString(c.userId)}`}>
+                                {c.user.name}
+                            </span>
+                        ))
+                    ) : (
+                        <span>N/A</span>
+                    )}
+                </div>
             </div>
             <div className="flex items-center">
                 <FaCalendarAlt className="mr-2 text-gray-400 flex-shrink-0" />

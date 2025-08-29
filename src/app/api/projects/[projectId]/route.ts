@@ -31,7 +31,6 @@ export async function GET(
           orderBy: { sprintNumber: 'asc' },
           include: {
             tasks: { include: { assignee: true }, orderBy: { createdAt: 'asc' } },
-            // THIS IS THE FIX: Always include the consultant's name
             sprintHours: {
               where: userRole === UserRole.CONSULTANT ? { consultantId: userId } : {},
               include: {
@@ -63,4 +62,55 @@ export async function GET(
     console.error('Failed to fetch project details:', error);
     return new NextResponse(JSON.stringify({ error: 'Internal server error' }), { status: 500 });
   }
+}
+
+export async function PATCH(
+    request: Request,
+    { params }: { params: { projectId: string } }
+) {
+    const session = await getServerSession(authOptions);
+    if (session?.user?.role !== 'GROWTH_TEAM') {
+        return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
+    }
+
+    try {
+        const { projectId } = params;
+        const body = await request.json();
+        const { title, description } = body;
+
+        const updatedProject = await prisma.project.update({
+            where: { id: projectId },
+            data: {
+                title,
+                description,
+            },
+        });
+
+        return NextResponse.json(updatedProject);
+    } catch (error) {
+        console.error('Error updating project:', error);
+        return new NextResponse(JSON.stringify({ error: 'Failed to update project' }), { status: 500 });
+    }
+}
+
+export async function DELETE(
+    request: Request,
+    { params }: { params: { projectId: string } }
+) {
+    const session = await getServerSession(authOptions);
+    if (session?.user?.role !== 'GROWTH_TEAM') {
+        return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
+    }
+
+    try {
+        const { projectId } = params;
+        await prisma.project.delete({
+            where: { id: projectId },
+        });
+
+        return new NextResponse(null, { status: 204 });
+    } catch (error) {
+        console.error('Error deleting project:', error);
+        return new NextResponse(JSON.stringify({ error: 'Failed to delete project' }), { status: 500 });
+    }
 }

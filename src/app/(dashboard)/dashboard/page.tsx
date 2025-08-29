@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, UserStatus, ChangeStatus } from '@prisma/client';
 import Link from 'next/link';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaUsers } from 'react-icons/fa';
 import ProjectCard from '@/app/components/ProjectCard';
 import DashboardLayout from '@/app/components/DashboardLayout';
 
@@ -105,28 +105,30 @@ export default async function DashboardPage() {
           {isGrowthTeam && (
             <div className="lg:col-span-1">
               <div className="border-t-2 border-gray-200 lg:border-t-0 lg:border-l-2 lg:pl-8 lg:ml-8">
+                <div className="border-t-2 border-gray-200 lg:border-t-0 lg:border-l-2 lg:pl-8 lg:ml-8">
                 <h2 className="text-2xl font-semibold text-gray-800 mb-4">Admin Panel</h2>
-                <div className="space-y-6">
-                  <Link href="/dashboard/admin/manage-users" className="block p-6 bg-white rounded-lg shadow-md border hover:border-blue-500 transition-colors">
-                      <div className="flex justify-between items-center">
-                          <h3 className="font-bold text-lg text-gray-800">Manage Users</h3>
-                      </div>
-                      <p className="text-sm text-gray-500 mt-2">Promote consultants and manage user roles.</p>
-                  </Link>
-                  <Link href="/dashboard/admin/user-approvals" className="block p-6 bg-white rounded-lg shadow-md border hover:border-blue-500 transition-colors">
-                      <div className="flex justify-between items-center">
-                          <h3 className="font-bold text-lg text-gray-800">Sign-up Approvals</h3>
-                          <p className="text-3xl font-bold text-blue-600">{adminData.pendingUserCount}</p>
-                      </div>
-                      <p className="text-sm text-gray-500">pending sign-ups</p>
-                  </Link>
-                  <Link href="/dashboard/admin/hour-changes" className="block p-6 bg-white rounded-lg shadow-md border hover:border-blue-500 transition-colors">
-                      <div className="flex justify-between items-center">
-                          <h3 className="font-bold text-lg text-gray-800">Hour Requests</h3>
-                           <p className="text-3xl font-bold text-blue-600">{adminData.pendingHoursCount}</p>
-                      </div>
-                      <p className="text-sm text-gray-500">pending hour changes</p>
-                  </Link>
+                  <div className="space-y-6">
+                    <Link href="/dashboard/admin/manage-users" className="block p-6 bg-white rounded-lg shadow-md border hover:border-blue-500 transition-colors">
+                        <div className="flex justify-between items-center">
+                            <h3 className="font-bold text-lg text-gray-800">Manage Users</h3>
+                          </div>
+                        <p className="text-sm text-gray-500 mt-2">Promote consultants and manage user roles.</p>
+                    </Link>
+                    <Link href="/dashboard/admin/user-approvals" className="block p-6 bg-white rounded-lg shadow-md border hover:border-blue-500 transition-colors">
+                        <div className="flex justify-between items-center">
+                            <h3 className="font-bold text-lg text-gray-800">Sign-up Approvals</h3>
+                            <p className="text-3xl font-bold text-blue-600">{adminData.pendingUserCount}</p>
+                        </div>
+                        <p className="text-sm text-gray-500">pending sign-ups</p>
+                    </Link>
+                    <Link href="/dashboard/admin/hour-changes" className="block p-6 bg-white rounded-lg shadow-md border hover:border-blue-500 transition-colors">
+                        <div className="flex justify-between items-center">
+                            <h3 className="font-bold text-lg text-gray-800">Hour Requests</h3>
+                             <p className="text-3xl font-bold text-blue-600">{adminData.pendingHoursCount}</p>
+                        </div>
+                        <p className="text-sm text-gray-500">pending hour changes</p>
+                    </Link>
+                </div>
                 </div>
               </div>
             </div>

@@ -5,7 +5,6 @@ import { PrismaClient, UserRole } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// This single PATCH function now handles both updating details and assigning sprints
 export async function PATCH(
   request: Request,
   { params }: { params: { phaseId: string } }
@@ -19,7 +18,6 @@ export async function PATCH(
     const { phaseId } = params;
     const body = await request.json();
 
-    // If the request is to assign sprints
     if (body.sprintIds) {
       const { sprintIds } = body;
       if (!Array.isArray(sprintIds)) {
@@ -42,7 +40,6 @@ export async function PATCH(
       return NextResponse.json({ success: true, message: 'Sprints assigned.' });
     }
 
-    // If the request is to update phase details
     else if (body.name) {
       const { name, description, startDate, endDate } = body;
       const updatedPhase = await prisma.phase.update({
@@ -60,7 +57,6 @@ export async function PATCH(
   }
 }
 
-// Function to handle DELETE requests for deleting a phase
 export async function DELETE(
   request: Request,
   { params }: { params: { phaseId: string } }
@@ -73,16 +69,14 @@ export async function DELETE(
     try {
         const { phaseId } = params;
         
-        // First, unassign all sprints from this phase
         await prisma.sprint.updateMany({
             where: { phaseId: phaseId },
             data: { phaseId: null },
         });
 
-        // Then, delete the phase itself
         await prisma.phase.delete({ where: { id: phaseId } });
 
-        return new NextResponse(null, { status: 204 }); // 204 No Content
+        return new NextResponse(null, { status: 204 });
     } catch (error) {
         console.error('Error deleting phase:', error);
         return new NextResponse(JSON.stringify({ error: 'Failed to delete phase' }), { status: 500 });
