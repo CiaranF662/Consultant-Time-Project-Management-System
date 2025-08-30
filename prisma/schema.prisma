@@ -10,39 +10,39 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// User model represents the users of the application
 model User {
   id              String    @id @default(cuid())
   name            String?
-  email           String?   @unique
+  email           String?   @unique // User's email, must be unique
   emailVerified   DateTime?
   image           String?
-  password        String?
-  role            UserRole  @default(CONSULTANT)
-  status          UserStatus @default(APPROVED)
+  password        String? // Hashed password for credentials-based login
+  role            UserRole  @default(CONSULTANT) // Role of the user, either CONSULTANT or GROWTH_TEAM
+  status          UserStatus @default(APPROVED) // User's status, either PENDING or APPROVED
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   accounts        Account[]
   sessions        Session[]
 
-  // CHANGE: This is now a relation through the join table
+  // A user can be assigned to multiple projects through the ConsultantsOnProjects join table
   projects        ConsultantsOnProjects[]
 
-  assignedTasks   Task[]
+  assignedTasks   Task[] // A user can be assigned to multiple tasks
   sprintHours     ConsultantSprintHours[]
   changeRequests  HourChangeRequest[]   @relation("ChangeRequestRequester")
   approvedChanges HourChangeRequest[]   @relation("ChangeRequestApprover")
 }
 
-
+// Project model represents a client engagement
 model Project {
   id            String    @id @default(cuid())
   title         String
   description   String?
   startDate     DateTime
   endDate       DateTime?
-  
-  // CHANGE: The direct consultant link is replaced by the join table
+  // A project can have multiple consultants assigned to it through the ConsultantsOnProjects join table
   consultants   ConsultantsOnProjects[]
 
   sprints       Sprint[]
@@ -54,38 +54,39 @@ model Project {
   updatedAt     DateTime  @updatedAt
 }
 
+// Phase model represents a high-level strategic stage within a project
 model Phase {
   id          String   @id @default(cuid())
   name        String
   description String?
   startDate   DateTime
   endDate     DateTime
-  
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  // CHANGE: A phase now contains a list of sprints.
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade) // A phase belongs to a project
+
+  // A phase contains a list of sprints.
   sprints     Sprint[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
+// Sprint model represents a two-week work period within a project
 model Sprint {
   id            String    @id @default(cuid())
-  // CHANGE: 'name' is replaced with a number for easier sequence tracking within a project.
-  sprintNumber  Int
+  sprintNumber  Int // The number of the sprints within a project for easy sequence tracking.
   startDate     DateTime
   endDate       DateTime
   expectedHours Int       @default(80)
 
-  // CHANGE: Sprint is now a child of Project. This is the most critical change.
+  // Sprint is a child of Project. This is a critical change.
   projectId     String
   project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
-  // CHANGE: A sprint can optionally belong to a phase.
+
+  // A sprint can optionally belong to a phase.
   phaseId       String?
-  phase         Phase?    @relation(fields: [phaseId], references: [id])
+  phase         Phase?    @relation(fields: [phaseId], references: [id], onUpdate: NoAction, onDelete: SetNull)
 
   tasks          Task[]
   sprintHours    ConsultantSprintHours[]
@@ -94,45 +95,43 @@ model Sprint {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  // CHANGE: The unique constraint is now on the combination of project and sprint number,
-  // not on the dates. This allows different projects to have sprints with overlapping dates.
+  // The unique constraint is now on the combination of project and sprint number,
+  // This allows different projects to have sprints with overlapping dates.
   @@unique([projectId, sprintNumber])
 }
 
-// The Task model does not need changes. Its existing links to Sprint and Project
-// work perfectly with the new structure.
+// Task model represents a granular unit of work
 model Task {
   id          String     @id @default(cuid())
   title       String
   description String?
   status      TaskStatus @default(TODO)
-  
+
   sprintId    String
-  sprint      Sprint     @relation(fields: [sprintId], references: [id])
-  
+  sprint      Sprint     @relation(fields: [sprintId], references: [id], onDelete: Restrict) // A task belongs to a sprint
+
   projectId   String
-  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade) // A task belongs to a project
+
   assigneeId  String?
-  assignee    User?      @relation(fields: [assigneeId], references: [id])
-  
+  assignee    User?      @relation(fields: [assigneeId], references: [id], onDelete: SetNull) // A task can be assigned to a user
+
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }
 
+// Join table for the many-to-many relationship between Users (consultants) and Projects
 model ConsultantsOnProjects {
-  user       User     @relation(fields: [userId], references: [id])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     String
-  project    Project  @relation(fields: [projectId], references: [id])
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId  String
   assignedAt DateTime @default(now())
 
   @@id([userId, projectId])
 }
 
-
-// No changes needed for ConsultantSprintHours or HourChangeRequest.
-// Their relationships remain valid.
+// ConsultantSprintHours model for logging planned hours for a sprint
 model ConsultantSprintHours {
   id           String @id @default(cuid())
   hours        Float
@@ -141,9 +140,9 @@ model ConsultantSprintHours {
   sprintId     String
   projectId    String
 
-  consultant User    @relation(fields: [consultantId], references: [id])
-  sprint     Sprint  @relation(fields: [sprintId], references: [id])
-  project    Project @relation(fields: [projectId], references: [id])
+  consultant User    @relation(fields: [consultantId], references: [id], onDelete: Restrict)
+  sprint     Sprint  @relation(fields: [sprintId], references: [id], onDelete: Restrict)
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -151,6 +150,7 @@ model ConsultantSprintHours {
   @@unique([consultantId, sprintId, projectId, weekNumber])
 }
 
+// HourChangeRequest model for requesting changes to logged hours
 model HourChangeRequest {
   id             String       @id @default(cuid())
   originalHours  Float
@@ -162,10 +162,10 @@ model HourChangeRequest {
   sprintId       String
   projectId      String
 
-  requester      User         @relation("ChangeRequestRequester", fields: [consultantId], references: [id])
-  sprint         Sprint       @relation(fields: [sprintId], references: [id])
+  requester      User         @relation("ChangeRequestRequester", fields: [consultantId], references: [id], onDelete: Restrict)
+  sprint         Sprint       @relation(fields: [sprintId], references: [id], onDelete: Restrict)
   approverId     String?
-  approver       User?        @relation("ChangeRequestApprover", fields: [approverId], references: [id])
+  approver       User?        @relation("ChangeRequestApprover", fields: [approverId], references: [id], onDelete: SetNull)
 
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -206,6 +206,8 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
+// Enums for defining specific sets of values
 
 enum UserRole {
   GROWTH_TEAM

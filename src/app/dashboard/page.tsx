@@ -1,3 +1,9 @@
+// This file defines a Next.js Server Component for the main user dashboard. It fetches
+// data and renders the page on the server, providing a dynamic experience based on the
+// user's role. 'GROWTH_TEAM' members see an administrative view with all projects
+// and an admin panel, while 'CONSULTANT' users see a personalized view of only their
+// assigned projects.
+
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';

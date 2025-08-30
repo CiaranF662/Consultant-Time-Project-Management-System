@@ -1,3 +1,7 @@
+// This file defines a client-side React component for a page that allows users
+// to create a new project. It includes a form to input project details and to
+// select and assign one or more consultants from a dynamically fetched list.
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -53,7 +57,7 @@ export default function CreateProjectPage() {
       setIsLoading(false);
       return;
     }
-
+    // Sends a POST request to create a new project with the provided details
     try {
       const response = await axios.post('/api/projects', {
         title,

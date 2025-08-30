@@ -1,3 +1,8 @@
+// This file defines the root layout for the Next.js application. It sets up the
+// basic HTML structure, applies global styles and fonts, and defines default
+// metadata. Most importantly, it wraps the entire application in an <AuthProvider>
+// to make authentication context and session data available globally.
+
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';

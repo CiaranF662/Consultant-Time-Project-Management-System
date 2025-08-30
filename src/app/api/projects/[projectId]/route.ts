@@ -1,3 +1,8 @@
+// This file defines an API route to manage a single project. It provides GET, PATCH, and DELETE
+// operations with role-based authorization. The GET endpoint allows any assigned user to view a
+// project's details (with filtered data), while the PATCH and DELETE endpoints are restricted
+// to 'GROWTH_TEAM' users for updating and deleting the project.
+
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
@@ -42,13 +47,23 @@ export async function GET(
         phases: {
           orderBy: { startDate: 'asc' },
           include: {
+            // THIS IS THE FIX: Deeply include sprint details within phases
             sprints: {
               orderBy: { sprintNumber: 'asc' },
+              include: {
+                tasks: { include: { assignee: true }, orderBy: { createdAt: 'asc' } },
+                sprintHours: {
+                  where: userRole === UserRole.CONSULTANT ? { consultantId: userId } : {},
+                  include: {
+                    consultant: { select: { name: true } },
+                  },
+                },
+              },
             },
           },
         },
         consultants: {
-          include: { user: { select: { name: true } } },
+          include: { user: { select: { id: true, name: true } } },
         },
       },
     });

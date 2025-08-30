@@ -1,3 +1,6 @@
+// This file defines a Next.js API route handler for fetching all pending consultant 
+// hour change requests, accessible only by users with the 'GROWTH_TEAM' role.
+
 import { NextResponse } from 'next/server';
 import { PrismaClient, ChangeStatus } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
@@ -5,7 +8,6 @@ import { authOptions } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
-// --- THIS GET FUNCTION WAS MISSING ---
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== 'GROWTH_TEAM') {

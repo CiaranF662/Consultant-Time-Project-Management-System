@@ -1,3 +1,9 @@
+// This file contains the central configuration for NextAuth.js, defining the application's
+// authentication strategy. It configures the Prisma adapter for database persistence, sets up
+// Google and Credentials (email/password) login providers, and uses callbacks to enrich the
+// session token with custom user data like ID and role. A key security feature is the
+// check within the Credentials provider to ensure 'GROWTH_TEAM' users are approved before login.
+
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { PrismaClient, UserStatus, UserRole } from '@prisma/client'; // Import enums
 import type { NextAuthOptions } from 'next-auth';
@@ -38,12 +44,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Incorrect password');
         }
 
-        // --- ADD THIS APPROVAL CHECK ---
         // If the user is a Growth Team member, ensure their account is approved.
         if (user.role === UserRole.GROWTH_TEAM && user.status !== UserStatus.APPROVED) {
           throw new Error('Your account is pending approval by an administrator.');
         }
-        // --- END APPROVAL CHECK ---
 
         return user;
       },

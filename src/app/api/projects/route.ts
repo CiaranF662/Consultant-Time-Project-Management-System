@@ -1,3 +1,7 @@
+// This file defines an API route for creating a new project. It takes project details and a
+// list of consultant IDs, automatically generates the corresponding sprints for the project's
+// duration, and saves the project, sprints, and consultant assignments to the database.
+
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
@@ -14,10 +18,8 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    // CHANGED: We now receive an array of 'consultantIds' instead of using the session user's ID.
     const { title, description, startDate, durationInWeeks, consultantIds } = body;
 
-    // --- UPDATED Validation ---
     if (!title || !startDate || !durationInWeeks || !consultantIds || consultantIds.length === 0) {
       return new NextResponse(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
     }
@@ -58,15 +60,13 @@ export async function POST(request: Request) {
       sprintCounter++;
     }
 
-    // --- UPDATED Database Transaction ---
+    // Add a new project to the database
     const newProject = await prisma.project.create({
       data: {
         title: title.trim(),
         description,
         startDate: projectStartDate,
         endDate: projectEndDate,
-        // CHANGED: We now create records in the 'ConsultantsOnProjects' join table.
-        // The old 'consultantId' field is gone.
         consultants: {
           create: consultantIds.map((id: string) => ({
             userId: id,

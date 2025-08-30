@@ -1,3 +1,9 @@
+// This file defines a large, feature-rich client-side component for the project detail
+// page. It provides a dynamic, role-based UI: administrators ('GROWTH_TEAM') get a
+// full overview with editing capabilities, while 'CONSULTANT' users see a focused
+// view for logging hours and managing their tasks. It handles fetching all project
+// data and manages multiple modals for various user actions.
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -10,22 +16,22 @@ import { UserRole, Sprint, Task, User, ConsultantSprintHours, Phase, Project } f
 
 import AddPhaseForm from '@/app/components/AddPhaseForm';
 import AssignSprintsButton from '@/app/components/AssignSprintsButton';
-import AddTaskForm from '@/app/components/AddTaskForm';
-import TaskItem from '@/app/components/TaskItem';
 import LogHoursModal from '@/app/components/LogHoursModal';
 import EditPhaseModal from '@/app/components/EditPhaseModal';
 import EditProjectModal from '@/app/components/EditProjectModal';
+import SprintCard from '@/app/components/SprintCard';
 import { generateColorFromString } from '@/lib/colors';
 import SignOutButton from '@/app/components/SignOutButton';
 
-// --- DEFINE COMPREHENSIVE TYPES ---
+
 type SprintHourWithConsultant = ConsultantSprintHours & { consultant: { name: string | null } };
 type TaskWithAssignee = Task & { assignee: User | null };
 type SprintWithDetails = Sprint & {
   tasks: TaskWithAssignee[];
   sprintHours: SprintHourWithConsultant[];
 };
-type PhaseWithSprints = Phase & { sprints: Sprint[] };
+
+type PhaseWithSprints = Phase & { sprints: SprintWithDetails[] };
 type ConsultantsOnProject = { userId: string; user: { name: string | null } };
 type ProjectWithDetails = Project & {
     consultants: ConsultantsOnProject[];
@@ -99,81 +105,6 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
   const sprintsInPhases = new Set(project.phases.flatMap(p => p.sprints.map(s => s.id)));
   const unassignedSprints = project.sprints.filter(s => !sprintsInPhases.has(s.id));
 
-  const renderSprintList = (sprints: SprintWithDetails[]) => (
-    <ul className="divide-y divide-gray-100">
-      {sprints.map((sprint) => {
-        
-        let hoursByConsultant: Record<string, { name: string | null; week1: number; week2: number }> = {};
-        if (session.user.role === UserRole.GROWTH_TEAM) {
-            hoursByConsultant = sprint.sprintHours.reduce((acc, curr) => {
-                acc[curr.consultantId] = acc[curr.consultantId] || { name: curr.consultant.name, week1: 0, week2: 0 };
-                if (curr.weekNumber === 1) acc[curr.consultantId].week1 = curr.hours;
-                if (curr.weekNumber === 2) acc[curr.consultantId].week2 = curr.hours;
-                return acc;
-            }, {} as Record<string, { name: string | null; week1: number; week2: number }>);
-        }
-        
-        const myHours = sprint.sprintHours.filter(h => h.consultantId === session.user.id);
-        const myWeek1 = myHours.find((h) => h.weekNumber === 1)?.hours || 0;
-        const myWeek2 = myHours.find((h) => h.weekNumber === 2)?.hours || 0;
-        const myTotal = myWeek1 + myWeek2;
-
-        return (
-          <li key={sprint.id} className="p-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="font-semibold">Sprint {sprint.sprintNumber}</p>
-                <p className="text-sm text-gray-500">{formatDate(sprint.startDate)} - {formatDate(sprint.endDate)}</p>
-              </div>
-              {session.user.role === UserRole.CONSULTANT && (
-                <button onClick={() => setModalState({ isOpen: true, sprint: sprint })} className="rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-gray-800 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                  {myHours.length > 0 ? 'Edit Hours' : 'Log Hours'}
-                </button>
-              )}
-            </div>
-            
-            {session.user.role === UserRole.GROWTH_TEAM && Object.keys(hoursByConsultant).length > 0 && (
-                <div className="mt-3 border-t pt-3">
-                    <h5 className="text-xs font-bold text-gray-500 mb-2 uppercase">Logged Hours</h5>
-                    {Object.values(hoursByConsultant).map((data, index) => (
-                        <div key={index} className="text-xs text-gray-600 flex justify-between py-1">
-                            <span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${generateColorFromString(Object.keys(hoursByConsultant)[index])}`}>{data.name}</span>
-                            <span>W1: {data.week1}h, W2: {data.week2}h, <strong>Total: {data.week1 + data.week2}h</strong></span>
-                        </div>
-                    ))}
-                </div>
-            )}
-            
-            {myTotal > 0 && session.user.role === UserRole.CONSULTANT && (
-                <div className="mt-3 text-xs text-gray-600 border-t pt-3">
-                    <strong>Your Logged Hours:</strong> Week 1: {myWeek1}h, Week 2: {myWeek2}h, <strong>Total: {myTotal}h</strong>
-                </div>
-            )}
-            
-            <div className="mt-3 space-y-2">
-              {sprint.tasks.map(task => (
-                <TaskItem 
-                    key={task.id} 
-                    task={task} 
-                    currentUserRole={session.user.role as UserRole}
-                    currentUserId={session.user.id} 
-                />
-              ))}
-            </div>
-            
-            {session.user.role === UserRole.CONSULTANT && (
-              <AddTaskForm 
-                sprintId={sprint.id} 
-                projectId={project.id} 
-                onTaskCreated={fetchProjectDetails}
-              />
-            )}
-          </li>
-        );
-      })}
-    </ul>
-  );
-
   return (
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto p-4 md:p-8">
@@ -238,15 +169,38 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
                     </div>
                   )}
                 </div>
-                {renderSprintList(project.sprints.filter(s => phase.sprints.some(ps => ps.id === s.id)))}
-                {phase.sprints.length === 0 && <p className="p-4 text-sm text-gray-400">No sprints assigned to this phase.</p>}
+                <div className="p-4 space-y-4">
+                    {phase.sprints.length > 0 ? (
+                        phase.sprints.map(sprint => (
+                            <SprintCard 
+                                key={sprint.id}
+                                sprint={sprint}
+                                projectId={project.id}
+                                onUpdate={fetchProjectDetails}
+                                onLogHours={(s) => setModalState({ isOpen: true, sprint: s })}
+                            />
+                        ))
+                    ) : (
+                        <p className="text-sm text-gray-400">No sprints assigned to this phase.</p>
+                    )}
+                </div>
               </div>
             ))}
             
             {unassignedSprints.length > 0 && (
                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="p-4 border-b"><h3 className="font-bold text-lg text-gray-800">Unassigned Sprints</h3></div>
-                {renderSprintList(unassignedSprints)}
+                    <div className="p-4 border-b"><h3 className="font-bold text-lg text-gray-800">Unassigned Sprints</h3></div>
+                    <div className="p-4 space-y-4">
+                        {unassignedSprints.map(sprint => (
+                            <SprintCard 
+                                key={sprint.id}
+                                sprint={sprint}
+                                projectId={project.id}
+                                onUpdate={fetchProjectDetails}
+                                onLogHours={(s) => setModalState({ isOpen: true, sprint: s })}
+                            />
+                        ))}
+                    </div>
               </div>
             )}
           </div>

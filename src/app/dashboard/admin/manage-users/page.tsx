@@ -1,3 +1,7 @@
+// This file defines a client-side React component for an administrative user management
+// page. It fetches and displays a list of all users, providing functionality to
+// promote a 'CONSULTANT' to the 'GROWTH_TEAM' role.
+
 'use client';
 
 import { useState, useEffect } from 'react';

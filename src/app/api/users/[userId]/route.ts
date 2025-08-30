@@ -1,3 +1,6 @@
+// This file defines an API route for updating a specific user's role. This is an
+// administrative action restricted to users with the 'GROWTH_TEAM' role.
+
 import { NextResponse } from 'next/server';
 import { PrismaClient, UserRole } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';

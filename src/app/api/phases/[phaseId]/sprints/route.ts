@@ -1,3 +1,7 @@
+// This file defines an API route for managing a specific project phase. It allows authorized
+// 'GROWTH_TEAM' users to update a phase's details or assign sprints to it (PATCH), 
+// and to delete a phase entirely after disassociating its sprints (DELETE).
+
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';

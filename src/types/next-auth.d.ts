@@ -1,3 +1,8 @@
+// This file is a TypeScript declaration file used to augment the default types provided
+// by the 'next-auth' library. It extends the JWT and Session interfaces to include the
+// custom 'id' and 'role' properties, ensuring type safety throughout the application
+// when accessing session data.
+
 import { DefaultSession } from 'next-auth';
 import { JWT } from 'next-auth/jwt';
 

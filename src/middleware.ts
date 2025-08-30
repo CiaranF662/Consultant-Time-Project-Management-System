@@ -1,3 +1,8 @@
+// This file defines the Next.js middleware that handles route protection. It checks the
+// user's authentication status and redirects them accordingly: unauthenticated users
+// are sent to the login page if they try to access protected routes, and authenticated
+// users are sent to the dashboard if they try to access login/register pages.
+
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';

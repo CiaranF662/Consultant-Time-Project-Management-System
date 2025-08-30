@@ -1,3 +1,7 @@
+// This file defines an API route for creating a new phase within a specific project.
+// It is restricted to 'GROWTH_TEAM' users and includes validation to prevent the
+// creation of phases with date ranges that overlap with existing phases in the same project.
+
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';

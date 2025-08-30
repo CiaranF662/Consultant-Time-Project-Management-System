@@ -1,3 +1,7 @@
+// This file defines a client-side React component for a page that allows administrators
+// to review, approve, or reject pending hour change requests. It fetches requests from the
+// API, displays them, and sends updates back to the server upon user action.
+
 'use client';
 
 import { useState, useEffect } from 'react';

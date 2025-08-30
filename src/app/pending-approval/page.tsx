@@ -1,3 +1,7 @@
+// This file defines a static informational page component. Its purpose is to notify a
+// user who has just registered that their account has been created successfully but
+// is now awaiting approval from an administrator before they can log in.
+
 import Link from 'next/link';
 
 export default function PendingApprovalPage() {

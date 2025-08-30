@@ -1,3 +1,6 @@
+// This file defines a Next.js API route for updating a user's status,
+// a function restricted to users with the 'GROWTH_TEAM' role.
+
 import { NextResponse } from 'next/server';
 import { PrismaClient, UserStatus } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';

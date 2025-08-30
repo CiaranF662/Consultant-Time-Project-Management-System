@@ -1,3 +1,7 @@
+// This file defines a public API route for fetching a list of users. It supports
+// optional filtering of the results based on 'role' and/or 'status'
+// query parameters provided in the URL.
+
 import { NextResponse } from 'next/server';
 import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
 

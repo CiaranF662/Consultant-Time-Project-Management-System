@@ -1,3 +1,7 @@
+// This file defines an API route that allows an authenticated user to create a new task.
+// The new task is automatically assigned to the user creating it and is associated
+// with a specific project and sprint.
+
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';

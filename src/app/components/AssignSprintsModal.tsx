@@ -39,7 +39,7 @@ export default function AssignSprintsModal({
     setError(null);
     setIsLoading(true);
     try {
-      await axios.patch(`/api/phases/${phaseId}`, {
+      await axios.patch(`/api/phases/${phaseId}/sprints`, {
         sprintIds: selectedSprintIds,
       });
       onClose(); // This calls the refresh function passed from the parent page

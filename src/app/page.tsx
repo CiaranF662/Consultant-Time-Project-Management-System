@@ -1,3 +1,8 @@
+// This file defines the main landing page for the application, which is a Next.js
+// Server Component. It serves as the public entry point for unauthenticated users,
+// providing login and sign-up links. If a user is already logged in, it
+// automatically redirects them to their dashboard.
+
 import Link from 'next/link';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';

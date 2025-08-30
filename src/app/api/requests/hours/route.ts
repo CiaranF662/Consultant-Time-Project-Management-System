@@ -1,3 +1,7 @@
+// This file defines an API route that allows an authenticated user to submit requests to
+// change their allocated hours for a sprint. It intelligently creates separate change requests
+// for each of the sprint's two weeks, but only for the specific weeks where hours were modified.
+
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';

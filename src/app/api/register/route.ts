@@ -1,3 +1,7 @@
+// This file defines a public API route for user registration. It creates a new user,
+// hashes their password, and sets their initial status to 'PENDING' for approval if they
+// register as 'GROWTH_TEAM', or 'APPROVED' for all other roles.
+
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
 import { PrismaClient, UserRole, UserStatus } from '@prisma/client';

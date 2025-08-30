@@ -1,3 +1,8 @@
+// This file defines an API route for a consultant to manage their logged hours for a
+// specific sprint. It allows fetching existing hours (GET) and creating or updating
+// the hours for both weeks of the sprint using an atomic "upsert" operation (POST).
+
+
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';

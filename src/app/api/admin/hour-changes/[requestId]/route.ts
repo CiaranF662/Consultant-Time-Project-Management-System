@@ -1,3 +1,10 @@
+// This file defines a Next.js API route handler for managing consultant hour change requests.
+// It provides two main functionalities:
+// 1. GET: Fetches all pending hour change requests for review by the GROWTH_TEAM.
+// 2. PATCH: Allows the GROWTH_TEAM to approve or reject a specific request. If approved,
+//    it updates the consultant's allocated hours for the corresponding sprint in a single,
+//    atomic database transaction to ensure data consistency.
+
 import { NextResponse } from 'next/server';
 import { PrismaClient, ChangeStatus } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
@@ -50,14 +57,12 @@ export async function PATCH(
       return new NextResponse(JSON.stringify({ error: 'Invalid status' }), { status: 400 });
     }
 
-    // Use a transaction to ensure data consistency
     const transaction = await prisma.$transaction(async (tx) => {
       const updatedRequest = await tx.hourChangeRequest.update({
         where: { id: requestId },
         data: { status, approverId: session.user.id },
       });
 
-      // If approved, update the consultant's sprint hours
       if (status === ChangeStatus.APPROVED) {
         await tx.consultantSprintHours.updateMany({
           where: {

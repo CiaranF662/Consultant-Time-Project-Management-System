@@ -1,3 +1,8 @@
+// This file defines a client-side React component for the application's login page.
+// It provides two authentication methods: a traditional email/password form and a
+// 'Sign in with Google' option, using the 'next-auth/react' library to manage the
+// sign-in process and redirection.
+
 'use client';
 
 import { useState } from 'react';

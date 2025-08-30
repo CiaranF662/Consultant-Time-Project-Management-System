@@ -1,3 +1,8 @@
+// This file defines a client-side React component for the user registration page.
+// It includes a form that allows new users to input their details and select a role.
+// After submission, it redirects the user based on their chosen role—sending
+// those needing approval to a pending page and others to the login page.
+
 'use client';
 
 import { useState } from 'react';

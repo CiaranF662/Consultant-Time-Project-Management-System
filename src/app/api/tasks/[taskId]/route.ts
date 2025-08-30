@@ -1,3 +1,6 @@
+// This file defines the API endpoints for managing a single task. It allows any
+// authenticated user to update a task's details (PATCH) or delete the task entirely (DELETE).
+
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';

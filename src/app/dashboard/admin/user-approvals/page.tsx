@@ -1,3 +1,7 @@
+// This file defines a client-side React component for an administrative page that handles
+// user sign-up approvals. It fetches only users with a 'PENDING' status from the API,
+// displays them, and allows an admin to approve their accounts.
+
 'use client';
 
 import { useState, useEffect } from 'react';
