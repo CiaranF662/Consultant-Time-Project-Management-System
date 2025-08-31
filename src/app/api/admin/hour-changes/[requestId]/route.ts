@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient, ChangeStatus } from '@prisma/client';
+import { PrismaClient, ChangeStatus, ChangeType } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 
@@ -16,11 +16,6 @@ export async function GET(request: Request) {
         where: { status: ChangeStatus.PENDING },
         include: {
           requester: true,
-          sprint: {
-            include: {
-              project: true,
-            },
-          },
         },
         orderBy: {
           createdAt: 'asc',
@@ -35,7 +30,7 @@ export async function GET(request: Request) {
   
 export async function PATCH(
   request: Request,
-  { params }: { params: { requestId: string } }
+  { params }: { params: Promise<{ requestId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== 'GROWTH_TEAM') {
@@ -43,7 +38,7 @@ export async function PATCH(
   }
 
   try {
-    const { requestId } = params;
+    const { requestId } = await params;
     const { status } = await request.json();
 
     if (!Object.values(ChangeStatus).includes(status)) {
@@ -57,18 +52,17 @@ export async function PATCH(
         data: { status, approverId: session.user.id },
       });
 
-      // If approved, update the consultant's sprint hours
+      // If approved, update the weekly allocations
       if (status === ChangeStatus.APPROVED) {
-        await tx.consultantSprintHours.updateMany({
-          where: {
-            consultantId: updatedRequest.consultantId,
-            sprintId: updatedRequest.sprintId,
-            weekNumber: updatedRequest.weekNumber,
-          },
-          data: {
-            hours: updatedRequest.requestedHours,
-          },
-        });
+        // Handle different change types according to the new schema
+        if (updatedRequest.changeType === ChangeType.ADJUSTMENT && updatedRequest.phaseAllocationId) {
+          // For hour adjustments, update the phase allocation
+          await tx.phaseAllocation.update({
+            where: { id: updatedRequest.phaseAllocationId },
+            data: { totalHours: updatedRequest.requestedHours },
+          });
+        }
+        // Note: SHIFT type changes would require more complex logic to transfer hours between consultants
       }
 
       return updatedRequest;

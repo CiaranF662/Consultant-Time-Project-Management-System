@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== 'GROWTH_TEAM') {
@@ -15,7 +15,7 @@ export async function PATCH(
   }
 
   try {
-    const { userId } = params;
+    const { userId } = await params;
     const { status } = await request.json();
 
     if (!Object.values(UserStatus).includes(status)) {

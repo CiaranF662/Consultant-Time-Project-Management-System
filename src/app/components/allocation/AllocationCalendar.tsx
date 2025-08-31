@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { formatHours } from '@/lib/dates';
 
@@ -51,6 +51,33 @@ interface AllocationCalendarProps {
 
 export default function AllocationCalendar({ phaseAllocations, upcomingAllocations }: AllocationCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  const isToday = useCallback((date: Date) => {
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
+  }, []);
+
+  const getProjectColor = useCallback((projectId: string) => {
+    const colors = [
+      'bg-blue-500',
+      'bg-green-500',
+      'bg-purple-500',
+      'bg-red-500',
+      'bg-yellow-500',
+      'bg-indigo-500',
+      'bg-pink-500',
+      'bg-gray-500'
+    ];
+    
+    // Simple hash to get consistent colors per project
+    let hash = 0;
+    for (let i = 0; i < projectId.length; i++) {
+      hash = projectId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  }, []);
 
   // Generate calendar data
   const calendarData = useMemo(() => {
@@ -120,34 +147,7 @@ export default function AllocationCalendar({ phaseAllocations, upcomingAllocatio
       days,
       monthName: firstDay.toLocaleString('default', { month: 'long' })
     };
-  }, [currentDate, phaseAllocations]);
-
-  const isToday = (date: Date) => {
-    const today = new Date();
-    return date.getDate() === today.getDate() &&
-           date.getMonth() === today.getMonth() &&
-           date.getFullYear() === today.getFullYear();
-  };
-
-  const getProjectColor = (projectId: string) => {
-    const colors = [
-      'bg-blue-500',
-      'bg-green-500',
-      'bg-purple-500',
-      'bg-red-500',
-      'bg-yellow-500',
-      'bg-indigo-500',
-      'bg-pink-500',
-      'bg-gray-500'
-    ];
-    
-    // Simple hash to get consistent colors per project
-    let hash = 0;
-    for (let i = 0; i < projectId.length; i++) {
-      hash = projectId.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-  };
+  }, [currentDate, phaseAllocations, getProjectColor, isToday]);
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     setCurrentDate(prev => {

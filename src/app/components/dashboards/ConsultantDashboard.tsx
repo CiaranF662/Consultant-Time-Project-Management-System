@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { FaCalendarWeek, FaProjectDiagram, FaClock, FaExclamationCircle, FaClipboardList } from 'react-icons/fa';
-import WeeklyPlannerWrapper from '@/app/components/allocation/WeeklyPlannerWrapper';
+import WeeklyPlannerEnhanced from '@/app/components/allocation/WeeklyPlannerEnhanced';
 import { formatHours } from '@/lib/dates';
 
 interface Sprint {
@@ -188,10 +188,9 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
             <h2 className="text-xl font-semibold text-gray-800">Weekly Hour Planner</h2>
             <p className="text-sm text-gray-500">Distribute your allocated hours across weeks</p>
           </div>
-          <WeeklyPlannerWrapper 
+          <WeeklyPlannerEnhanced 
             consultantId={userId}
-            initialPhaseAllocations={data.phaseAllocations}
-            initialWeeklyAllocations={data.weeklyAllocations}
+            phaseAllocations={data.phaseAllocations as any}
           />
         </div>
       </div>

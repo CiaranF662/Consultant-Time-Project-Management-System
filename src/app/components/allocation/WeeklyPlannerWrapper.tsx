@@ -2,21 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import WeeklyPlanner from './WeeklyPlanner';
+import WeeklyPlannerEnhanced from './WeeklyPlannerEnhanced';
 
 interface WeeklyPlannerWrapperProps {
   consultantId: string;
   initialPhaseAllocations: Array<any>;
-  initialWeeklyAllocations: Array<any>;
+  initialWeeklyAllocations: Array<any>; // Keep for backward compatibility but unused
 }
 
 export default function WeeklyPlannerWrapper({ 
   consultantId, 
-  initialPhaseAllocations, 
-  initialWeeklyAllocations 
+  initialPhaseAllocations
 }: WeeklyPlannerWrapperProps) {
   const [phaseAllocations, setPhaseAllocations] = useState(initialPhaseAllocations);
-  const [weeklyAllocations, setWeeklyAllocations] = useState(initialWeeklyAllocations);
   const [isLoading, setIsLoading] = useState(false);
 
   const refreshData = async () => {
@@ -24,7 +22,7 @@ export default function WeeklyPlannerWrapper({
       setIsLoading(true);
       const response = await axios.get(`/api/consultants/${consultantId}/allocations`);
       setPhaseAllocations(response.data.phaseAllocations);
-      setWeeklyAllocations(response.data.weeklyAllocations);
+      // WeeklyPlannerEnhanced expects weeklyAllocations nested within phaseAllocations
     } catch (error) {
       console.error('Failed to refresh allocation data:', error);
     } finally {
@@ -42,10 +40,9 @@ export default function WeeklyPlannerWrapper({
   }
 
   return (
-    <WeeklyPlanner 
+    <WeeklyPlannerEnhanced 
       consultantId={consultantId}
       phaseAllocations={phaseAllocations}
-      weeklyAllocations={weeklyAllocations}
       onDataChanged={refreshData}
     />
   );
