@@ -1,46 +1,170 @@
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, UserStatus, ChangeStatus } from '@prisma/client';
-import Link from 'next/link';
-import { FaPlus, FaUsers } from 'react-icons/fa';
-import ProjectCard from '@/app/components/ProjectCard';
+import { PrismaClient, UserRole, UserStatus, ChangeStatus, ProjectRole } from '@prisma/client';
 import DashboardLayout from '@/app/components/DashboardLayout';
+import GrowthTeamDashboard from '@/app/components/dashboards/GrowthTeamDashboard';
+import ConsultantDashboard from '@/app/components/dashboards/ConsultantDashboard';
 
 const prisma = new PrismaClient();
 
-async function getProjectsForDashboard(userId: string, userRole: UserRole) {
-  const whereClause =
-    userRole === UserRole.GROWTH_TEAM ? {} : { consultants: { some: { userId } } };
+async function getGrowthTeamData() {
+  // Get pending approvals count
+  const pendingUserCount = await prisma.user.count({
+    where: { status: UserStatus.PENDING }
+  });
+  
+  const pendingHoursCount = await prisma.hourChangeRequest.count({
+    where: { status: ChangeStatus.PENDING }
+  });
 
-  return prisma.project.findMany({
-    where: whereClause,
+  // Get all consultants for timeline
+  const consultants = await prisma.user.findMany({
+    where: { role: UserRole.CONSULTANT },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+    orderBy: { name: 'asc' }
+  });
+
+  // Get recent projects
+  const projects = await prisma.project.findMany({
     include: {
-      sprints: true,
-      tasks: true,
-      consultants: { 
-        include: { 
-          user: { 
-            select: { 
-              id: true,
-              name: true 
-            } 
-          } 
-        } 
+      phases: {
+        include: {
+          allocations: true
+        }
       },
+      consultants: {
+        include: {
+          user: true
+        }
+      }
     },
     orderBy: { createdAt: 'desc' },
+    take: 5
   });
+
+  return { pendingUserCount, pendingHoursCount, consultants, projects };
 }
 
-async function getAdminDashboardData() {
-    const pendingUserCount = await prisma.user.count({
-        where: { status: UserStatus.PENDING }
-    });
-    const pendingHoursCount = await prisma.hourChangeRequest.count({
-        where: { status: ChangeStatus.PENDING }
-    });
-    return { pendingUserCount, pendingHoursCount };
+async function getConsultantData(userId: string) {
+  // Check if user is a PM
+  const pmProjects = await prisma.project.findMany({
+    where: {
+      consultants: {
+        some: {
+          userId: userId,
+          role: ProjectRole.PRODUCT_MANAGER
+        }
+      }
+    },
+    select: {
+      id: true,
+      title: true
+    }
+  });
+
+  const isPM = pmProjects.length > 0;
+
+  // Get current week allocations
+  const today = new Date();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Monday
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6); // Sunday
+
+  // Get current week allocations for stats
+  const currentWeekAllocations = await prisma.weeklyAllocation.findMany({
+    where: {
+      consultantId: userId,
+      weekStartDate: {
+        gte: startOfWeek,
+        lte: endOfWeek
+      }
+    },
+    include: {
+      phaseAllocation: {
+        include: {
+          phase: {
+            include: {
+              project: true
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Get ALL weekly allocations for the consultant (for weekly planner)
+  const allWeeklyAllocations = await prisma.weeklyAllocation.findMany({
+    where: {
+      consultantId: userId
+    },
+    include: {
+      phaseAllocation: {
+        include: {
+          phase: {
+            include: {
+              project: true
+            }
+          }
+        }
+      }
+    },
+    orderBy: { weekStartDate: 'asc' }
+  });
+
+  // Get all phase allocations for the consultant
+  const phaseAllocations = await prisma.phaseAllocation.findMany({
+    where: { consultantId: userId },
+    include: {
+      phase: {
+        include: {
+          project: true,
+          sprints: true
+        }
+      },
+      weeklyAllocations: {
+        orderBy: { weekStartDate: 'asc' }
+      }
+    }
+  });
+
+  // Get pending hour change requests
+  const pendingRequests = await prisma.hourChangeRequest.findMany({
+    where: {
+      consultantId: userId,
+      status: ChangeStatus.PENDING
+    }
+  });
+
+  // Get assigned projects
+  const projects = await prisma.project.findMany({
+    where: {
+      consultants: {
+        some: { userId }
+      }
+    },
+    include: {
+      phases: true,
+      consultants: {
+        include: { user: true }
+      }
+    }
+  });
+
+  return {
+    isPM,
+    pmProjects,
+    weeklyAllocations: allWeeklyAllocations, // Pass ALL weekly allocations for planner
+    currentWeekAllocations, // Pass current week for stats
+    phaseAllocations,
+    pendingRequests,
+    projects
+  };
 }
 
 export default async function DashboardPage() {
@@ -49,92 +173,25 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
-  const projects = await getProjectsForDashboard(session.user.id, session.user.role as UserRole);
-
-  let adminData = { pendingUserCount: 0, pendingHoursCount: 0 };
-  if (session.user.role === UserRole.GROWTH_TEAM) {
-      adminData = await getAdminDashboardData();
-  }
-
   const isGrowthTeam = session.user.role === UserRole.GROWTH_TEAM;
 
-  return (
-    <DashboardLayout>
-      <div className="p-4 md:p-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">
-              {isGrowthTeam ? 'Growth Team Dashboard' : 'Consultant Dashboard'}
-            </h1>
-            <p className="text-lg text-gray-600">
-              Welcome back, {session.user.name || session.user.email}.
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            {isGrowthTeam && (
-                <Link href="/dashboard/create-project" className="inline-flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-                  <FaPlus />
-                  Create New Project
-                </Link>
-            )}
-          </div>
-        </div>
-
-        <div className={`grid grid-cols-1 ${isGrowthTeam ? 'lg:grid-cols-3' : ''} gap-8`}>
-
-          <div className={isGrowthTeam ? 'lg:col-span-2' : ''}>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-              {isGrowthTeam ? 'All Projects' : 'Your Projects'}
-            </h2>
-            {projects.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {projects.map((project) => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 px-6 bg-white rounded-lg shadow-md border">
-                <h3 className="text-xl font-semibold text-gray-800">No Projects Yet</h3>
-                <p className="text-gray-500 mt-2">
-                  {isGrowthTeam ? 'Click "Create New Project" to get started.' : 'You have not been assigned to any projects yet.'}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {isGrowthTeam && (
-            <div className="lg:col-span-1">
-              <div className="border-t-2 border-gray-200 lg:border-t-0 lg:border-l-2 lg:pl-8 lg:ml-8">
-                <div className="border-t-2 border-gray-200 lg:border-t-0 lg:border-l-2 lg:pl-8 lg:ml-8">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-4">Admin Panel</h2>
-                  <div className="space-y-6">
-                    <Link href="/dashboard/admin/manage-users" className="block p-6 bg-white rounded-lg shadow-md border hover:border-blue-500 transition-colors">
-                        <div className="flex justify-between items-center">
-                            <h3 className="font-bold text-lg text-gray-800">Manage Users</h3>
-                          </div>
-                        <p className="text-sm text-gray-500 mt-2">Promote consultants and manage user roles.</p>
-                    </Link>
-                    <Link href="/dashboard/admin/user-approvals" className="block p-6 bg-white rounded-lg shadow-md border hover:border-blue-500 transition-colors">
-                        <div className="flex justify-between items-center">
-                            <h3 className="font-bold text-lg text-gray-800">Sign-up Approvals</h3>
-                            <p className="text-3xl font-bold text-blue-600">{adminData.pendingUserCount}</p>
-                        </div>
-                        <p className="text-sm text-gray-500">pending sign-ups</p>
-                    </Link>
-                    <Link href="/dashboard/admin/hour-changes" className="block p-6 bg-white rounded-lg shadow-md border hover:border-blue-500 transition-colors">
-                        <div className="flex justify-between items-center">
-                            <h3 className="font-bold text-lg text-gray-800">Hour Requests</h3>
-                             <p className="text-3xl font-bold text-blue-600">{adminData.pendingHoursCount}</p>
-                        </div>
-                        <p className="text-sm text-gray-500">pending hour changes</p>
-                    </Link>
-                </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </DashboardLayout>
-  );
+  if (isGrowthTeam) {
+    const data = await getGrowthTeamData();
+    return (
+      <DashboardLayout>
+        <GrowthTeamDashboard data={data} />
+      </DashboardLayout>
+    );
+  } else {
+    const data = await getConsultantData(session.user.id);
+    return (
+      <DashboardLayout>
+        <ConsultantDashboard 
+          data={data} 
+          userId={session.user.id}
+          userName={session.user.name || session.user.email || 'User'}
+        />
+      </DashboardLayout>
+    );
+  }
 }

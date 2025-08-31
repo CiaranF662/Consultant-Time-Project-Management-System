@@ -7,14 +7,14 @@ const prisma = new PrismaClient();
 
 export async function GET(
   request: Request,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
   }
 
-  const { projectId } = params;
+  const { projectId } = await params;
   const { id: userId, role } = session.user;
   const userRole = role as UserRole;
 
@@ -28,16 +28,7 @@ export async function GET(
       where: whereClause,
       include: {
         sprints: {
-          orderBy: { sprintNumber: 'asc' },
-          include: {
-            tasks: { include: { assignee: true }, orderBy: { createdAt: 'asc' } },
-            sprintHours: {
-              where: userRole === UserRole.CONSULTANT ? { consultantId: userId } : {},
-              include: {
-                consultant: { select: { name: true } },
-              },
-            },
-          },
+          orderBy: { sprintNumber: 'asc' }
         },
         phases: {
           orderBy: { startDate: 'asc' },
@@ -45,11 +36,28 @@ export async function GET(
             sprints: {
               orderBy: { sprintNumber: 'asc' },
             },
+            allocations: {
+              include: {
+                consultant: {
+                  select: { id: true, name: true, email: true }
+                },
+                weeklyAllocations: {
+                  orderBy: { weekStartDate: 'asc' }
+                }
+              }
+            }
           },
         },
         consultants: {
-          include: { user: { select: { name: true } } },
+          include: { 
+            user: { 
+              select: { id: true, name: true, email: true } 
+            } 
+          },
         },
+        productManager: {
+          select: { id: true, name: true, email: true }
+        }
       },
     });
 
@@ -57,7 +65,24 @@ export async function GET(
       return new NextResponse(JSON.stringify({ error: 'Project not found or not authorized' }), { status: 404 });
     }
 
-    return NextResponse.json(project);
+    // Transform the data to match frontend expectations
+    const transformedProject = {
+      ...project,
+      phases: project.phases.map(phase => ({
+        ...phase,
+        phaseAllocations: phase.allocations.map(allocation => ({
+          id: allocation.id,
+          consultantId: allocation.consultantId,
+          consultantName: allocation.consultant.name || allocation.consultant.email || 'Unknown',
+          hours: allocation.totalHours,
+          usedHours: allocation.weeklyAllocations.reduce((sum, wa) => sum + wa.plannedHours, 0)
+        })),
+        // Remove the original allocations field to avoid confusion
+        allocations: undefined
+      }))
+    };
+
+    return NextResponse.json(transformedProject);
   } catch (error) {
     console.error('Failed to fetch project details:', error);
     return new NextResponse(JSON.stringify({ error: 'Internal server error' }), { status: 500 });

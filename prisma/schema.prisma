@@ -1,5 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// This is your Prisma schema file for the Resource & Progress Insight System
+// Corrected to work with existing structure
 
 generator client {
   provider = "prisma-client-js"
@@ -9,6 +9,10 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ============================================
+// USER MANAGEMENT (Keep existing auth system)
+// ============================================
 
 model User {
   id              String    @id @default(cuid())
@@ -22,18 +26,26 @@ model User {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
+  // Auth relations (keep existing)
   accounts        Account[]
   sessions        Session[]
 
-  // CHANGE: This is now a relation through the join table
-  projects        ConsultantsOnProjects[]
-
-  assignedTasks   Task[]
-  sprintHours     ConsultantSprintHours[]
-  changeRequests  HourChangeRequest[]   @relation("ChangeRequestRequester")
-  approvedChanges HourChangeRequest[]   @relation("ChangeRequestApprover")
+  // Project relations
+  managedProjects Project[] @relation("ProductManager")
+  projectAssignments ConsultantsOnProjects[]
+  
+  // Allocation relations
+  phaseAllocations PhaseAllocation[]
+  weeklyAllocations WeeklyAllocation[]
+  
+  // Hour change requests
+  changeRequests  HourChangeRequest[] @relation("ChangeRequestRequester")
+  approvedChanges HourChangeRequest[] @relation("ChangeRequestApprover")
 }
 
+// ============================================
+// PROJECT MANAGEMENT
+// ============================================
 
 model Project {
   id            String    @id @default(cuid())
@@ -41,83 +53,19 @@ model Project {
   description   String?
   startDate     DateTime
   endDate       DateTime?
+  budgetedHours Int       @default(0) // Total budgeted hours for the project
   
-  // CHANGE: The direct consultant link is replaced by the join table
+  // Product Manager assignment
+  productManagerId String?
+  productManager   User?    @relation("ProductManager", fields: [productManagerId], references: [id])
+  
+  // Relations
   consultants   ConsultantsOnProjects[]
-
   sprints       Sprint[]
   phases        Phase[]
-  tasks         Task[]
-  sprintHours   ConsultantSprintHours[]
-
+  
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-}
-
-model Phase {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  startDate   DateTime
-  endDate     DateTime
-  
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  // CHANGE: A phase now contains a list of sprints.
-  sprints     Sprint[]
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model Sprint {
-  id            String    @id @default(cuid())
-  // CHANGE: 'name' is replaced with a number for easier sequence tracking within a project.
-  sprintNumber  Int
-  startDate     DateTime
-  endDate       DateTime
-  expectedHours Int       @default(80)
-
-  // CHANGE: Sprint is now a child of Project. This is the most critical change.
-  projectId     String
-  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
-  // CHANGE: A sprint can optionally belong to a phase.
-  phaseId       String?
-  phase         Phase?    @relation(fields: [phaseId], references: [id])
-
-  tasks          Task[]
-  sprintHours    ConsultantSprintHours[]
-  changeRequests HourChangeRequest[]
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  // CHANGE: The unique constraint is now on the combination of project and sprint number,
-  // not on the dates. This allows different projects to have sprints with overlapping dates.
-  @@unique([projectId, sprintNumber])
-}
-
-// The Task model does not need changes. Its existing links to Sprint and Project
-// work perfectly with the new structure.
-model Task {
-  id          String     @id @default(cuid())
-  title       String
-  description String?
-  status      TaskStatus @default(TODO)
-  
-  sprintId    String
-  sprint      Sprint     @relation(fields: [sprintId], references: [id])
-  
-  projectId   String
-  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
-  assigneeId  String?
-  assignee    User?      @relation(fields: [assigneeId], references: [id])
-  
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
 }
 
 model ConsultantsOnProjects {
@@ -126,52 +74,152 @@ model ConsultantsOnProjects {
   project    Project  @relation(fields: [projectId], references: [id])
   projectId  String
   assignedAt DateTime @default(now())
+  role       ProjectRole @default(TEAM_MEMBER) // Add role in project
 
   @@id([userId, projectId])
 }
 
+// ============================================
+// PHASE & SPRINT MANAGEMENT
+// ============================================
 
-// No changes needed for ConsultantSprintHours or HourChangeRequest.
-// Their relationships remain valid.
-model ConsultantSprintHours {
-  id           String @id @default(cuid())
-  hours        Float
-  weekNumber   Int
-  consultantId String
-  sprintId     String
-  projectId    String
-
-  consultant User    @relation(fields: [consultantId], references: [id])
-  sprint     Sprint  @relation(fields: [sprintId], references: [id])
-  project    Project @relation(fields: [projectId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([consultantId, sprintId, projectId, weekNumber])
+model Phase {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  
+  // Dates are dynamically determined by assigned sprints
+  // But we store them for quick access
+  startDate   DateTime
+  endDate     DateTime
+  
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Sprints assigned to this phase
+  sprints     Sprint[]
+  
+  // Phase allocations (budget per consultant)
+  allocations PhaseAllocation[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
+
+model Sprint {
+  id            String    @id @default(cuid())
+  sprintNumber  Int       // Sprint number within project
+  startDate     DateTime
+  endDate       DateTime
+  
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Optional phase assignment
+  phaseId       String?
+  phase         Phase?    @relation(fields: [phaseId], references: [id])
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@unique([projectId, sprintNumber])
+}
+
+// ============================================
+// RESOURCE ALLOCATION (NEW MODELS)
+// ============================================
+
+model PhaseAllocation {
+  id           String @id @default(cuid())
+  
+  phaseId      String
+  phase        Phase  @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  
+  consultantId String
+  consultant   User   @relation(fields: [consultantId], references: [id])
+  
+  totalHours   Float  // Total hours allocated for this consultant on this phase
+  
+  // Weekly breakdown of this allocation
+  weeklyAllocations WeeklyAllocation[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@unique([phaseId, consultantId])
+}
+
+model WeeklyAllocation {
+  id                String @id @default(cuid())
+  
+  phaseAllocationId String
+  phaseAllocation   PhaseAllocation @relation(fields: [phaseAllocationId], references: [id], onDelete: Cascade)
+  
+  consultantId      String
+  consultant        User @relation(fields: [consultantId], references: [id])
+  
+  weekStartDate     DateTime // Monday of the week
+  weekEndDate       DateTime // Sunday of the week
+  weekNumber        Int      // ISO week number
+  year             Int      // Year
+  
+  plannedHours     Float    // Hours planned for this week
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  @@unique([phaseAllocationId, weekNumber, year])
+  @@index([consultantId, weekStartDate])
+  @@index([weekStartDate])
+}
+
+// ============================================
+// HOUR CHANGE MANAGEMENT (UPDATED)
+// ============================================
 
 model HourChangeRequest {
   id             String       @id @default(cuid())
-  originalHours  Float
-  requestedHours Float
-  reason         String
-  status         ChangeStatus @default(PENDING)
-  weekNumber     Int
+  
+  // Request type
+  changeType     ChangeType   // ADJUSTMENT or SHIFT
+  
+  // For ADJUSTMENT type
+  phaseAllocationId String?
+  originalHours     Float
+  requestedHours    Float
+  
+  // For SHIFT type
+  fromConsultantId  String?
+  toConsultantId    String?
+  shiftHours        Float?
+  
+  // Common fields
+  phaseId        String?
+  weekNumber     Int?         // Optional: specific week affected
+  year          Int?         // Optional: year for the week
+  reason        String
+  status        ChangeStatus @default(PENDING)
+  
+  // Requester
   consultantId   String
-  sprintId       String
-  projectId      String
-
   requester      User         @relation("ChangeRequestRequester", fields: [consultantId], references: [id])
-  sprint         Sprint       @relation(fields: [sprintId], references: [id])
+  
+  // Approver
   approverId     String?
   approver       User?        @relation("ChangeRequestApprover", fields: [approverId], references: [id])
-
+  
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 }
 
-// --- Authentication and other models remain unchanged ---
+// ============================================
+// REMOVE OLD MODELS
+// ============================================
+// Remove: Task, ConsultantSprintHours (replaced by WeeklyAllocation)
+
+// ============================================
+// AUTHENTICATION (Keep existing)
+// ============================================
 
 model Account {
   id                String  @id @default(cuid())
@@ -207,9 +255,19 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// ============================================
+// ENUMS
+// ============================================
+
 enum UserRole {
   GROWTH_TEAM
   CONSULTANT
+  // Note: Product Managers will be CONSULTANTS with special project assignment
+}
+
+enum UserStatus {
+  PENDING
+  APPROVED
 }
 
 enum ChangeStatus {
@@ -218,13 +276,12 @@ enum ChangeStatus {
   REJECTED
 }
 
-enum UserStatus {
-  PENDING
-  APPROVED
+enum ChangeType {
+  ADJUSTMENT  // Increase/decrease own hours
+  SHIFT      // Transfer hours to another consultant
 }
 
-enum TaskStatus {
-  TODO
-  IN_PROGRESS
-  DONE
+enum ProjectRole {
+  PRODUCT_MANAGER
+  TEAM_MEMBER
 }

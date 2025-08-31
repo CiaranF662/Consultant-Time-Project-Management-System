@@ -1,12 +1,20 @@
 import Link from 'next/link';
-import type { Project, Task, Sprint, ConsultantsOnProjects } from '@prisma/client';
-import { FaUsers, FaTasks, FaCalendarAlt, FaClock } from 'react-icons/fa';
+import type { Project, Phase, Sprint, ConsultantsOnProjects, PhaseAllocation } from '@prisma/client';
+import { FaUsers, FaCalendarAlt, FaClock, FaChartBar } from 'react-icons/fa';
 import { generateColorFromString } from '@/lib/colors';
 
 type ProjectWithDetails = Project & {
   sprints: Sprint[];
-  tasks: Task[];
-  consultants: (ConsultantsOnProjects & { user: { id: string; name: string | null } })[];
+  phases: (Phase & {
+    allocations: PhaseAllocation[];
+  })[];
+  consultants: (ConsultantsOnProjects & { 
+    user: { 
+      id: string; 
+      name: string | null;
+      email: string | null;
+    } 
+  })[];
 };
 
 interface ProjectCardProps {
@@ -28,51 +36,87 @@ function getProjectDurationInWeeks(start: Date, end: Date | null): string {
 }
 
 export default function ProjectCard({ project }: ProjectCardProps) {
-  const today = new Date();
-  
-  // 1. Sprint Progress Calculation (Time-based)
-  const totalSprints = project.sprints.length;
-  const completedSprints = project.sprints.filter(sprint => new Date(sprint.endDate) < today).length;
-  const sprintProgress = totalSprints > 0 ? (completedSprints / totalSprints) * 100 : 0;
+  // Calculate total allocated hours
+  const totalAllocated = project.phases.reduce((sum, phase) => {
+    return sum + phase.allocations.reduce((phaseSum, allocation) => {
+      return phaseSum + allocation.totalHours;
+    }, 0);
+  }, 0);
 
-  // 2. Task Count
-  const totalTasks = project.tasks.length;
-  const completedTasks = project.tasks.filter(task => task.status === 'DONE').length;
+  // Calculate budget utilization
+  const utilization = project.budgetedHours > 0 
+    ? Math.round((totalAllocated / project.budgetedHours) * 100)
+    : 0;
+
+  // Get utilization color
+  const getUtilizationColor = (percent: number) => {
+    if (percent >= 100) return 'text-red-600 bg-red-100';
+    if (percent >= 80) return 'text-orange-600 bg-orange-100';
+    if (percent >= 60) return 'text-yellow-600 bg-yellow-100';
+    return 'text-green-600 bg-green-100';
+  };
 
   return (
     <Link href={`/dashboard/projects/${project.id}`}>
       <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 flex flex-col h-full cursor-pointer">
         <h3 className="text-xl font-bold text-gray-800 truncate mb-2">{project.title}</h3>
         
-        {/* Sprint Progress Bar */}
+        {/* Budget Progress Bar */}
         <div className="mb-4">
             <div className="flex justify-between mb-1">
-                <span className="text-sm font-medium text-gray-700">Sprint Progress</span>
-                <span className="text-sm font-medium text-gray-700">{Math.round(sprintProgress)}%</span>
+                <span className="text-sm font-medium text-gray-700">Budget Utilization</span>
+                <span className={`text-sm font-bold px-2 py-0.5 rounded ${getUtilizationColor(utilization)}`}>
+                  {utilization}%
+                </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2.5">
-                <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${sprintProgress}%` }}></div>
+                <div 
+                  className={`h-2.5 rounded-full ${
+                    utilization >= 100 ? 'bg-red-500' :
+                    utilization >= 80 ? 'bg-orange-500' :
+                    utilization >= 60 ? 'bg-yellow-500' :
+                    'bg-green-500'
+                  }`} 
+                  style={{ width: `${Math.min(utilization, 100)}%` }}
+                />
+            </div>
+            <div className="flex justify-between mt-1">
+              <span className="text-xs text-gray-500">
+                {totalAllocated}h allocated
+              </span>
+              <span className="text-xs text-gray-500">
+                {project.budgetedHours}h budget
+              </span>
             </div>
         </div>
         
         {/* Project Details */}
         <div className="mt-auto space-y-3 pt-4 border-t border-gray-200 text-sm text-gray-600">
             <div className="flex items-center">
-                <FaTasks className="mr-2 text-gray-400 flex-shrink-0" />
-                <span>{completedTasks} of {totalTasks} tasks complete</span>
+                <FaChartBar className="mr-2 text-gray-400 flex-shrink-0" />
+                <span>{project.phases.length} phases • {project.sprints.length} sprints</span>
             </div>
             <div className="flex items-center">
                 <FaUsers className="mr-2 text-gray-400 flex-shrink-0" />
                 <div className="flex flex-wrap gap-1 items-center">
-                    <strong>Consultants:</strong>
+                    <span className="mr-1">Team:</span>
                     {project.consultants.length > 0 ? (
-                        project.consultants.map(c => (
-                            <span key={c.userId} className={`rounded-md px-2 py-0.5 text-xs font-semibold ${generateColorFromString(c.userId)}`}>
-                                {c.user.name}
+                        project.consultants.slice(0, 3).map(c => (
+                            <span 
+                              key={c.userId} 
+                              className={`rounded-md px-2 py-0.5 text-xs font-semibold ${generateColorFromString(c.userId)}`}
+                              title={c.user.name || c.user.email || 'Unknown'}
+                            >
+                                {(c.user.name || c.user.email || '?').split(' ')[0]}
                             </span>
                         ))
                     ) : (
-                        <span>N/A</span>
+                        <span className="text-gray-400">No team assigned</span>
+                    )}
+                    {project.consultants.length > 3 && (
+                      <span className="text-xs text-gray-500">
+                        +{project.consultants.length - 3} more
+                      </span>
                     )}
                 </div>
             </div>
@@ -80,7 +124,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                 <FaCalendarAlt className="mr-2 text-gray-400 flex-shrink-0" />
                 <span>{formatDate(project.startDate)} - {formatDate(project.endDate)}</span>
             </div>
-             <div className="flex items-center">
+            <div className="flex items-center">
                 <FaClock className="mr-2 text-gray-400 flex-shrink-0" />
                 <span><strong>Duration:</strong> {getProjectDurationInWeeks(project.startDate, project.endDate)}</span>
             </div>

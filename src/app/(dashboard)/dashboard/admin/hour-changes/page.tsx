@@ -1,98 +1,66 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import type { HourChangeRequest, User, Project, Sprint } from '@prisma/client';
-import Link from 'next/link';
-import { FaArrowLeft } from 'react-icons/fa';
+import { getServerSession } from 'next-auth/next';
+import { redirect } from 'next/navigation';
+import { authOptions } from '@/lib/auth';
+import { PrismaClient, UserRole, ChangeStatus } from '@prisma/client';
 import DashboardLayout from '@/app/components/DashboardLayout';
+import HourChangeApprovalsManager from '@/app/components/admin/HourChangeApprovalsManager';
 
-type ExtendedHourChangeRequest = HourChangeRequest & {
-    requester: User;
-    sprint: Sprint & {
-        project: Project;
-    };
+const prisma = new PrismaClient();
+
+async function getPendingHourRequests() {
+  const requests = await prisma.hourChangeRequest.findMany({
+    where: { 
+      status: ChangeStatus.PENDING 
+    },
+    include: {
+      requester: {
+        select: { id: true, name: true, email: true }
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  return requests;
 }
 
-export default function HourChangeApprovalsPage() {
-  const [requests, setRequests] = useState<ExtendedHourChangeRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default async function HourChangeApprovalsPage() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    redirect('/login');
+  }
 
-  const fetchRequests = async () => {
-    setIsLoading(true);
-    try {
-      const { data } = await axios.get('/api/admin/hour-changes');
-      setRequests(data);
-    } catch (err) {
-      setError('Failed to load hour change requests.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Only Growth Team can access this page
+  if (session.user.role !== UserRole.GROWTH_TEAM) {
+    return (
+      <DashboardLayout>
+        <div className="p-8">
+          <div className="bg-red-50 border-l-4 border-red-400 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">
+                  Access denied. Only Growth Team members can approve hour change requests.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
-
-  const handleApproval = async (requestId: string, newStatus: 'APPROVED' | 'REJECTED') => {
-    try {
-      await axios.patch(`/api/admin/hour-changes/${requestId}`, { status: newStatus });
-      fetchRequests(); // Refresh list
-    } catch (err) {
-      alert('Failed to update request.');
-    }
-  };
-
-  if (isLoading) return <div className="text-center p-12">Loading...</div>;
-  if (error) return <div className="text-center p-12 text-red-500">{error}</div>;
+  const requests = await getPendingHourRequests();
 
   return (
     <DashboardLayout>
-    <div className="bg-gray-50 min-h-screen">
-      <div className="container mx-auto p-4 md:p-8">
-        <div className="mb-6">
-            <Link href="/dashboard" className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600">
-                <FaArrowLeft /> Back to Dashboard
-            </Link>
-        </div>
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">Hour Change Requests</h1>
-        <div className="space-y-4">
-            {requests.length > 0 ? (
-                requests.map(req => (
-                    <div key={req.id} className="bg-white p-4 rounded-lg shadow-md border">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                {/* --- THIS IS THE FIX --- */}
-                                <p className="font-semibold text-gray-800">{req.requester.name} - {req.sprint.project.title}</p>
-                                <p className="text-sm text-gray-500">Sprint {req.sprint.sprintNumber} - Week {req.weekNumber}</p>
-                                <p className="text-sm mt-1">
-                                    Request: <strong>{req.originalHours}h → {req.requestedHours}h</strong>
-                                </p>
-                                <p className="text-xs text-gray-600 mt-2 p-2 bg-gray-50 rounded-md">Reason: "{req.reason}"</p>
-                            </div>
-                            <div className="flex flex-col gap-2 items-end">
-                                <div className="flex gap-2">
-                                    <button onClick={() => handleApproval(req.id, 'APPROVED')} className="px-3 py-1 bg-green-500 text-white rounded-md text-sm hover:bg-green-600">
-                                        Approve
-                                    </button>
-                                    <button onClick={() => handleApproval(req.id, 'REJECTED')} className="px-3 py-1 bg-red-500 text-white rounded-md text-sm hover:bg-red-600">
-                                        Reject
-                                    </button>
-                                </div>
-                                <p className="text-xs text-gray-400">{new Date(req.createdAt).toLocaleDateString()}</p>
-                            </div>
-                        </div>
-                    </div>
-                ))
-            ) : (
-                <div className="text-center py-12 px-6 bg-white rounded-lg shadow-md border">
-                    <p className="text-gray-500">No pending hour change requests.</p>
-                </div>
-            )}
-        </div>
-      </div>
-    </div>
+      <HourChangeApprovalsManager 
+        requests={requests} 
+        userId={session.user.id}
+      />
     </DashboardLayout>
   );
 }
