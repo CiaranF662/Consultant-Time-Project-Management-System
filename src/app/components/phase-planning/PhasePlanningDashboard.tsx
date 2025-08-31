@@ -31,6 +31,9 @@ interface Phase {
   description: string | null;
   startDate: Date | string;
   endDate: Date | string;
+  projectId: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
   sprints: Sprint[];
   allocations: PhaseAllocation[];
 }
@@ -276,11 +279,20 @@ export default function PhasePlanningDashboard({ data, userId }: PhasePlanningDa
         />
       )}
 
+      // ...existing code...
+
       {showEditPhase && (
         <EditPhaseModal
           phase={showEditPhase}
-          onClose={() => setShowEditPhase(null)}
-          onPhaseUpdated={handlePhaseCreated}
+          onClose={() => {
+            setShowEditPhase(null);
+            handlePhaseCreated(); // Call the refresh function in onClose instead
+          }}
+          onDelete={() => {
+            // Handle delete if needed - you might want to add delete functionality
+            setShowEditPhase(null);
+            handlePhaseCreated();
+          }}
         />
       )}
     </div>
