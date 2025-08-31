@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { formatWeekLabel, getUtilizationColor, formatHours, generateTimelineWeeks } from '@/lib/dates';
+import { formatHours, getUtilizationColor } from '@/lib/dates';
 
 interface ResourceTimelineProps {
   consultants: Array<{
@@ -47,15 +47,45 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
     try {
       setLoading(true);
       const response = await axios.get(`/api/timeline?weeks=${weeks}`);
-      setTimelineData(response.data.timeline);
+      const { timeline, weeks: apiWeeks } = response.data;
       
-      // Generate week headers
-      const generatedWeeks = generateTimelineWeeks(weeks);
-      setWeekHeaders(generatedWeeks.map(w => ({
-        label: w.label,
-        isCurrent: w.isCurrent,
-        isPast: w.isPast
-      })));
+      // Ensure all consultants have exactly the same number of weeks
+      const normalizedTimeline = timeline.map((consultant: any) => ({
+        ...consultant,
+        weeklyData: apiWeeks.map((week: any, index: number) => {
+          // Find matching week data or return empty week
+          const existingWeek = consultant.weeklyData[index];
+          if (existingWeek && 
+              new Date(existingWeek.weekStart).getTime() === new Date(week.weekStart).getTime()) {
+            return existingWeek;
+          }
+          
+          // Return empty week with correct structure
+          return {
+            week: week.label,
+            weekStart: new Date(week.weekStart),
+            weekEnd: new Date(week.weekEnd),
+            totalHours: 0,
+            allocations: []
+          };
+        })
+      }));
+      
+      setTimelineData(normalizedTimeline);
+      
+      // Use API weeks for headers to ensure perfect alignment
+      setWeekHeaders(apiWeeks.map((w: any) => {
+        const weekDate = new Date(w.weekStart);
+        const today = new Date();
+        const isCurrentWeek = weekDate <= today && today <= new Date(w.weekEnd);
+        const isPastWeek = new Date(w.weekEnd) < today;
+        
+        return {
+          label: w.label,
+          isCurrent: isCurrentWeek,
+          isPast: isPastWeek
+        };
+      }));
     } catch (error) {
       console.error('Failed to fetch timeline data:', error);
     } finally {

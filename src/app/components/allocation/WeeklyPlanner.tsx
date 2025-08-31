@@ -17,6 +17,7 @@ interface WeeklyPlannerProps {
   consultantId: string;
   phaseAllocations: Array<any>;
   weeklyAllocations: Array<any>;
+  onDataChanged?: () => void; // Callback to refresh parent data
 }
 
 interface WeekAllocation {
@@ -28,7 +29,7 @@ interface WeekAllocation {
   hours: number;
 }
 
-export default function WeeklyPlanner({ consultantId, phaseAllocations, weeklyAllocations }: WeeklyPlannerProps) {
+export default function WeeklyPlanner({ consultantId, phaseAllocations, weeklyAllocations, onDataChanged }: WeeklyPlannerProps) {
   const [allocations, setAllocations] = useState<Map<string, number>>(new Map());
   const [unsavedChanges, setUnsavedChanges] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
@@ -91,11 +92,17 @@ export default function WeeklyPlanner({ consultantId, phaseAllocations, weeklyAl
         const [phaseAllocationId, weekNumber, year] = key.split('-');
         const hours = allocations.get(key) || 0;
         
-        // Calculate week dates
-        const weekStart = new Date();
-        weekStart.setFullYear(parseInt(year));
-        weekStart.setMonth(0, 1); // January 1st
-        weekStart.setDate(weekStart.getDate() + (parseInt(weekNumber) - 1) * 7);
+        // Calculate week dates more safely
+        const yearNum = parseInt(year);
+        const weekNum = parseInt(weekNumber);
+        
+        // Validate year and week number
+        if (isNaN(yearNum) || isNaN(weekNum) || yearNum < 2020 || yearNum > 2030 || weekNum < 1 || weekNum > 53) {
+          console.error('Invalid year or week number:', { year, weekNumber });
+          return Promise.reject(new Error(`Invalid date parameters: year=${year}, week=${weekNumber}`));
+        }
+        
+        const weekStart = new Date(yearNum, 0, 1 + (weekNum - 1) * 7);
         const actualWeekStart = getWeekStart(weekStart);
         
         return axios.post('/api/allocations/weekly', {
@@ -108,8 +115,13 @@ export default function WeeklyPlanner({ consultantId, phaseAllocations, weeklyAl
       await Promise.all(promises);
       setUnsavedChanges(new Set());
       
+      // Trigger parent data refresh
+      if (onDataChanged) {
+        onDataChanged();
+      }
+      
       // Show success message
-      alert('Allocations saved successfully!');
+      alert('Weekly allocations saved successfully! Your time distribution has been updated.');
     } catch (error) {
       console.error('Failed to save allocations:', error);
       alert('Failed to save allocations. Please try again.');
@@ -135,18 +147,45 @@ export default function WeeklyPlanner({ consultantId, phaseAllocations, weeklyAl
     <div className="p-4">
       {Object.values(projectGroups).map((group: any) => (
         <div key={group.project.id} className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">{group.project.title}</h3>
+          <div className="flex items-center gap-3 mb-4 p-3 bg-white border-l-4 rounded-lg shadow-sm" style={{ borderLeftColor: `hsl(${Math.abs(group.project.id.split('').reduce((a: number, b: string) => a + b.charCodeAt(0), 0)) % 360}, 70%, 60%)` }}>
+            <div 
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: `hsl(${Math.abs(group.project.id.split('').reduce((a: number, b: string) => a + b.charCodeAt(0), 0)) % 360}, 70%, 60%)` }}
+            />
+            <h3 className="text-lg font-semibold text-gray-800">{group.project.title}</h3>
+            <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+              {group.phases.length} phase{group.phases.length !== 1 ? 's' : ''}
+            </span>
+          </div>
           
           {group.phases.map((allocation: any) => {
             const phase = allocation.phase;
-            const weeks = getWeeksBetween(
-              new Date(phase.startDate),
-              new Date(phase.endDate)
-            );
+            
+            // Validate dates before processing
+            if (!phase.startDate || !phase.endDate) {
+              console.error('Phase missing dates:', phase);
+              return null;
+            }
+            
+            const startDate = new Date(phase.startDate);
+            const endDate = new Date(phase.endDate);
+            
+            // Check if dates are valid
+            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+              console.error('Invalid phase dates:', { startDate: phase.startDate, endDate: phase.endDate });
+              return null;
+            }
+            
+            const weeks = getWeeksBetween(startDate, endDate);
             
             // Calculate total distributed
             let totalDistributed = 0;
             weeks.forEach(week => {
+              // Validate week data
+              if (!week || typeof week.weekNumber === 'undefined' || typeof week.year === 'undefined') {
+                console.error('Invalid week data:', week);
+                return;
+              }
               const key = `${allocation.id}-${week.weekNumber}-${week.year}`;
               totalDistributed += allocations.get(key) || 0;
             });
@@ -177,6 +216,12 @@ export default function WeeklyPlanner({ consultantId, phaseAllocations, weeklyAl
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
                   {weeks.map((week) => {
+                    // Validate week data before using it
+                    if (!week || typeof week.weekNumber === 'undefined' || typeof week.year === 'undefined') {
+                      console.error('Invalid week data in input generation:', week);
+                      return null;
+                    }
+                    
                     const key = `${allocation.id}-${week.weekNumber}-${week.year}`;
                     const value = allocations.get(key) || 0;
                     const isUnsaved = unsavedChanges.has(key);
@@ -204,11 +249,11 @@ export default function WeeklyPlanner({ consultantId, phaseAllocations, weeklyAl
                         />
                       </div>
                     );
-                  })}
+                  }).filter(Boolean)} {/* Filter out null results from invalid week data */}
                 </div>
               </div>
             );
-          })}
+          }).filter(Boolean)} {/* Filter out null results from invalid dates */}
         </div>
       ))}
       

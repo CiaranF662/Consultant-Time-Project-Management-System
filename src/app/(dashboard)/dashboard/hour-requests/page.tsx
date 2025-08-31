@@ -1,12 +1,66 @@
+import { getServerSession } from 'next-auth/next';
+import { redirect } from 'next/navigation';
+import { authOptions } from '@/lib/auth';
+import { PrismaClient, ChangeStatus } from '@prisma/client';
 import DashboardLayout from '@/app/components/DashboardLayout';
+import HourRequestsManager from '@/app/components/requests/HourRequestsManager';
 
-export default function HourRequestsPage() {
+const prisma = new PrismaClient();
+
+async function getUserHourRequests(userId: string) {
+  const requests = await prisma.hourChangeRequest.findMany({
+    where: { consultantId: userId },
+    include: {
+      requester: {
+        select: { id: true, name: true, email: true }
+      },
+      approver: {
+        select: { id: true, name: true, email: true }
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  // Get user's phase allocations for creating new requests
+  const phaseAllocations = await prisma.phaseAllocation.findMany({
+    where: { consultantId: userId },
+    include: {
+      phase: {
+        include: {
+          project: {
+            include: {
+              consultants: {
+                include: {
+                  user: {
+                    select: { id: true, name: true, email: true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  return { requests, phaseAllocations };
+}
+
+export default async function HourRequestsPage() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    redirect('/login');
+  }
+
+  const data = await getUserHourRequests(session.user.id);
+
   return (
     <DashboardLayout>
-      <div className="p-8">
-        <h1 className="text-2xl font-bold mb-4">Hour Change Requests</h1>
-        <p className="text-gray-600">Manage your hour change requests here...</p>
-      </div>
+      <HourRequestsManager 
+        data={data} 
+        userId={session.user.id}
+        userName={session.user.name || session.user.email || 'User'}
+      />
     </DashboardLayout>
   );
 }

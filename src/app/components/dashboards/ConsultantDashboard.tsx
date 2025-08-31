@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { FaCalendarWeek, FaProjectDiagram, FaClock, FaExclamationCircle, FaClipboardList } from 'react-icons/fa';
-import WeeklyPlanner from '@/app/components/allocation/WeeklyPlanner';
+import WeeklyPlannerWrapper from '@/app/components/allocation/WeeklyPlannerWrapper';
 import { formatHours } from '@/lib/dates';
 
 interface Sprint {
@@ -76,6 +76,7 @@ interface ConsultantDashboardProps {
     isPM: boolean;
     pmProjects: Array<{ id: string; title: string }>;
     weeklyAllocations: ConsultantAllocation[];
+    currentWeekAllocations?: ConsultantAllocation[];
     phaseAllocations: PhaseAllocation[];
     pendingRequests: Array<any>;
     projects: ConsultantProject[];
@@ -88,7 +89,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
   const [selectedWeek, setSelectedWeek] = useState(new Date());
 
   // Calculate current week's total hours
-  const currentWeekHours = data.weeklyAllocations.reduce((sum, allocation) => {
+  const currentWeekHours = (data.currentWeekAllocations || []).reduce((sum: number, allocation: any) => {
     return sum + allocation.plannedHours;
   }, 0);
 
@@ -187,10 +188,10 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
             <h2 className="text-xl font-semibold text-gray-800">Weekly Hour Planner</h2>
             <p className="text-sm text-gray-500">Distribute your allocated hours across weeks</p>
           </div>
-          <WeeklyPlanner 
+          <WeeklyPlannerWrapper 
             consultantId={userId}
-            phaseAllocations={data.phaseAllocations}
-            weeklyAllocations={data.weeklyAllocations}
+            initialPhaseAllocations={data.phaseAllocations}
+            initialWeeklyAllocations={data.weeklyAllocations}
           />
         </div>
       </div>

@@ -111,3 +111,99 @@ export async function POST(
     return new NextResponse(JSON.stringify({ error: 'Failed to save allocation' }), { status: 500 });
   }
 }
+
+// PUT bulk update phase allocations
+export async function PUT(
+  request: Request,
+  { params }: { params: { phaseId: string } }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
+  }
+
+  try {
+    const { phaseId } = params;
+    const body = await request.json();
+    const { allocations } = body;
+
+    // Validate that the user is a PM for the project containing this phase
+    const phase = await prisma.phase.findUnique({
+      where: { id: phaseId },
+      include: {
+        project: {
+          include: {
+            consultants: true
+          }
+        }
+      }
+    });
+
+    if (!phase) {
+      return new NextResponse(JSON.stringify({ error: 'Phase not found' }), { status: 404 });
+    }
+
+    const isProductManager = phase.project.consultants.some(
+      consultant => consultant.userId === session.user.id && consultant.role === ProjectRole.PRODUCT_MANAGER
+    );
+    const isGrowthTeam = session.user.role === UserRole.GROWTH_TEAM;
+
+    if (!isProductManager && !isGrowthTeam) {
+      return new NextResponse(JSON.stringify({ error: 'Not authorized - must be Product Manager or Growth Team' }), { status: 403 });
+    }
+
+    // Validate allocations
+    if (!Array.isArray(allocations)) {
+      return new NextResponse(JSON.stringify({ error: 'Invalid allocations data' }), { status: 400 });
+    }
+
+    // Ensure all consultants are part of the project
+    const projectConsultantIds = phase.project.consultants.map(c => c.userId);
+    const invalidConsultants = allocations.filter(
+      alloc => !projectConsultantIds.includes(alloc.consultantId)
+    );
+
+    if (invalidConsultants.length > 0) {
+      return new NextResponse(JSON.stringify({ error: 'Some consultants are not part of the project' }), { status: 400 });
+    }
+
+    // Use transaction to update allocations
+    await prisma.$transaction(async (tx) => {
+      // Delete existing allocations
+      await tx.phaseAllocation.deleteMany({
+        where: { phaseId }
+      });
+
+      // Create new allocations
+      if (allocations.length > 0) {
+        await tx.phaseAllocation.createMany({
+          data: allocations.map((alloc: any) => ({
+            phaseId,
+            consultantId: alloc.consultantId,
+            totalHours: parseFloat(alloc.totalHours)
+          }))
+        });
+      }
+    });
+
+    // Fetch updated phase with allocations
+    const updatedPhase = await prisma.phase.findUnique({
+      where: { id: phaseId },
+      include: {
+        allocations: {
+          include: {
+            consultant: {
+              select: { id: true, name: true, email: true }
+            }
+          }
+        }
+      }
+    });
+
+    return NextResponse.json(updatedPhase);
+
+  } catch (error) {
+    console.error('Error updating phase allocations:', error);
+    return new NextResponse(JSON.stringify({ error: 'Failed to update allocations' }), { status: 500 });
+  }
+}

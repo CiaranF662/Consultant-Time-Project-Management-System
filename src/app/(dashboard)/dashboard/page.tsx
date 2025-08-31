@@ -76,7 +76,8 @@ async function getConsultantData(userId: string) {
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 6); // Sunday
 
-  const weeklyAllocations = await prisma.weeklyAllocation.findMany({
+  // Get current week allocations for stats
+  const currentWeekAllocations = await prisma.weeklyAllocation.findMany({
     where: {
       consultantId: userId,
       weekStartDate: {
@@ -95,6 +96,25 @@ async function getConsultantData(userId: string) {
         }
       }
     }
+  });
+
+  // Get ALL weekly allocations for the consultant (for weekly planner)
+  const allWeeklyAllocations = await prisma.weeklyAllocation.findMany({
+    where: {
+      consultantId: userId
+    },
+    include: {
+      phaseAllocation: {
+        include: {
+          phase: {
+            include: {
+              project: true
+            }
+          }
+        }
+      }
+    },
+    orderBy: { weekStartDate: 'asc' }
   });
 
   // Get all phase allocations for the consultant
@@ -139,7 +159,8 @@ async function getConsultantData(userId: string) {
   return {
     isPM,
     pmProjects,
-    weeklyAllocations,
+    weeklyAllocations: allWeeklyAllocations, // Pass ALL weekly allocations for planner
+    currentWeekAllocations, // Pass current week for stats
     phaseAllocations,
     pendingRequests,
     projects

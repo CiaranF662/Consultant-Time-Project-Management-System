@@ -14,6 +14,10 @@ import {
    * Get the start of the week (Monday) for a given date
    */
   export function getWeekStart(date: Date): Date {
+    if (!date || isNaN(date.getTime())) {
+      console.error('Invalid date passed to getWeekStart:', date);
+      return new Date(); // Return current date as fallback
+    }
     return startOfWeek(date, { weekStartsOn: 1 });
   }
   
@@ -21,6 +25,10 @@ import {
    * Get the end of the week (Sunday) for a given date
    */
   export function getWeekEnd(date: Date): Date {
+    if (!date || isNaN(date.getTime())) {
+      console.error('Invalid date passed to getWeekEnd:', date);
+      return new Date(); // Return current date as fallback
+    }
     return endOfWeek(date, { weekStartsOn: 1 });
   }
   
@@ -28,6 +36,10 @@ import {
    * Get ISO week number for a date
    */
   export function getWeekNumber(date: Date): number {
+    if (!date || isNaN(date.getTime())) {
+      console.error('Invalid date passed to getWeekNumber:', date);
+      return 1; // Return week 1 as fallback
+    }
     return getISOWeek(date);
   }
   
@@ -35,6 +47,10 @@ import {
    * Get year for a date
    */
   export function getYear(date: Date): number {
+    if (!date || isNaN(date.getTime())) {
+      console.error('Invalid date passed to getYear:', date);
+      return new Date().getFullYear(); // Return current year as fallback
+    }
     return dateFnsGetYear(date);
   }
   
@@ -65,18 +81,35 @@ import {
     year: number;
     label: string;
   }> {
-    const weeks = eachWeekOfInterval(
-      { start: startDate, end: endDate },
-      { weekStartsOn: 1 }
-    );
-  
-    return weeks.map(weekStart => ({
-      weekStart,
-      weekEnd: getWeekEnd(weekStart),
-      weekNumber: getWeekNumber(weekStart),
-      year: getYear(weekStart),
-      label: formatWeekLabel(weekStart)
-    }));
+    // Validate input dates
+    if (!startDate || !endDate || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      console.error('Invalid dates passed to getWeeksBetween:', { startDate, endDate });
+      return [];
+    }
+
+    // Ensure end date is after start date
+    if (endDate < startDate) {
+      console.warn('End date is before start date, swapping:', { startDate, endDate });
+      [startDate, endDate] = [endDate, startDate];
+    }
+
+    try {
+      const weeks = eachWeekOfInterval(
+        { start: startDate, end: endDate },
+        { weekStartsOn: 1 }
+      );
+    
+      return weeks.map(weekStart => ({
+        weekStart,
+        weekEnd: getWeekEnd(weekStart),
+        weekNumber: getWeekNumber(weekStart),
+        year: getYear(weekStart),
+        label: formatWeekLabel(weekStart)
+      }));
+    } catch (error) {
+      console.error('Error in getWeeksBetween:', error, { startDate, endDate });
+      return [];
+    }
   }
   
   /**

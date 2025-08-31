@@ -76,14 +76,19 @@ export async function GET(request: Request) {
       }
     });
 
-    // Build timeline data structure
+    // Build timeline data structure ensuring each consultant has exactly the same weeks
     const timeline = consultants.map(consultant => {
       const consultantAllocations = allocations.filter(a => a.consultantId === consultant.id);
       
-      const weeklyData = weeks.map(week => {
+      const weeklyData = weeks.map((week) => {
         const weekAllocations = consultantAllocations.filter(a => {
           const allocWeekStart = new Date(a.weekStartDate);
-          return allocWeekStart >= week.weekStart && allocWeekStart <= week.weekEnd;
+          // More precise week matching to avoid date comparison issues
+          const weekStartTime = week.weekStart.getTime();
+          const weekEndTime = week.weekEnd.getTime();
+          const allocTime = allocWeekStart.getTime();
+          
+          return allocTime >= weekStartTime && allocTime <= weekEndTime;
         });
 
         const totalHours = weekAllocations.reduce((sum, a) => sum + a.plannedHours, 0);
@@ -103,6 +108,11 @@ export async function GET(request: Request) {
           }))
         };
       });
+
+      // Verify we have exactly the right number of weeks
+      if (weeklyData.length !== weeksToShow) {
+        console.warn(`Consultant ${consultant.id} has ${weeklyData.length} weeks instead of ${weeksToShow}`);
+      }
 
       return {
         consultantId: consultant.id,
