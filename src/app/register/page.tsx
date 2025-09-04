@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
-// Import the UserRole enum from Prisma to ensure type safety
 import { UserRole } from '@prisma/client';
+import { BarChart3, User, Users2 } from 'lucide-react';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -57,131 +57,195 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
-        <h1 className="mb-6 text-center text-3xl font-bold text-gray-800">
-          Create an Account
-        </h1>
-
-        {error && (
-          <div className="mb-4 rounded-md bg-red-100 p-3 text-center text-sm text-red-500">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          {/* --- NEW ROLE SELECTION --- */}
-          <div className="mb-4">
-            <label className="mb-2 block text-sm font-medium text-gray-700">I am a...</label>
-            <div className="flex items-center space-x-6 rounded-md border border-gray-300 p-2">
-              <label className="flex flex-1 cursor-pointer items-center justify-center rounded-md p-2 transition-colors hover:bg-gray-100 has-[:checked]:bg-blue-50 has-[:checked]:text-blue-700">
-                <input
-                  type="radio"
-                  name="role"
-                  value={UserRole.CONSULTANT}
-                  checked={role === UserRole.CONSULTANT}
-                  onChange={() => setRole(UserRole.CONSULTANT)}
-                  className="sr-only" // Hide the default radio button
-                />
-                <span className="text-sm font-medium">Consultant</span>
-              </label>
-              <label className="flex flex-1 cursor-pointer items-center justify-center rounded-md p-2 transition-colors hover:bg-gray-100 has-[:checked]:bg-blue-50 has-[:checked]:text-blue-700">
-                <input
-                  type="radio"
-                  name="role"
-                  value={UserRole.GROWTH_TEAM}
-                  checked={role === UserRole.GROWTH_TEAM}
-                  onChange={() => setRole(UserRole.GROWTH_TEAM)}
-                  className="sr-only"
-                />
-                <span className="text-sm font-medium">Growth Team</span>
-              </label>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        {/* Header */}
+        <div className="text-center">
+          <Link href="/" className="inline-flex items-center space-x-2 mb-8">
+            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+              <BarChart3 className="w-6 h-6 text-white" />
             </div>
-          </div>
-          {/* --- END NEW ROLE SELECTION --- */}
-
-          <div className="mb-4">
-            <label
-              htmlFor="name"
-              className="mb-2 block text-sm font-medium text-gray-700"
-            >
-              Full Name
-            </label>
-            <input
-              id="name"
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-              placeholder="John Doe"
-            />
-          </div>
-          <div className="mb-4">
-            <label
-              htmlFor="email"
-              className="mb-2 block text-sm font-medium text-gray-700"
-            >
-              Email Address
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-              placeholder="you@example.com"
-            />
-          </div>
-          <div className="mb-4">
-            <label
-              htmlFor="password"
-              className="mb-2 block text-sm font-medium text-gray-700"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-              placeholder="••••••••"
-            />
-          </div>
-          <div className="mb-6">
-            <label
-              htmlFor="confirmPassword"
-              className="mb-2 block text-sm font-medium text-gray-700"
-            >
-              Confirm Password
-            </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-              placeholder="••••••••"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full rounded-md bg-blue-500 px-4 py-2 font-semibold text-white transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            Sign Up
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-gray-600">
-          Already have an account?{' '}
-          <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
-            Sign in
+            <span className="text-2xl font-bold text-gray-900">AgilePM</span>
           </Link>
-        </p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create your account</h1>
+          <p className="text-gray-600">Join thousands of teams managing resources efficiently</p>
+        </div>
+
+        {/* Main Card */}
+        <div className="bg-white rounded-xl shadow-xl p-8 border border-gray-200">
+          {error && (
+            <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4 text-center text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Role Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                I am joining as a...
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className={`
+                  relative flex cursor-pointer rounded-lg border p-4 focus:outline-none transition-all
+                  ${role === UserRole.CONSULTANT 
+                    ? 'border-blue-200 bg-blue-50 ring-2 ring-blue-500' 
+                    : 'border-gray-300 bg-white hover:bg-gray-50'
+                  }
+                `}>
+                  <input
+                    type="radio"
+                    name="role"
+                    value={UserRole.CONSULTANT}
+                    checked={role === UserRole.CONSULTANT}
+                    onChange={() => setRole(UserRole.CONSULTANT)}
+                    className="sr-only"
+                  />
+                  <div className="flex items-center">
+                    <div className={`
+                      w-8 h-8 rounded-lg flex items-center justify-center mr-3
+                      ${role === UserRole.CONSULTANT ? 'bg-blue-100' : 'bg-gray-100'}
+                    `}>
+                      <User className={`w-4 h-4 ${role === UserRole.CONSULTANT ? 'text-blue-600' : 'text-gray-500'}`} />
+                    </div>
+                    <div>
+                      <div className={`text-sm font-medium ${role === UserRole.CONSULTANT ? 'text-blue-900' : 'text-gray-900'}`}>
+                        Consultant
+                      </div>
+                      <div className={`text-xs ${role === UserRole.CONSULTANT ? 'text-blue-700' : 'text-gray-500'}`}>
+                        Execute projects
+                      </div>
+                    </div>
+                  </div>
+                </label>
+
+                <label className={`
+                  relative flex cursor-pointer rounded-lg border p-4 focus:outline-none transition-all
+                  ${role === UserRole.GROWTH_TEAM 
+                    ? 'border-blue-200 bg-blue-50 ring-2 ring-blue-500' 
+                    : 'border-gray-300 bg-white hover:bg-gray-50'
+                  }
+                `}>
+                  <input
+                    type="radio"
+                    name="role"
+                    value={UserRole.GROWTH_TEAM}
+                    checked={role === UserRole.GROWTH_TEAM}
+                    onChange={() => setRole(UserRole.GROWTH_TEAM)}
+                    className="sr-only"
+                  />
+                  <div className="flex items-center">
+                    <div className={`
+                      w-8 h-8 rounded-lg flex items-center justify-center mr-3
+                      ${role === UserRole.GROWTH_TEAM ? 'bg-blue-100' : 'bg-gray-100'}
+                    `}>
+                      <Users2 className={`w-4 h-4 ${role === UserRole.GROWTH_TEAM ? 'text-blue-600' : 'text-gray-500'}`} />
+                    </div>
+                    <div>
+                      <div className={`text-sm font-medium ${role === UserRole.GROWTH_TEAM ? 'text-blue-900' : 'text-gray-900'}`}>
+                        Growth Team
+                      </div>
+                      <div className={`text-xs ${role === UserRole.GROWTH_TEAM ? 'text-blue-700' : 'text-gray-500'}`}>
+                        Manage resources
+                      </div>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Name Input */}
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                Full name
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors"
+                placeholder="Enter your full name"
+              />
+            </div>
+
+            {/* Email Input */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors"
+                placeholder="Enter your email"
+              />
+            </div>
+
+            {/* Password Input */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors"
+                placeholder="Create a password"
+              />
+              <p className="mt-1 text-xs text-gray-500">Must be at least 6 characters</p>
+            </div>
+
+            {/* Confirm Password Input */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                Confirm password
+              </label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors"
+                placeholder="Confirm your password"
+              />
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              Create account
+            </button>
+          </form>
+        </div>
+
+        {/* Sign in link */}
+        <div className="text-center">
+          <p className="text-sm text-gray-600">
+            Already have an account?{' '}
+            <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+              Sign in instead
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
