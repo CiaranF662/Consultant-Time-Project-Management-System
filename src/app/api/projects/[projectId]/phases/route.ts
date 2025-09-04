@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 export async function POST(
   request: Request,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
   const session = await getServerSession(authOptions);
 
@@ -16,7 +16,7 @@ export async function POST(
   }
 
   try {
-    const { projectId } = params;
+    const { projectId } = await params;
     const body = await request.json();
     const { name, description, startDate, endDate } = body;
 

@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { phaseId: string } }
+  { params }: { params: Promise<{ phaseId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (session?.user.role !== UserRole.GROWTH_TEAM) {
@@ -15,7 +15,7 @@ export async function PATCH(
   }
 
   try {
-    const { phaseId } = params;
+    const { phaseId } = await params;
     const body = await request.json();
 
     if (body.sprintIds) {
@@ -59,7 +59,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { phaseId: string } }
+  { params }: { params: Promise<{ phaseId: string }> }
 ) {
     const session = await getServerSession(authOptions);
     if (session?.user.role !== UserRole.GROWTH_TEAM) {
@@ -67,7 +67,7 @@ export async function DELETE(
     }
 
     try {
-        const { phaseId } = params;
+        const { phaseId } = await params;
         
         await prisma.sprint.updateMany({
             where: { phaseId: phaseId },
