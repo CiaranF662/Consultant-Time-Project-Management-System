@@ -283,13 +283,12 @@ export default function PhasePlanningDashboard({ data, userId }: PhasePlanningDa
 
       {showEditPhase && (
         <EditPhaseModal
-          phase={showEditPhase}
+          phase={showEditPhase as any}
           onClose={() => {
             setShowEditPhase(null);
-            handlePhaseCreated(); // Call the refresh function in onClose instead
+            handlePhaseCreated();
           }}
           onDelete={() => {
-            // Handle delete if needed - you might want to add delete functionality
             setShowEditPhase(null);
             handlePhaseCreated();
           }}

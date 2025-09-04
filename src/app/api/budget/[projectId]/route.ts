@@ -7,17 +7,19 @@ const prisma = new PrismaClient();
 
 export async function GET(
   request: Request,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
   }
 
+  const { projectId } = await params;
+
   try {
     // Get project with all phases and allocations
     const project = await prisma.project.findUnique({
-      where: { id: params.projectId },
+      where: { id: projectId },
       include: {
         phases: {
           include: {

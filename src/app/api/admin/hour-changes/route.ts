@@ -17,11 +17,7 @@ export async function GET(request: Request) {
       where: { status: ChangeStatus.PENDING },
       include: {
         requester: true,
-        sprint: {
-          include: {
-            project: true,
-          },
-        },
+        approver: true
       },
       orderBy: {
         createdAt: 'asc',

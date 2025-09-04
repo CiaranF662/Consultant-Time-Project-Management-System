@@ -8,16 +8,18 @@ const prisma = new PrismaClient();
 // GET all allocations for a phase
 export async function GET(
   request: Request,
-  { params }: { params: { phaseId: string } }
+  { params }: { params: Promise<{ phaseId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
   }
 
+  const { phaseId } = await params;
+
   try {
     const allocations = await prisma.phaseAllocation.findMany({
-      where: { phaseId: params.phaseId },
+      where: { phaseId },
       include: {
         consultant: {
           select: { id: true, name: true, email: true }
@@ -38,16 +40,18 @@ export async function GET(
 // POST create or update phase allocation
 export async function POST(
   request: Request,
-  { params }: { params: { phaseId: string } }
+  { params }: { params: Promise<{ phaseId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
   }
 
+  const { phaseId } = await params;
+
   // Check if user is Growth Team or PM for this project
   const phase = await prisma.phase.findUnique({
-    where: { id: params.phaseId },
+    where: { id: phaseId },
     include: { 
       project: {
         include: {
@@ -79,7 +83,7 @@ export async function POST(
     const existing = await prisma.phaseAllocation.findUnique({
       where: {
         phaseId_consultantId: {
-          phaseId: params.phaseId,
+          phaseId,
           consultantId
         }
       }
@@ -97,7 +101,7 @@ export async function POST(
       // Create new allocation
       allocation = await prisma.phaseAllocation.create({
         data: {
-          phaseId: params.phaseId,
+          phaseId,
           consultantId,
           totalHours
         },
@@ -115,15 +119,16 @@ export async function POST(
 // PUT bulk update phase allocations
 export async function PUT(
   request: Request,
-  { params }: { params: { phaseId: string } }
+  { params }: { params: Promise<{ phaseId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
   }
 
+  const { phaseId } = await params;
+
   try {
-    const { phaseId } = params;
     const body = await request.json();
     const { allocations } = body;
 

@@ -91,7 +91,7 @@ export async function GET(
 
 export async function PATCH(
     request: Request,
-    { params }: { params: { projectId: string } }
+    { params }: { params: Promise<{ projectId: string }> }
 ) {
     const session = await getServerSession(authOptions);
     if (session?.user?.role !== 'GROWTH_TEAM') {
@@ -99,7 +99,7 @@ export async function PATCH(
     }
 
     try {
-        const { projectId } = params;
+        const { projectId } = await params;
         const body = await request.json();
         const { title, description } = body;
 
@@ -120,7 +120,7 @@ export async function PATCH(
 
 export async function DELETE(
     request: Request,
-    { params }: { params: { projectId: string } }
+    { params }: { params: Promise<{ projectId: string }> }
 ) {
     const session = await getServerSession(authOptions);
     if (session?.user?.role !== 'GROWTH_TEAM') {
@@ -128,7 +128,7 @@ export async function DELETE(
     }
 
     try {
-        const { projectId } = params;
+        const { projectId } = await params;
         await prisma.project.delete({
             where: { id: projectId },
         });
