@@ -202,12 +202,12 @@ import {
   export function getUtilizationColor(hours: number, maxHours: number = 40): string {
     const utilization = (hours / maxHours) * 100;
     
-    if (utilization === 0) return 'bg-gray-100';
-    if (utilization <= 25) return 'bg-green-100';
-    if (utilization <= 50) return 'bg-green-200';
-    if (utilization <= 75) return 'bg-yellow-200';
-    if (utilization <= 100) return 'bg-orange-200';
-    return 'bg-red-200'; // Over-allocated
+    if (utilization === 0) return 'bg-gray-50';
+    if (utilization <= 25) return 'bg-green-50';
+    if (utilization <= 50) return 'bg-green-100';
+    if (utilization <= 75) return 'bg-yellow-100';
+    if (utilization <= 100) return 'bg-orange-100';
+    return 'bg-red-400 text-black'; // Over-allocated - prominent red that's clearly visible
   }
   
   /**

@@ -122,20 +122,50 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
       <div className="bg-white p-4 rounded-lg shadow-md border mb-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-800">Resource Allocation Timeline</h2>
-          <div className="flex items-center gap-4">
-            <label className="text-sm font-medium text-gray-700">
-              Weeks to show:
-              <select 
-                value={timelineWeeks} 
-                onChange={(e) => setTimelineWeeks(Number(e.target.value))}
-                className="ml-2 rounded-md border-gray-300 shadow-sm"
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-gray-700">Time Period:</span>
+            <div className="flex bg-gray-50 border border-gray-200 rounded-lg p-1 shadow-sm">
+              <button
+                onClick={() => setTimelineWeeks(8)}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                  timelineWeeks === 8 
+                    ? 'bg-blue-600 text-white shadow-sm' 
+                    : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
+                }`}
               >
-                <option value={4}>4 weeks</option>
-                <option value={8}>8 weeks</option>
-                <option value={12}>12 weeks</option>
-                <option value={16}>16 weeks</option>
-              </select>
-            </label>
+                8 weeks
+              </button>
+              <button
+                onClick={() => setTimelineWeeks(12)}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                  timelineWeeks === 12 
+                    ? 'bg-blue-600 text-white shadow-sm' 
+                    : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
+                }`}
+              >
+                12 weeks
+              </button>
+              <button
+                onClick={() => setTimelineWeeks(24)}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                  timelineWeeks === 24 
+                    ? 'bg-blue-600 text-white shadow-sm' 
+                    : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
+                }`}
+              >
+                24 weeks
+              </button>
+              <button
+                onClick={() => setTimelineWeeks(32)}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                  timelineWeeks === 32 
+                    ? 'bg-blue-600 text-white shadow-sm' 
+                    : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
+                }`}
+              >
+                32 weeks
+              </button>
+            </div>
           </div>
         </div>
       </div>

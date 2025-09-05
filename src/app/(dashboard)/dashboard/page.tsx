@@ -69,21 +69,18 @@ async function getConsultantData(userId: string) {
 
   const isPM = pmProjects.length > 0;
 
-  // Get current week allocations
+  // Get current week allocations using the same date logic as the app
+  const { getWeekNumber, getYear } = await import('@/lib/dates');
   const today = new Date();
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Monday
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6); // Sunday
+  const currentWeekNumber = getWeekNumber(today);
+  const currentYear = getYear(today);
 
   // Get current week allocations for stats
   const currentWeekAllocations = await prisma.weeklyAllocation.findMany({
     where: {
       consultantId: userId,
-      weekStartDate: {
-        gte: startOfWeek,
-        lte: endOfWeek
-      }
+      weekNumber: currentWeekNumber,
+      year: currentYear
     },
     include: {
       phaseAllocation: {

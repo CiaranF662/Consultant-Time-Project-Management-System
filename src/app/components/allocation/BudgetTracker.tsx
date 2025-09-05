@@ -14,20 +14,26 @@ interface BudgetData {
     id: string;
     name: string;
     allocatedHours: number;
+    plannedHours: number;
     usedHours: number;
     consultants: {
       id: string;
       name: string;
       allocatedHours: number;
+      plannedHours: number;
       usedHours: number;
     }[];
   }[];
   summary: {
+    totalBudgeted: number;
     totalAllocated: number;
+    totalPlanned: number;
     totalUsed: number;
     totalRemaining: number;
-    utilizationPercentage: number;
     allocationPercentage: number;
+    planningVsAllocationPercentage: number;
+    planningVsBudgetPercentage: number;
+    utilizationPercentage: number;
   };
 }
 
@@ -156,61 +162,97 @@ export default function BudgetTracker({
       </div>
 
       <div className="p-4">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="p-3 bg-blue-50 rounded-lg">
-            <div className="text-sm text-blue-600 font-medium">Total Budget</div>
-            <div className="text-2xl font-bold text-blue-800">{budgetData.totalBudgetHours}h</div>
+        {/* Summary Cards - Better Spacing */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+          <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+            <div className="text-sm text-blue-600 font-medium mb-1">Total Budget</div>
+            <div className="text-3xl font-bold text-blue-800 mb-1">{budgetData.totalBudgetHours}h</div>
+            <div className="text-xs text-blue-600">Set by Growth Team</div>
           </div>
           
-          <div className="p-3 bg-green-50 rounded-lg">
-            <div className="text-sm text-green-600 font-medium">Allocated</div>
-            <div className="text-2xl font-bold text-green-800">{summary.totalAllocated}h</div>
-            <div className="text-xs text-green-600">({Math.round(summary.allocationPercentage)}%)</div>
+          <div className="p-4 bg-green-50 rounded-lg border-l-4 border-green-500">
+            <div className="text-sm text-green-600 font-medium mb-1">Allocated</div>
+            <div className="text-3xl font-bold text-green-800 mb-1">{summary.totalAllocated}h</div>
+            <div className="text-xs text-green-600">{Math.round(summary.allocationPercentage)}% of budget</div>
           </div>
           
-          <div className="p-3 bg-orange-50 rounded-lg">
-            <div className="text-sm text-orange-600 font-medium">Used</div>
-            <div className="text-2xl font-bold text-orange-800">{summary.totalUsed}h</div>
-            <div className="text-xs text-orange-600">({Math.round(summary.utilizationPercentage)}%)</div>
+          <div className="p-4 bg-purple-50 rounded-lg border-l-4 border-purple-500">
+            <div className="text-sm text-purple-600 font-medium mb-1">Planned</div>
+            <div className="text-3xl font-bold text-purple-800 mb-1">{summary.totalPlanned}h</div>
+            <div className="text-xs text-purple-600">{Math.round(summary.planningVsBudgetPercentage)}% of budget</div>
           </div>
           
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <div className="text-sm text-gray-600 font-medium">Remaining</div>
-            <div className="text-2xl font-bold text-gray-800">{summary.totalRemaining}h</div>
-            <div className="text-xs text-gray-600">Available</div>
+          <div className="p-4 bg-orange-50 rounded-lg border-l-4 border-orange-500">
+            <div className="text-sm text-orange-600 font-medium mb-1">Used (Auto)</div>
+            <div className="text-3xl font-bold text-orange-800 mb-1">{summary.totalUsed}h</div>
+            <div className="text-xs text-orange-600">{Math.round(summary.utilizationPercentage)}% of budget</div>
+          </div>
+          
+          <div className="p-4 bg-gray-50 rounded-lg border-l-4 border-gray-500">
+            <div className="text-sm text-gray-600 font-medium mb-1">Remaining</div>
+            <div className="text-3xl font-bold text-gray-800 mb-1">{summary.totalRemaining}h</div>
+            <div className="text-xs text-gray-600">Available to allocate</div>
           </div>
         </div>
 
-        {/* Progress Bars */}
-        <div className="mb-6">
-          <div className="flex justify-between text-sm mb-1">
-            <span>Budget Utilization</span>
-            <span>{Math.round(summary.utilizationPercentage)}% used</span>
+        {/* Progress Bars - Three-Tier System */}
+        <div className="mb-6 space-y-4">
+          {/* 1. Budget Allocation */}
+          <div>
+            <div className="flex justify-between text-sm mb-1">
+              <span className="font-medium">Budget Allocation</span>
+              <span>{Math.round(summary.allocationPercentage)}% of budget allocated</span>
+            </div>
+            <div className="text-xs text-gray-500 mb-2">How much budget has been assigned to phases</div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div
+                className={`h-3 rounded-full transition-all duration-300 ${
+                  summary.allocationPercentage > 100 ? 'bg-red-500' : 'bg-green-500'
+                }`}
+                style={{ width: `${Math.min(100, summary.allocationPercentage)}%` }}
+              />
+            </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
-            <div
-              className={`h-3 rounded-full transition-all duration-300 ${
-                summary.utilizationPercentage > 90 ? 'bg-red-500' :
-                summary.utilizationPercentage > 75 ? 'bg-yellow-500' : 'bg-blue-500'
-              }`}
-              style={{ width: `${Math.min(100, summary.utilizationPercentage)}%` }}
-            />
+
+          {/* 2. Planning Progress */}
+          <div>
+            <div className="flex justify-between text-sm mb-1">
+              <span className="font-medium">Planning Progress</span>
+              <span>{Math.round(summary.planningVsAllocationPercentage)}% of allocations planned</span>
+            </div>
+            <div className="text-xs text-gray-500 mb-2">How much allocated work has been scheduled</div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div
+                className={`h-3 rounded-full transition-all duration-300 ${
+                  summary.planningVsAllocationPercentage >= 100 ? 'bg-green-500' :
+                  summary.planningVsAllocationPercentage >= 75 ? 'bg-yellow-500' : 'bg-purple-500'
+                }`}
+                style={{ width: `${Math.min(100, summary.planningVsAllocationPercentage)}%` }}
+              />
+            </div>
           </div>
-          
-          <div className="flex justify-between text-sm mt-3 mb-1">
-            <span>Budget Allocation</span>
-            <span>{Math.round(summary.allocationPercentage)}% allocated</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
-            <div
-              className={`h-3 rounded-full transition-all duration-300 ${
-                summary.allocationPercentage > 100 ? 'bg-red-500' : 'bg-green-500'
-              }`}
-              style={{ width: `${Math.min(100, summary.allocationPercentage)}%` }}
-            />
+
+          {/* 3. Budget Utilization */}
+          <div>
+            <div className="flex justify-between text-sm mb-1">
+              <span className="font-medium">Budget Utilization</span>
+              <span>{Math.round(summary.utilizationPercentage)}% of budget used</span>
+            </div>
+            <div className="text-xs text-gray-500 mb-2">Automated based on completed weeks</div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div
+                className={`h-3 rounded-full transition-all duration-300 ${
+                  summary.utilizationPercentage > 90 ? 'bg-red-500' :
+                  summary.utilizationPercentage > 75 ? 'bg-yellow-500' : 'bg-orange-500'
+                }`}
+                style={{ width: `${Math.min(100, summary.utilizationPercentage)}%` }}
+              />
+            </div>
           </div>
         </div>
+
+        {/* Divider */}
+        <div className="border-t border-gray-200 mb-6"></div>
 
         {/* Phase Breakdown */}
         {showDetails && budgetData.phases.length > 0 && (
@@ -218,32 +260,75 @@ export default function BudgetTracker({
             <h4 className="font-medium text-gray-800 mb-3">Phase Breakdown</h4>
             <div className="space-y-3">
               {budgetData.phases.map((phase) => (
-                <div key={phase.id} className="border rounded-lg p-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium text-gray-800">{phase.name}</span>
-                    <span className="text-sm text-gray-600">
-                      {phase.usedHours}h / {phase.allocatedHours}h
-                    </span>
+                <div key={phase.id} className="border rounded-lg p-4">
+                  {/* Phase Header */}
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium text-gray-800">{phase.name}</span>
+                      {/* Phase Status Indicator */}
+                      {(() => {
+                        const planningPercentage = phase.allocatedHours > 0 ? (phase.plannedHours / phase.allocatedHours) * 100 : 0;
+                        const utilizationPercentage = phase.allocatedHours > 0 ? (phase.usedHours / phase.allocatedHours) * 100 : 0;
+                        
+                        let status = { color: 'bg-gray-400', text: 'No allocation', textColor: 'text-gray-600' };
+                        
+                        if (phase.allocatedHours === 0) {
+                          status = { color: 'bg-gray-400', text: 'No allocation', textColor: 'text-gray-600' };
+                        } else if (planningPercentage === 0) {
+                          status = { color: 'bg-red-400', text: 'Not planned', textColor: 'text-red-600' };
+                        } else if (planningPercentage < 75) {
+                          status = { color: 'bg-yellow-400', text: 'Partial planning', textColor: 'text-yellow-600' };
+                        } else if (utilizationPercentage > 90 && planningPercentage >= 100) {
+                          status = { color: 'bg-red-400', text: 'Behind schedule', textColor: 'text-red-600' };
+                        } else if (planningPercentage >= 100) {
+                          status = { color: 'bg-green-400', text: 'Fully planned', textColor: 'text-green-600' };
+                        } else {
+                          status = { color: 'bg-blue-400', text: 'In planning', textColor: 'text-blue-600' };
+                        }
+                        
+                        return (
+                          <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${status.textColor} bg-opacity-20`}>
+                            <span className={`w-2 h-2 rounded-full mr-1 ${status.color}`}></span>
+                            {status.text}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {phase.allocatedHours}h allocated
+                    </div>
                   </div>
                   
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                    <div
-                      className="bg-blue-500 h-2 rounded-full"
-                      style={{ 
-                        width: `${Math.min(100, (phase.usedHours / Math.max(phase.allocatedHours, 1)) * 100)}%` 
-                      }}
-                    />
+                  {/* Planning Progress Bar */}
+                  <div className="mb-3">
+                    <div className="flex justify-between text-sm text-gray-700 mb-2">
+                      <span>Planning Progress</span>
+                      <span className="font-medium">{phase.allocatedHours > 0 ? Math.round((phase.plannedHours / phase.allocatedHours) * 100) : 0}% scheduled</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div
+                        className={`h-3 rounded-full transition-all duration-300 ${
+                          phase.allocatedHours === 0 ? 'bg-gray-400' :
+                          (phase.plannedHours / phase.allocatedHours) * 100 >= 100 ? 'bg-green-500' :
+                          (phase.plannedHours / phase.allocatedHours) * 100 >= 75 ? 'bg-yellow-500' : 
+                          (phase.plannedHours / phase.allocatedHours) * 100 > 0 ? 'bg-purple-500' : 'bg-red-400'
+                        }`}
+                        style={{ 
+                          width: `${phase.allocatedHours > 0 ? Math.min(100, (phase.plannedHours / phase.allocatedHours) * 100) : 0}%` 
+                        }}
+                      />
+                    </div>
                   </div>
                   
-                  {/* Consultant breakdown */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+                  {/* Consultant List */}
+                  <div className="space-y-2">
                     {phase.consultants.map((consultant) => (
-                      <div key={consultant.id} className="flex items-center justify-between text-xs">
-                        <span className={`px-2 py-1 rounded ${generateColorFromString(consultant.id)}`}>
+                      <div key={consultant.id} className="flex items-center justify-between">
+                        <span className={`px-2 py-1 rounded text-sm ${generateColorFromString(consultant.id)}`}>
                           {consultant.name}
                         </span>
-                        <span className="text-gray-600">
-                          {consultant.usedHours}h / {consultant.allocatedHours}h
+                        <span className="text-sm text-gray-600">
+                          {consultant.allocatedHours}h
                         </span>
                       </div>
                     ))}

@@ -444,12 +444,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
               </div>
             </div>
             
-            {/* Right Column - Budget Tracker */}
+            {/* Right Column - Project Overview & Budget */}
             <div className="lg:col-span-1">
               <div className="sticky top-4 space-y-6">
-                <BudgetTracker projectId={project.id} />
-
-                {/* Project Stats */}
+                {/* Project Overview */}
                 <div className="bg-white rounded-lg shadow-md border p-4">
                   <h3 className="font-bold text-gray-800 mb-4">Project Overview</h3>
                   <div className="space-y-3">
@@ -473,6 +471,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                     </div>
                   </div>
                 </div>
+
+                {/* Budget Tracker */}
+                <BudgetTracker projectId={project.id} />
               </div>
             </div>
           </div>
