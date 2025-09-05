@@ -50,6 +50,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
   const [errors, setErrors] = useState<Map<string, string>>(new Map());
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
+  const [collapsedPhases, setCollapsedPhases] = useState<Set<string>>(new Set());
   const [notification, setNotification] = useState<{
     show: boolean;
     type: 'success' | 'error';
@@ -68,6 +69,14 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
     });
     
     setAllocations(initialAllocations);
+
+    // Initialize all projects as collapsed
+    const uniqueProjectIds = Array.from(new Set(phaseAllocations.map(alloc => alloc.phase.project.id)));
+    setCollapsedProjects(new Set(uniqueProjectIds));
+    
+    // Initialize all phases as collapsed
+    const uniquePhaseIds = Array.from(new Set(phaseAllocations.map(alloc => alloc.id)));
+    setCollapsedPhases(new Set(uniquePhaseIds));
   }, [phaseAllocations]);
 
   const handleHourChange = (phaseAllocationId: string, weekNumber: number, year: number, value: string) => {
@@ -166,6 +175,52 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
     return getWeeksBetween(startDate, endDate);
   };
 
+  // Group weeks by their corresponding sprints
+  const getPhaseWeeksBySprint = (phase: PhaseAllocation['phase']) => {
+    if (phase.sprints.length === 0) return [];
+
+    const sprintWeeks = phase.sprints.map(sprint => {
+      // For 2-week sprints, calculate exactly 2 weeks from start date
+      const startDate = new Date(sprint.startDate);
+      const endDate = new Date(sprint.endDate);
+      
+      // Get all weeks but limit to exactly what the sprint should contain
+      const allWeeks = getWeeksBetween(startDate, endDate);
+      
+      // For 2-week sprints, we should have exactly 2 weeks
+      // If we have more, it's likely due to overlap, so take only the first 2
+      const weeks = allWeeks.slice(0, 2);
+      
+      return {
+        sprint,
+        weeks: weeks
+      };
+    });
+
+    // Sort by sprint number
+    return sprintWeeks.sort((a, b) => a.sprint.sprintNumber - b.sprint.sprintNumber);
+  };
+
+  // Calculate total hours for a specific sprint in a phase allocation
+  const getSprintTotal = (phaseAllocationId: string, sprint: any) => {
+    // Use the same logic as getPhaseWeeksBySprint to ensure consistency
+    const startDate = new Date(sprint.startDate);
+    const endDate = new Date(sprint.endDate);
+    const allWeeks = getWeeksBetween(startDate, endDate);
+    // For 2-week sprints, take only the first 2 weeks to avoid overlap
+    const sprintWeeks = allWeeks.slice(0, 2);
+    
+    let total = 0;
+    
+    sprintWeeks.forEach(week => {
+      const key = `${phaseAllocationId}-${week.weekNumber}-${week.year}`;
+      const hours = allocations.get(key) || 0;
+      total += hours;
+    });
+    
+    return total;
+  };
+
   // Group allocations by project
   const projectGroups = phaseAllocations.reduce((groups: any, allocation: any) => {
     const projectId = allocation.phase.project.id;
@@ -225,6 +280,45 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
     }, 3000);
   };
 
+  // Get other phases planned for the same week (excluding current phase)
+  const getOtherPhasesForWeek = (weekNumber: number, year: number, currentPhaseId: string) => {
+    const otherPhases: Array<{
+      phaseId: string;
+      phaseName: string;
+      projectTitle: string;
+      hours: number;
+      projectColor: string;
+    }> = [];
+    
+    phaseAllocations.forEach((phaseAlloc) => {
+      // Skip the current phase we're editing
+      if (phaseAlloc.id === currentPhaseId) return;
+      
+      const weeks = getPhaseWeeks(phaseAlloc.phase);
+      const hasThisWeek = weeks.some(w => w.weekNumber === weekNumber && w.year === year);
+      
+      if (hasThisWeek) {
+        const allocationKey = `${phaseAlloc.id}-${weekNumber}-${year}`;
+        const hours = allocations.get(allocationKey) || 0;
+        
+        // Only include if there are planned hours
+        if (hours > 0) {
+          const projectColor = `hsl(${Math.abs(phaseAlloc.phase.project.id.split('').reduce((a: number, b: string) => a + b.charCodeAt(0), 0)) % 360}, 70%, 60%)`;
+          
+          otherPhases.push({
+            phaseId: phaseAlloc.id,
+            phaseName: phaseAlloc.phase.name,
+            projectTitle: phaseAlloc.phase.project.title,
+            hours,
+            projectColor
+          });
+        }
+      }
+    });
+    
+    return otherPhases;
+  };
+
   const toggleProjectCollapse = (projectId: string) => {
     setCollapsedProjects(prev => {
       const newSet = new Set(prev);
@@ -232,6 +326,18 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
         newSet.delete(projectId);
       } else {
         newSet.add(projectId);
+      }
+      return newSet;
+    });
+  };
+
+  const togglePhaseCollapse = (phaseId: string) => {
+    setCollapsedPhases(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(phaseId)) {
+        newSet.delete(phaseId);
+      } else {
+        newSet.add(phaseId);
       }
       return newSet;
     });
@@ -256,6 +362,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
           </button>
         </div>
       )}
+
 
       {/* Project Filter */}
       <div className="mb-6">
@@ -317,21 +424,47 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
               {!collapsedProjects.has(group.project.id) && (
                 <div className="p-6 space-y-6">
                   {group.phases.map((phaseAlloc: any) => {
-                  const weeks = getPhaseWeeks(phaseAlloc.phase);
                   const status = getPhaseAllocationStatus(phaseAlloc);
                   
                   return (
                     <div key={phaseAlloc.id} className="border border-gray-200 rounded-lg overflow-hidden">
                       {/* Phase Header */}
-                      <div className="bg-gray-50 px-4 py-3 border-b">
+                      <div 
+                        className="bg-gray-50 px-4 py-3 border-b cursor-pointer hover:bg-gray-100 transition-colors"
+                        onClick={() => togglePhaseCollapse(phaseAlloc.id)}
+                      >
                         <div className="flex justify-between items-center">
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-800">
-                              {phaseAlloc.phase.name}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              {phaseAlloc.phase.project.title} • {formatHours(phaseAlloc.totalHours)} total
-                            </p>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center">
+                              {collapsedPhases.has(phaseAlloc.id) ? (
+                                <FaChevronRight className="text-gray-500 text-sm" />
+                              ) : (
+                                <FaChevronDown className="text-gray-500 text-sm" />
+                              )}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-lg font-semibold text-gray-800">
+                                  {phaseAlloc.phase.name}
+                                </h3>
+                                <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                                  {phaseAlloc.phase.sprints.length} sprint{phaseAlloc.phase.sprints.length !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                {phaseAlloc.phase.project.title} • {formatHours(phaseAlloc.totalHours)} total
+                                {phaseAlloc.phase.sprints.length > 0 && (
+                                  <span className="ml-2">
+                                    • Sprint{phaseAlloc.phase.sprints.length > 1 ? 's' : ''} {
+                                      phaseAlloc.phase.sprints
+                                        .sort((a: any, b: any) => a.sprintNumber - b.sprintNumber)
+                                        .map((sprint: any) => sprint.sprintNumber)
+                                        .join(', ')
+                                    }
+                                  </span>
+                                )}
+                              </p>
+                            </div>
                           </div>
                           <div className="text-right">
                             <div className="text-sm text-gray-600">
@@ -365,56 +498,142 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                         </div>
                       </div>
 
-                      {/* Weekly Allocation Grid */}
-                      <div className="p-4">
-                        {weeks.length === 0 ? (
-                          <p className="text-gray-500 text-center py-4">
-                            No sprints assigned to this phase yet.
-                          </p>
-                        ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {weeks.map((week) => {
-                              const weekNumber = week.weekNumber;
-                              const year = week.year;
-                              const key = `${phaseAlloc.id}-${weekNumber}-${year}`;
-                              const currentHours = allocations.get(key) || 0;
-                              const hasUnsavedChanges = unsavedChanges.has(key);
-                              const error = errors.get(key);
-                              
-                              return (
-                                <div key={key} className="border border-gray-200 rounded-lg p-3">
-                                  <div className="flex justify-between items-center mb-2">
-                                    <div className="text-sm font-medium text-gray-800">
-                                      {week.label}
+                      {/* Sprint-based Weekly Allocation */}
+                      {!collapsedPhases.has(phaseAlloc.id) && (
+                        <div className="p-4">
+                        {(() => {
+                          const sprintWeeks = getPhaseWeeksBySprint(phaseAlloc.phase);
+                          
+                          if (sprintWeeks.length === 0) {
+                            return (
+                              <p className="text-gray-500 text-center py-4">
+                                No sprints assigned to this phase yet.
+                              </p>
+                            );
+                          }
+                          
+                          return (
+                            <div className="space-y-5">
+                              {sprintWeeks.map(({ sprint, weeks }) => {
+                                const sprintTotal = getSprintTotal(phaseAlloc.id, sprint);
+                                
+                                return (
+                                  <div key={sprint.id} className="border border-gray-200 border-l-4 border-l-blue-400 rounded-md overflow-hidden shadow-md bg-white">
+                                    {/* Sprint Header */}
+                                    <div className="bg-gradient-to-r from-blue-50 to-gray-50 px-3 py-2 border-b border-gray-200">
+                                      <div className="flex justify-between items-center">
+                                        <div>
+                                          <h5 className="text-sm font-medium text-gray-700">
+                                            Sprint {sprint.sprintNumber}
+                                          </h5>
+                                          <p className="text-xs text-gray-500">
+                                            {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}
+                                          </p>
+                                        </div>
+                                        <div className="text-right">
+                                          <div className="text-sm font-semibold text-blue-600">
+                                            {formatHours(sprintTotal)}
+                                          </div>
+                                          <div className="text-xs text-gray-400">
+                                            total
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Sprint Weeks */}
+                                    <div className="p-3">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {weeks.map((week) => {
+                                          const weekNumber = week.weekNumber;
+                                          const year = week.year;
+                                          const key = `${phaseAlloc.id}-${weekNumber}-${year}`;
+                                          const currentHours = allocations.get(key) || 0;
+                                          const hasUnsavedChanges = unsavedChanges.has(key);
+                                          const error = errors.get(key);
+                                          
+                                          // Get other phases planned for this same week
+                                          const otherPhases = getOtherPhasesForWeek(weekNumber, year, phaseAlloc.id);
+                                          
+                                          return (
+                                            <div key={key} className="border border-gray-200 rounded p-2 bg-white shadow-sm hover:shadow transition-shadow duration-150">
+                                              <div className="mb-2">
+                                                <div className="text-xs font-medium text-gray-700">
+                                                  {week.label}
+                                                </div>
+                                              </div>
+                                              
+                                              <input
+                                                type="number"
+                                                min="0"
+                                                step="0.5"
+                                                value={currentHours || ''}
+                                                onChange={(e) => handleHourChange(phaseAlloc.id, weekNumber, year, e.target.value)}
+                                                className={`block w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 ${
+                                                  error ? 'border-red-300 focus:ring-red-500' : 
+                                                  hasUnsavedChanges ? 'border-yellow-300 focus:ring-yellow-500' :
+                                                  'border-gray-300 focus:ring-blue-500'
+                                                }`}
+                                                placeholder="Enter hours"
+                                              />
+                                              
+                                              {/* Show other phases planned for this week */}
+                                              {otherPhases.length > 0 && (
+                                                <div className="mt-2 pt-1 border-t border-gray-100">
+                                                  <div className="text-xs text-gray-500 mb-1">
+                                                    Other work:
+                                                  </div>
+                                                  <div className="space-y-0.5">
+                                                    {otherPhases.map((phase) => (
+                                                      <div 
+                                                        key={phase.phaseId} 
+                                                        className="flex items-center gap-1.5 text-xs"
+                                                      >
+                                                        <div 
+                                                          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                                                          style={{ backgroundColor: phase.projectColor }}
+                                                        />
+                                                        <div className="flex-1 min-w-0 truncate">
+                                                          <span className="text-gray-600 font-medium">
+                                                            {phase.projectTitle}
+                                                          </span>
+                                                          <span className="text-gray-400"> • {phase.phaseName}</span>
+                                                        </div>
+                                                        <span className="text-gray-600 font-medium text-xs">
+                                                          {formatHours(phase.hours)}
+                                                        </span>
+                                                      </div>
+                                                    ))}
+                                                  </div>
+                                                </div>
+                                              )}
+                                              
+                                              {otherPhases.length === 0 && (
+                                                <div className="mt-2 pt-1 border-t border-gray-100">
+                                                  <div className="text-xs text-gray-400">
+                                                    No other work
+                                                  </div>
+                                                </div>
+                                              )}
+                                              
+                                              {error && (
+                                                <p className="mt-1 text-xs text-red-600">{error}</p>
+                                              )}
+                                              
+                                              {hasUnsavedChanges && !error && (
+                                                <p className="mt-1 text-xs text-yellow-600">Unsaved</p>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
                                     </div>
                                   </div>
-                                  
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="0.5"
-                                    value={currentHours || ''}
-                                    onChange={(e) => handleHourChange(phaseAlloc.id, weekNumber, year, e.target.value)}
-                                    className={`block w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 ${
-                                      error ? 'border-red-300 focus:ring-red-500' : 
-                                      hasUnsavedChanges ? 'border-yellow-300 focus:ring-yellow-500' :
-                                      'border-gray-300 focus:ring-blue-500'
-                                    }`}
-                                    placeholder="Enter hours"
-                                  />
-                                  
-                                  {error && (
-                                    <p className="mt-1 text-xs text-red-600">{error}</p>
-                                  )}
-                                  
-                                  {hasUnsavedChanges && !error && (
-                                    <p className="mt-1 text-xs text-yellow-600">Unsaved changes</p>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
                         
                         {/* Phase Save Button */}
                         <div className="mt-4 flex justify-end">
@@ -431,7 +650,8 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                             {saving ? 'Saving...' : 'Save Phase Allocations'}
                           </button>
                         </div>
-                      </div>
+                        </div>
+                      )}
                     </div>
                   );
                   })}
