@@ -13,6 +13,7 @@ import PhaseAllocationForm from '@/app/components/allocation/PhaseAllocationForm
 import EditPhaseModal from '@/app/components/EditPhaseModal';
 import EditProjectModal from '@/app/components/EditProjectModal';
 import BudgetTracker from '@/app/components/allocation/BudgetTracker';
+import PhaseStatusCard from '@/app/components/PhaseStatusCard';
 import { generateColorFromString } from '@/lib/colors';
 import DashboardLayout from '@/app/components/DashboardLayout';
 
@@ -28,6 +29,19 @@ interface PhaseAllocation {
 interface PhaseWithAllocations extends Phase {
   sprints: Sprint[];
   phaseAllocations: PhaseAllocation[];
+  allocations?: Array<{
+    id: string;
+    consultantId: string;
+    totalHours: number;
+    weeklyAllocations: Array<{
+      id: string;
+      plannedHours: number;
+      weekStartDate: Date;
+      weekEndDate: Date;
+      weekNumber: number;
+      year: number;
+    }>;
+  }>;
   _count: { phaseAllocations: number };
 }
 
@@ -286,137 +300,28 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {project.phases.map(phase => {
-                      const phaseAllocatedHours = phase.phaseAllocations?.reduce((sum, allocation) => 
-                        sum + allocation.hours, 0) || 0; // Changed from allocatedHours to hours
-                      const phaseUsedHours = phase.phaseAllocations?.reduce((sum, allocation) => 
-                        sum + allocation.usedHours, 0) || 0;
-
-                      return (
-                        <div key={phase.id} className="bg-white rounded-lg shadow-sm border border-gray-200">
-                          <div className="p-4 border-b flex justify-between items-start">
-                            <div className="flex-1">
-                              <h3 className="font-bold text-lg text-gray-800">{phase.name}</h3>
-                              <p className="text-sm text-gray-500 mt-1">{formatDate(phase.startDate)} - {formatDate(phase.endDate)}</p>
-                              {phase.description && (
-                                <p className="text-sm text-gray-600 mt-2">{phase.description}</p>
-                              )}
-                            </div>
-                            
-                            <div className="flex items-center gap-2 ml-4">
-                              <div className="text-right text-sm">
-                                <div className="font-medium">{phaseAllocatedHours}h allocated</div>
-                                <div className="text-gray-500">{phaseUsedHours}h used</div>
-                              </div>
-                              
-                              {canManageProject && (
-                                <div className="flex items-center gap-1">
-                                  <button 
-                                    onClick={() => setEditPhaseModal({ isOpen: true, phase })}
-                                    className="p-2 text-gray-400 hover:text-blue-600"
-                                  >
-                                    <FaEdit />
-                                  </button>
-                                  {canManageAllocations && (
-                                    <button 
-                                      onClick={() => openAllocationModal(phase)}
-                                      className="px-3 py-1 text-xs font-medium bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
-                                    >
-                                      Manage Hours
-                                    </button>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Phase Allocations */}
-                          <div className="p-4">
-                            {phase.phaseAllocations && phase.phaseAllocations.length > 0 ? (
-                              <div>
-                                <h4 className="font-medium text-gray-800 mb-3">Resource Allocation</h4>
-                                <div className="space-y-2">
-                                  {phase.phaseAllocations.map((allocation) => (
-                                    <div key={allocation.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                      <div className="flex items-center gap-3">
-                                        <span className={`px-2 py-1 rounded text-sm font-medium ${generateColorFromString(allocation.consultantId)}`}>
-                                          {allocation.consultantName}
-                                        </span>
-                                        <div className="text-sm text-gray-600">
-                                          {allocation.hours}h allocated {/* Changed from allocatedHours to hours */}
-                                        </div>
-                                      </div>
-                                      
-                                      <div className="flex items-center gap-4">
-                                        <div className="text-sm">
-                                          <span className="text-gray-600">{allocation.usedHours}h used</span>
-                                          <span className="text-gray-400 mx-2">•</span>
-                                          <span className="text-gray-600">{allocation.hours - allocation.usedHours}h remaining</span> {/* Changed from allocatedHours to hours */}
-                                        </div>
-                                        
-                                        {/* Progress bar */}
-                                        <div className="w-20 bg-gray-200 rounded-full h-2">
-                                          <div
-                                            className="bg-blue-500 h-2 rounded-full transition-all"
-                                            style={{
-                                              width: `${Math.min(100, (allocation.usedHours / Math.max(allocation.hours, 1)) * 100)}%` // Changed from allocatedHours to hours
-                                            }}
-                                          />
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-
-                                {/* Phase Summary */}
-                                <div className="mt-4 pt-4 border-t border-gray-200">
-                                  <div className="flex justify-between items-center text-sm">
-                                    <span className="font-medium">Phase Total:</span>
-                                    <span>{phaseUsedHours}h / {phaseAllocatedHours}h</span>
-                                  </div>
-                                  <div className="mt-2 w-full bg-gray-200 rounded-full h-3">
-                                    <div
-                                      className="bg-green-500 h-3 rounded-full transition-all"
-                                      style={{
-                                        width: `${Math.min(100, (phaseUsedHours / Math.max(phaseAllocatedHours, 1)) * 100)}%`
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="text-center py-6">
-                                <div className="text-gray-500 mb-2">No resource allocations yet</div>
-                                {canManageAllocations && (
-                                  <button 
-                                    onClick={() => openAllocationModal(phase)}
-                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                                  >
-                                    Allocate Resources →
-                                  </button>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Associated Sprints */}
-                            {phase.sprints.length > 0 && (
-                              <div className="mt-4 pt-4 border-t border-gray-200">
-                                <div className="text-sm text-gray-600 mb-2">Associated Sprints:</div>
-                                <div className="flex flex-wrap gap-2">
-                                  {phase.sprints
-                                    .sort((a, b) => a.sprintNumber - b.sprintNumber)
-                                    .map((sprint) => (
-                                      <span key={sprint.id} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                                        Sprint {sprint.sprintNumber}
-                                      </span>
-                                    ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {project.phases.map(phase => (
+                      <PhaseStatusCard 
+                        key={phase.id}
+                        phase={{
+                          id: phase.id,
+                          name: phase.name,
+                          description: phase.description || undefined,
+                          startDate: phase.startDate,
+                          endDate: phase.endDate,
+                          sprints: phase.sprints,
+                          allocations: phase.allocations
+                        }}
+                        individualAllocations={phase.phaseAllocations}
+                        showDetails={true}
+                        showIndividualAllocations={true}
+                        canManageProject={canManageProject}
+                        canManageAllocations={canManageAllocations}
+                        onEditPhase={() => setEditPhaseModal({ isOpen: true, phase })}
+                        onManageAllocations={() => openAllocationModal(phase)}
+                        className="shadow-sm"
+                      />
+                    ))}
                   </div>
                 )}
 

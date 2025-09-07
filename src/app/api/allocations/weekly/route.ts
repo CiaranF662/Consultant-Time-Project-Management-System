@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { phaseAllocationId, weekStartDate, plannedHours } = body;
+    const { phaseAllocationId, weekStartDate, plannedHours, consultantDescription } = body;
 
     // Verify the consultant owns this allocation
     const phaseAllocation = await prisma.phaseAllocation.findUnique({
@@ -88,6 +88,14 @@ export async function POST(request: Request) {
         }
       }
     });
+
+    // Update consultant description if provided
+    if (consultantDescription !== undefined) {
+      await prisma.phaseAllocation.update({
+        where: { id: phaseAllocationId },
+        data: { consultantDescription }
+      });
+    }
 
     let allocation;
     if (existing) {

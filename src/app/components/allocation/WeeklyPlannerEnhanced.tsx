@@ -11,6 +11,7 @@ import { FaSave, FaChevronDown, FaChevronRight, FaCheckCircle, FaTimes } from 'r
 interface PhaseAllocation {
   id: string;
   totalHours: number;
+  consultantDescription?: string; // Added for phase description
   phase: {
     id: string;
     name: string;
@@ -51,6 +52,9 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
   const [collapsedPhases, setCollapsedPhases] = useState<Set<string>>(new Set());
+  const [phaseDescriptions, setPhaseDescriptions] = useState<Map<string, string>>(new Map());
+  const [unsavedDescriptions, setUnsavedDescriptions] = useState<Map<string, string>>(new Map());
+  const [showDescriptionModal, setShowDescriptionModal] = useState<string | null>(null);
   const [notification, setNotification] = useState<{
     show: boolean;
     type: 'success' | 'error';
@@ -60,15 +64,22 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
   useEffect(() => {
     // Initialize allocations from existing data
     const initialAllocations = new Map<string, number>();
+    const initialDescriptions = new Map<string, string>();
     
     phaseAllocations.forEach((phaseAlloc) => {
       phaseAlloc.weeklyAllocations.forEach((allocation) => {
         const key = `${phaseAlloc.id}-${allocation.weekNumber}-${allocation.year}`;
         initialAllocations.set(key, allocation.plannedHours);
       });
+      
+      // Initialize phase descriptions
+      if (phaseAlloc.consultantDescription) {
+        initialDescriptions.set(phaseAlloc.id, phaseAlloc.consultantDescription);
+      }
     });
     
     setAllocations(initialAllocations);
+    setPhaseDescriptions(initialDescriptions);
 
     // Initialize all projects as collapsed
     const uniqueProjectIds = Array.from(new Set(phaseAllocations.map(alloc => alloc.phase.project.id)));
@@ -77,11 +88,39 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
     // Initialize all phases as collapsed
     const uniquePhaseIds = Array.from(new Set(phaseAllocations.map(alloc => alloc.id)));
     setCollapsedPhases(new Set(uniquePhaseIds));
+    
+    // Clear any unsaved descriptions when new data loads
+    setUnsavedDescriptions(new Map());
   }, [phaseAllocations]);
 
   const handleHourChange = (phaseAllocationId: string, weekNumber: number, year: number, value: string) => {
     const key = `${phaseAllocationId}-${weekNumber}-${year}`;
     const hours = parseFloat(value) || 0;
+    
+    // Get the phase allocation to check total hours limit
+    const phaseAlloc = phaseAllocations.find(p => p.id === phaseAllocationId);
+    if (phaseAlloc) {
+      // Calculate what the new total would be
+      const newAllocations = new Map(allocations);
+      newAllocations.set(key, hours);
+      
+      let newTotalDistributed = 0;
+      newAllocations.forEach((h, k) => {
+        if (k.startsWith(`${phaseAllocationId}-`)) {
+          newTotalDistributed += h;
+        }
+      });
+      
+      // Check if this would exceed the allocated total
+      if (newTotalDistributed > phaseAlloc.totalHours) {
+        const excess = newTotalDistributed - phaseAlloc.totalHours;
+        setErrors(prev => new Map(prev.set(key, 
+          `This would exceed your allocated ${formatHours(phaseAlloc.totalHours)} by ${formatHours(excess)}. Create an Hour Change Request if you need more hours.`
+        )));
+        // Don't save the invalid value
+        return;
+      }
+    }
     
     setAllocations(prev => new Map(prev.set(key, hours)));
     setUnsavedChanges(prev => new Set(prev).add(key));
@@ -96,12 +135,58 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
     }
   };
 
+
+  const isFirstTimePlanning = (phaseAllocationId: string) => {
+    const phaseAllocation = phaseAllocations.find(p => p.id === phaseAllocationId);
+    if (!phaseAllocation) return false;
+    
+    // Check if this phase has any existing weekly allocations with hours > 0
+    const hasExistingHours = phaseAllocation.weeklyAllocations.some(w => w.plannedHours > 0);
+    return !hasExistingHours;
+  };
+
+  const requiresDescription = (phaseAlloc: PhaseAllocation) => {
+    // Requires description if:
+    // 1. It's the first time planning (no existing hours)
+    // 2. AND there's no existing description
+    // 3. AND the consultant has planned some hours now
+    const hasPlannedHours = Array.from(allocations.entries()).some(([key, hours]) => 
+      key.startsWith(`${phaseAlloc.id}-`) && hours > 0
+    );
+    
+    return isFirstTimePlanning(phaseAlloc.id) && 
+           !phaseAlloc.consultantDescription && 
+           hasPlannedHours;
+  };
+
+  const checkDescriptionRequirement = (phaseAlloc: PhaseAllocation) => {
+    if (requiresDescription(phaseAlloc)) {
+      const currentDescription = phaseDescriptions.get(phaseAlloc.id);
+      const unsavedDesc = unsavedDescriptions.get(phaseAlloc.id);
+      
+      if (!currentDescription?.trim() && !unsavedDesc?.trim()) {
+        setShowDescriptionModal(phaseAlloc.id);
+        return false;
+      }
+    }
+    return true;
+  };
+
   const savePhaseAllocations = async (phaseAllocationId: string) => {
+    // For first-time planning, check if description is required and missing
+    const phaseAllocation = phaseAllocations.find(p => p.id === phaseAllocationId);
+    if (phaseAllocation && requiresDescription(phaseAllocation) && !checkDescriptionRequirement(phaseAllocation)) {
+      return; // Modal will be shown, don't continue with save
+    }
+    
     const phaseKeys = Array.from(unsavedChanges).filter(key => key.startsWith(`${phaseAllocationId}-`));
-    if (phaseKeys.length === 0) return;
+    const hasUnsavedDescription = unsavedDescriptions.has(phaseAllocationId);
+    
+    if (phaseKeys.length === 0 && !hasUnsavedDescription) return;
 
     setSaving(true);
     try {
+      // Handle hour allocations
       const savePromises = phaseKeys.map(async (key) => {
         const [, weekNumber, year] = key.split('-');
         const hours = allocations.get(key) || 0;
@@ -126,7 +211,32 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
         });
       });
 
+      // Handle description update separately if needed
+      const unsavedDesc = unsavedDescriptions.get(phaseAllocationId);
+      if (unsavedDesc !== undefined) {
+        savePromises.push(
+          axios.post('/api/allocations/weekly', {
+            phaseAllocationId,
+            weekStartDate: new Date().toISOString(), // Dummy date for description-only updates
+            plannedHours: 0, // Dummy hours for description-only updates
+            consultantDescription: unsavedDesc.trim()
+          })
+        );
+      }
+
       await Promise.all(savePromises);
+      
+      // Update saved description if it was provided
+      if (unsavedDesc !== undefined) {
+        const newDescriptions = new Map(phaseDescriptions);
+        newDescriptions.set(phaseAllocationId, unsavedDesc.trim());
+        setPhaseDescriptions(newDescriptions);
+        
+        // Clear unsaved description
+        const newUnsaved = new Map(unsavedDescriptions);
+        newUnsaved.delete(phaseAllocationId);
+        setUnsavedDescriptions(newUnsaved);
+      }
       
       // Remove saved keys from unsaved changes
       setUnsavedChanges(prev => {
@@ -234,6 +344,24 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
     return groups;
   }, {});
 
+  // Sort phases within each project by start date, then by creation date
+  Object.values(projectGroups).forEach((group: any) => {
+    group.phases.sort((a: any, b: any) => {
+      const aStartDate = new Date(a.phase.startDate).getTime();
+      const bStartDate = new Date(b.phase.startDate).getTime();
+      
+      // Primary sort: by start date
+      if (aStartDate !== bStartDate) {
+        return aStartDate - bStartDate;
+      }
+      
+      // Secondary sort: by creation date if start dates are the same
+      const aCreatedAt = new Date(a.phase.createdAt).getTime();
+      const bCreatedAt = new Date(b.phase.createdAt).getTime();
+      return aCreatedAt - bCreatedAt;
+    });
+  });
+
   // Filter by selected project
   const filteredProjectGroups = selectedProject === 'all' 
     ? projectGroups 
@@ -272,6 +400,24 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
     };
   };
 
+  const handleDescriptionSave = async (phaseId: string, description: string) => {
+    if (!description.trim()) {
+      showNotification('error', 'Description is required for first-time planning.');
+      return;
+    }
+    
+    // Save the description to unsaved descriptions
+    const newUnsaved = new Map(unsavedDescriptions);
+    newUnsaved.set(phaseId, description.trim());
+    setUnsavedDescriptions(newUnsaved);
+    
+    // Close modal
+    setShowDescriptionModal(null);
+    
+    // Now save the allocations
+    await savePhaseAllocations(phaseId);
+  };
+  
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ show: true, type, message });
     // Auto-hide after 3 seconds
@@ -362,7 +508,55 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
           </button>
         </div>
       )}
-
+      
+      {/* Description Modal */}
+      {showDescriptionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              Phase Description Required
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Please provide a brief description of what you plan to accomplish during this phase. This helps the Growth Team understand your planned work.
+            </p>
+            <textarea
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              rows={4}
+              placeholder="Describe your planned work for this phase..."
+              value={unsavedDescriptions.get(showDescriptionModal) || ''}
+              onChange={(e) => {
+                const newUnsaved = new Map(unsavedDescriptions);
+                newUnsaved.set(showDescriptionModal, e.target.value);
+                setUnsavedDescriptions(newUnsaved);
+              }}
+              autoFocus
+            />
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => {
+                  setShowDescriptionModal(null);
+                  // Clear any unsaved description for this phase
+                  const newUnsaved = new Map(unsavedDescriptions);
+                  newUnsaved.delete(showDescriptionModal);
+                  setUnsavedDescriptions(newUnsaved);
+                }}
+                className="px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const description = unsavedDescriptions.get(showDescriptionModal) || '';
+                  handleDescriptionSave(showDescriptionModal, description);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Save & Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Project Filter */}
       <div className="mb-6">
@@ -501,6 +695,44 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                       {/* Sprint-based Weekly Allocation */}
                       {!collapsedPhases.has(phaseAlloc.id) && (
                         <div className="p-4">
+                        {/* Phase Description */}
+                        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0">
+                              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                              </div>
+                            </div>
+                            <div className="flex-1">
+                              <label className="block text-sm font-medium text-blue-800 mb-2">
+                                Phase Description - What do you plan to accomplish?
+                              </label>
+                              <textarea
+                                className="w-full p-3 text-sm border border-blue-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                rows={3}
+                                placeholder="Describe what you plan to accomplish during this phase..."
+                                value={(() => {
+                                  const unsaved = unsavedDescriptions.get(phaseAlloc.id);
+                                  if (unsaved !== undefined) return unsaved;
+                                  const saved = phaseDescriptions.get(phaseAlloc.id);
+                                  return saved || '';
+                                })()}
+                                onChange={(e) => {
+                                  const newUnsaved = new Map(unsavedDescriptions);
+                                  newUnsaved.set(phaseAlloc.id, e.target.value);
+                                  setUnsavedDescriptions(newUnsaved);
+                                }}
+                              />
+                              {unsavedDescriptions.has(phaseAlloc.id) && (
+                                <div className="mt-2 text-xs text-blue-600">
+                                  Description will be saved with your hour allocations
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                         {(() => {
                           const sprintWeeks = getPhaseWeeksBySprint(phaseAlloc.phase);
                           
@@ -639,9 +871,9 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                         <div className="mt-4 flex justify-end">
                           <button
                             onClick={() => savePhaseAllocations(phaseAlloc.id)}
-                            disabled={saving || !Array.from(unsavedChanges).some(key => key.startsWith(`${phaseAlloc.id}-`))}
+                            disabled={saving || (!Array.from(unsavedChanges).some(key => key.startsWith(`${phaseAlloc.id}-`)) && !unsavedDescriptions.has(phaseAlloc.id))}
                             className={`px-4 py-2 text-sm font-medium rounded-lg flex items-center gap-2 ${
-                              Array.from(unsavedChanges).some(key => key.startsWith(`${phaseAlloc.id}-`)) && !saving
+                              (Array.from(unsavedChanges).some(key => key.startsWith(`${phaseAlloc.id}-`)) || unsavedDescriptions.has(phaseAlloc.id)) && !saving
                                 ? 'bg-blue-600 text-white hover:bg-blue-700'
                                 : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                             }`}
@@ -668,9 +900,11 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
         <ul className="text-sm text-blue-700 space-y-1">
           <li>• Click on project headers to collapse/expand phases for better organization</li>
           <li>• Enter the number of hours you plan to work each week for each phase</li>
+          <li>• Edit phase descriptions to explain what you plan to accomplish</li>
           <li>• Click the "Save Phase Allocations" button to save all changes for that phase</li>
           <li>• The progress bar shows how much of your total phase allocation you've distributed</li>
           <li>• Aim to distribute all your allocated hours across the phase duration</li>
+          <li>• <strong>Need more hours?</strong> You cannot exceed your allocated total - create an Hour Change Request instead</li>
         </ul>
       </div>
     </div>

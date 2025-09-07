@@ -153,6 +153,8 @@ export async function GET(request: Request) {
               projectId: a.phaseAllocation.phase.project.id,
               phase: a.phaseAllocation.phase.name,
               phaseId: a.phaseAllocation.phase.id,
+              phaseAllocationId: a.phaseAllocation.id,
+              consultantDescription: a.phaseAllocation.consultantDescription,
               isProductManager: a.phaseAllocation.phase.project.productManagerId === consultant.id,
               sprint: sprintInfo ? {
                 sprintNumber: sprintInfo.sprint.sprintNumber,

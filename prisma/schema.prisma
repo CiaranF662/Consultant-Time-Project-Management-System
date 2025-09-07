@@ -1,6 +1,3 @@
-// This is your Prisma schema file for the Resource & Progress Insight System
-// Corrected to work with existing structure
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,216 +7,138 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================
-// USER MANAGEMENT (Keep existing auth system)
-// ============================================
-
 model User {
-  id              String    @id @default(cuid())
-  name            String?
-  email           String?   @unique
-  emailVerified   DateTime?
-  image           String?
-  password        String?
-  role            UserRole  @default(CONSULTANT)
-  status          UserStatus @default(APPROVED)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  // Auth relations (keep existing)
-  accounts        Account[]
-  sessions        Session[]
-
-  // Project relations
-  managedProjects Project[] @relation("ProductManager")
+  id                 String                  @id @default(cuid())
+  name               String?
+  email              String?                 @unique
+  emailVerified      DateTime?
+  image              String?
+  password           String?
+  role               UserRole                @default(CONSULTANT)
+  status             UserStatus              @default(APPROVED)
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  accounts           Account[]
   projectAssignments ConsultantsOnProjects[]
-  
-  // Allocation relations
-  phaseAllocations PhaseAllocation[]
-  weeklyAllocations WeeklyAllocation[]
-  
-  // Hour change requests
-  changeRequests  HourChangeRequest[] @relation("ChangeRequestRequester")
-  approvedChanges HourChangeRequest[] @relation("ChangeRequestApprover")
+  approvedChanges    HourChangeRequest[]     @relation("ChangeRequestApprover")
+  changeRequests     HourChangeRequest[]     @relation("ChangeRequestRequester")
+  phaseAllocations   PhaseAllocation[]
+  managedProjects    Project[]               @relation("ProductManager")
+  sessions           Session[]
+  weeklyAllocations  WeeklyAllocation[]
 }
 
-// ============================================
-// PROJECT MANAGEMENT
-// ============================================
-
 model Project {
-  id            String    @id @default(cuid())
-  title         String
-  description   String?
-  startDate     DateTime
-  endDate       DateTime?
-  budgetedHours Int       @default(0) // Total budgeted hours for the project
-  
-  // Product Manager assignment
+  id               String                  @id @default(cuid())
+  title            String
+  description      String?
+  startDate        DateTime
+  endDate          DateTime?
+  budgetedHours    Int                     @default(0)
   productManagerId String?
-  productManager   User?    @relation("ProductManager", fields: [productManagerId], references: [id])
-  
-  // Relations
-  consultants   ConsultantsOnProjects[]
-  sprints       Sprint[]
-  phases        Phase[]
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  consultants      ConsultantsOnProjects[]
+  phases           Phase[]
+  productManager   User?                   @relation("ProductManager", fields: [productManagerId], references: [id])
+  sprints          Sprint[]
 }
 
 model ConsultantsOnProjects {
-  user       User     @relation(fields: [userId], references: [id])
   userId     String
-  project    Project  @relation(fields: [projectId], references: [id])
   projectId  String
-  assignedAt DateTime @default(now())
-  role       ProjectRole @default(TEAM_MEMBER) // Add role in project
+  assignedAt DateTime    @default(now())
+  role       ProjectRole @default(TEAM_MEMBER)
+  project    Project     @relation(fields: [projectId], references: [id])
+  user       User        @relation(fields: [userId], references: [id])
 
   @@id([userId, projectId])
 }
 
-// ============================================
-// PHASE & SPRINT MANAGEMENT
-// ============================================
-
 model Phase {
-  id          String   @id @default(cuid())
+  id          String            @id @default(cuid())
   name        String
   description String?
-  
-  // Dates are dynamically determined by assigned sprints
-  // But we store them for quick access
   startDate   DateTime
   endDate     DateTime
-  
   projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
-  // Sprints assigned to this phase
-  sprints     Sprint[]
-  
-  // Phase allocations (budget per consultant)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
   allocations PhaseAllocation[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  sprints     Sprint[]
 }
 
 model Sprint {
-  id            String    @id @default(cuid())
-  sprintNumber  Int       // Sprint number within project
-  startDate     DateTime
-  endDate       DateTime
-  
-  projectId     String
-  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
-  // Optional phase assignment
-  phaseId       String?
-  phase         Phase?    @relation(fields: [phaseId], references: [id])
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
+  id           String   @id @default(cuid())
+  sprintNumber Int
+  startDate    DateTime
+  endDate      DateTime
+  projectId    String
+  phaseId      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  phase        Phase?   @relation(fields: [phaseId], references: [id])
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
   @@unique([projectId, sprintNumber])
 }
 
-// ============================================
-// RESOURCE ALLOCATION (NEW MODELS)
-// ============================================
-
 model PhaseAllocation {
-  id           String @id @default(cuid())
-  
-  phaseId      String
-  phase        Phase  @relation(fields: [phaseId], references: [id], onDelete: Cascade)
-  
-  consultantId String
-  consultant   User   @relation(fields: [consultantId], references: [id])
-  
-  totalHours   Float  // Total hours allocated for this consultant on this phase
-  
-  // Weekly breakdown of this allocation
-  weeklyAllocations WeeklyAllocation[]
-  
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
+  id                    String             @id @default(cuid())
+  phaseId               String
+  consultantId          String
+  totalHours            Float
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  consultantDescription String?
+  consultant            User               @relation(fields: [consultantId], references: [id])
+  phase                 Phase              @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  weeklyAllocations     WeeklyAllocation[]
+
   @@unique([phaseId, consultantId])
 }
 
 model WeeklyAllocation {
-  id                String @id @default(cuid())
-  
+  id                String          @id @default(cuid())
   phaseAllocationId String
-  phaseAllocation   PhaseAllocation @relation(fields: [phaseAllocationId], references: [id], onDelete: Cascade)
-  
   consultantId      String
-  consultant        User @relation(fields: [consultantId], references: [id])
-  
-  weekStartDate     DateTime // Monday of the week
-  weekEndDate       DateTime // Sunday of the week
-  weekNumber        Int      // ISO week number
-  year             Int      // Year
-  
-  plannedHours     Float    // Hours planned for this week
-  
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  
+  weekStartDate     DateTime
+  weekEndDate       DateTime
+  weekNumber        Int
+  year              Int
+  plannedHours      Float
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  consultant        User            @relation(fields: [consultantId], references: [id])
+  phaseAllocation   PhaseAllocation @relation(fields: [phaseAllocationId], references: [id], onDelete: Cascade)
+
   @@unique([phaseAllocationId, weekNumber, year])
   @@index([consultantId, weekStartDate])
   @@index([weekStartDate])
 }
 
-// ============================================
-// HOUR CHANGE MANAGEMENT (UPDATED)
-// ============================================
-
 model HourChangeRequest {
-  id             String       @id @default(cuid())
-  
-  // Request type
-  changeType     ChangeType   // ADJUSTMENT or SHIFT
-  
-  // For ADJUSTMENT type
+  id                String       @id @default(cuid())
+  changeType        ChangeType
   phaseAllocationId String?
   originalHours     Float
   requestedHours    Float
-  
-  // For SHIFT type
   fromConsultantId  String?
   toConsultantId    String?
   shiftHours        Float?
-  
-  // Common fields
-  phaseId        String?
-  weekNumber     Int?         // Optional: specific week affected
-  year          Int?         // Optional: year for the week
-  reason        String
-  status        ChangeStatus @default(PENDING)
-  
-  // Requester
-  consultantId   String
-  requester      User         @relation("ChangeRequestRequester", fields: [consultantId], references: [id])
-  
-  // Approver
-  approverId     String?
-  approver       User?        @relation("ChangeRequestApprover", fields: [approverId], references: [id])
-  
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  phaseId           String?
+  weekNumber        Int?
+  year              Int?
+  reason            String
+  status            ChangeStatus @default(PENDING)
+  consultantId      String
+  approverId        String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  approver          User?        @relation("ChangeRequestApprover", fields: [approverId], references: [id])
+  requester         User         @relation("ChangeRequestRequester", fields: [consultantId], references: [id])
 }
-
-// ============================================
-// REMOVE OLD MODELS
-// ============================================
-// Remove: Task, ConsultantSprintHours (replaced by WeeklyAllocation)
-
-// ============================================
-// AUTHENTICATION (Keep existing)
-// ============================================
 
 model Account {
   id                String  @id @default(cuid())
@@ -227,12 +146,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -255,14 +174,9 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// ============================================
-// ENUMS
-// ============================================
-
 enum UserRole {
   GROWTH_TEAM
   CONSULTANT
-  // Note: Product Managers will be CONSULTANTS with special project assignment
 }
 
 enum UserStatus {
@@ -277,8 +191,8 @@ enum ChangeStatus {
 }
 
 enum ChangeType {
-  ADJUSTMENT  // Increase/decrease own hours
-  SHIFT      // Transfer hours to another consultant
+  ADJUSTMENT
+  SHIFT
 }
 
 enum ProjectRole {
