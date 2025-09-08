@@ -78,7 +78,9 @@ export async function POST(request: Request) {
     }
 
     // Create project with PM and consultants
-    const consultantsData = consultantIds.map((id: string) => ({
+    // Ensure Product Manager is included in consultants list
+    const allConsultantIds = [...new Set([productManagerId, ...consultantIds])];
+    const consultantsData = allConsultantIds.map((id: string) => ({
       userId: id,
       role: id === productManagerId ? ProjectRole.PRODUCT_MANAGER : ProjectRole.TEAM_MEMBER
     }));

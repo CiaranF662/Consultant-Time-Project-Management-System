@@ -83,7 +83,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
     phaseName: '',
     existingAllocations: []
   });
-  const [editPhaseModal, setEditPhaseModal] = useState<{ isOpen: boolean; phase: Phase | null }>({
+  const [editPhaseModal, setEditPhaseModal] = useState<{ isOpen: boolean; phase: PhaseWithAllocations | null }>({
     isOpen: false,
     phase: null,
   });
@@ -161,7 +161,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   const unassignedSprints = project.sprints.filter(s => !sprintsInPhases.has(s.id));
   const isProductManager = session.user.id === project.productManagerId;
   const isGrowthTeam = session.user.role === UserRole.GROWTH_TEAM;
-  const canManageProject = isGrowthTeam || isProductManager;
+  const canViewProject = isGrowthTeam || isProductManager; // Growth Team can view projects
+  const canManagePhases = isProductManager; // Only Product Managers can manage phases
   const canManageAllocations = isProductManager; // Only Product Managers can manage allocations
 
   // Calculate project-level statistics
@@ -194,7 +195,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                 <h1 className="text-3xl font-bold text-gray-800">{project.title}</h1>
                 <p className="text-gray-600 mt-2 max-w-prose">{project.description || 'No description provided.'}</p>
               </div>
-              {canManageProject && (
+              {isGrowthTeam && (
                 <div className="flex items-center gap-2 ml-4">
                   <button 
                     onClick={() => setIsEditProjectModalOpen(true)} 
@@ -288,7 +289,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                 {project.phases.length === 0 ? (
                   <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
                     <div className="text-gray-500 mb-4">No phases defined yet</div>
-                    {canManageProject && (
+                    {canManagePhases && (
                       <button 
                         onClick={() => setIsAddPhaseModalOpen(true)}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
@@ -315,7 +316,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                         individualAllocations={phase.phaseAllocations}
                         showDetails={true}
                         showIndividualAllocations={true}
-                        canManageProject={canManageProject}
+                        canManageProject={canManagePhases}
                         canManageAllocations={canManageAllocations}
                         onEditPhase={() => setEditPhaseModal({ isOpen: true, phase })}
                         onManageAllocations={() => openAllocationModal(phase)}
@@ -406,9 +407,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
           />
         )}
 
-        {editPhaseModal.isOpen && editPhaseModal.phase && (
+        {editPhaseModal.isOpen && editPhaseModal.phase && project.sprints && (
           <EditPhaseModal 
             phase={editPhaseModal.phase}
+            projectSprints={project.sprints || []}
             onClose={() => {
               setEditPhaseModal({ isOpen: false, phase: null });
               fetchProjectDetails();

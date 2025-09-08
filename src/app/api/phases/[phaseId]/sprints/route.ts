@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -10,12 +10,32 @@ export async function PATCH(
   { params }: { params: Promise<{ phaseId: string }> }
 ) {
   const session = await getServerSession(authOptions);
-  if (session?.user.role !== UserRole.GROWTH_TEAM) {
-    return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
+  const { phaseId } = await params;
+
+  if (!session?.user?.id) {
+    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
+  }
+
+  // Check if user is Product Manager of this project (only PMs can assign sprints)
+  const phase = await prisma.phase.findUnique({
+    where: { id: phaseId },
+    include: { 
+      project: {
+        select: { productManagerId: true }
+      }
+    }
+  });
+
+  if (!phase) {
+    return new NextResponse(JSON.stringify({ error: 'Phase not found' }), { status: 404 });
+  }
+
+  const isProductManager = phase.project.productManagerId === session.user.id;
+  if (!isProductManager) {
+    return new NextResponse(JSON.stringify({ error: 'Only Product Managers can manage phase sprints' }), { status: 403 });
   }
 
   try {
-    const { phaseId } = await params;
     const body = await request.json();
 
     if (body.sprintIds) {
@@ -61,13 +81,33 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ phaseId: string }> }
 ) {
-    const session = await getServerSession(authOptions);
-    if (session?.user.role !== UserRole.GROWTH_TEAM) {
-        return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
+  const session = await getServerSession(authOptions);
+  const { phaseId } = await params;
+
+  if (!session?.user?.id) {
+    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
+  }
+
+  // Check if user is Product Manager of this project (only PMs can delete phase sprints)
+  const phase = await prisma.phase.findUnique({
+    where: { id: phaseId },
+    include: { 
+      project: {
+        select: { productManagerId: true }
+      }
     }
+  });
+
+  if (!phase) {
+    return new NextResponse(JSON.stringify({ error: 'Phase not found' }), { status: 404 });
+  }
+
+  const isProductManager = phase.project.productManagerId === session.user.id;
+  if (!isProductManager) {
+    return new NextResponse(JSON.stringify({ error: 'Only Product Managers can manage phase sprints' }), { status: 403 });
+  }
 
     try {
-        const { phaseId } = await params;
         
         await prisma.sprint.updateMany({
             where: { phaseId: phaseId },

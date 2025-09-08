@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -40,13 +40,28 @@ export default function Sidebar({ children }: SidebarProps) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isDynamicPM, setIsDynamicPM] = useState(false);
+
+  // Dynamically check if user is a Product Manager
+  useEffect(() => {
+    if (session?.user?.id && session.user.role !== UserRole.GROWTH_TEAM) {
+      fetch('/api/user/pm-status')
+        .then(res => res.json())
+        .then(data => {
+          setIsDynamicPM(data.isProductManager || false);
+        })
+        .catch(() => {
+          setIsDynamicPM(false);
+        });
+    }
+  }, [session?.user?.id, session?.user?.role]);
 
   if (!session?.user) {
     return <div>{children}</div>;
   }
 
   const userRole = session.user.role as UserRole;
-  const isProductManager = session.user.isProductManager || false;
+  const isProductManager = session.user.isProductManager || isDynamicPM;
   const isGrowthTeam = userRole === UserRole.GROWTH_TEAM;
 
   // Define navigation items based on role
