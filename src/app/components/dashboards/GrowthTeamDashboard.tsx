@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FaPlus, FaUsers, FaClock, FaChartBar, FaExclamationCircle } from 'react-icons/fa';
 import ResourceTimeline from '@/app/components/timeline/ResourceTimeline';
+import CreateProjectModal from '@/app/components/CreateProjectModal';
 
 interface ProjectConsultant {
   user: {
@@ -53,6 +54,7 @@ interface GrowthTeamDashboardProps {
 export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) {
   const [timelineWeeks, setTimelineWeeks] = useState(12);
   const [selectedConsultant, setSelectedConsultant] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   return (
     <div className="p-4 md:p-8">
@@ -62,13 +64,13 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
           <h1 className="text-3xl font-bold text-gray-800">Resource Timeline</h1>
           <p className="text-lg text-gray-600">Manage consultant allocations and project resources</p>
         </div>
-        <Link 
-          href="/dashboard/create-project" 
-          className="inline-flex items-center gap-2 py-2 px-4 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+        <button 
+          onClick={() => setShowCreateModal(true)}
+          className="inline-flex items-center gap-2 py-3 px-6 text-sm font-semibold rounded-lg text-white bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all duration-200"
         >
           <FaPlus />
           Create New Project
-        </Link>
+        </button>
       </div>
 
       {/* Quick Stats */}
@@ -203,7 +205,7 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
                   </p>
                   <div className="mt-4">
                     <div className="flex justify-between text-sm mb-1">
-                      <span>Budget Utilization</span>
+                      <span>Budget Allocation</span>
                       <span className="font-medium">{utilization}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -226,6 +228,16 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
           })}
         </div>
       </div>
+
+      {/* Create Project Modal */}
+      <CreateProjectModal 
+        isOpen={showCreateModal} 
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={() => {
+          // Refresh the page to show the new project
+          window.location.reload();
+        }}
+      />
     </div>
   );
 }

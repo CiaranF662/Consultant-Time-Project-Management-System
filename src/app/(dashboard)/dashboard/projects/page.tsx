@@ -2,10 +2,8 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole } from '@prisma/client';
-import Link from 'next/link';
-import { FaPlus } from 'react-icons/fa';
-import ProjectCard from '@/app/components/ProjectCard';
 import DashboardLayout from '@/app/components/DashboardLayout';
+import ProjectsPageClient from '@/app/components/ProjectsPageClient';
 
 const prisma = new PrismaClient();
 
@@ -77,39 +75,10 @@ export default async function ProjectsPage() {
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-semibold text-gray-800">
-            {isGrowthTeam ? 'All Projects' : 'Your Projects'}
-          </h1>
-          {isGrowthTeam && (
-            <Link 
-              href="/dashboard/create-project" 
-              className="inline-flex items-center gap-2 py-2 px-4 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-            >
-              <FaPlus />
-              Create New Project
-            </Link>
-          )}
-        </div>
-
-        {projects.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project) => (
-              <ProjectCard key={project.id} project={project as any} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 px-6 bg-white rounded-lg shadow-md border">
-            <h3 className="text-xl font-semibold text-gray-800">No Projects Yet</h3>
-            <p className="text-gray-500 mt-2">
-              {isGrowthTeam 
-                ? 'Click "Create New Project" to get started.' 
-                : 'You have not been assigned to any projects yet.'}
-            </p>
-          </div>
-        )}
-      </div>
+      <ProjectsPageClient 
+        projects={projects} 
+        isGrowthTeam={isGrowthTeam} 
+      />
     </DashboardLayout>
   );
 }
