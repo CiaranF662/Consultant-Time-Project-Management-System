@@ -63,6 +63,31 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { phaseAllocationId, weekStartDate, plannedHours, consultantDescription } = body;
+    
+    console.log('Weekly allocation request:', {
+      phaseAllocationId,
+      weekStartDate,
+      plannedHours: typeof plannedHours,
+      plannedHoursValue: plannedHours,
+      consultantId: session.user.id
+    });
+
+    // Validate required fields
+    if (!phaseAllocationId) {
+      return new NextResponse(JSON.stringify({ error: 'phaseAllocationId is required' }), { status: 400 });
+    }
+
+    if (!weekStartDate) {
+      return new NextResponse(JSON.stringify({ error: 'weekStartDate is required' }), { status: 400 });
+    }
+
+    if (plannedHours === undefined || plannedHours === null) {
+      return new NextResponse(JSON.stringify({ error: 'plannedHours is required' }), { status: 400 });
+    }
+
+    if (typeof plannedHours !== 'number' || plannedHours < 0) {
+      return new NextResponse(JSON.stringify({ error: 'plannedHours must be a non-negative number' }), { status: 400 });
+    }
 
     // Verify the consultant owns this allocation
     const phaseAllocation = await prisma.phaseAllocation.findUnique({
@@ -118,8 +143,13 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(allocation);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error saving weekly allocation:', error);
-    return new NextResponse(JSON.stringify({ error: 'Failed to save allocation' }), { status: 500 });
+    console.error('Error details:', error?.message);
+    if (error?.code) console.error('Error code:', error.code);
+    return new NextResponse(JSON.stringify({ 
+      error: 'Failed to save allocation',
+      details: error?.message || 'Unknown error'
+    }), { status: 500 });
   }
 }

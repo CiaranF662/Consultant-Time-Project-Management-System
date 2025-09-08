@@ -51,6 +51,29 @@ async function main() {
     },
   });
 
+  // Additional real email users for testing
+  const realPmPassword = await bcrypt.hash('PM123#', 12);
+  const realPmUser = await prisma.user.create({
+    data: {
+      email: 'ciaranformby@gmail.com',
+      name: 'Ciaran PM',
+      password: realPmPassword,
+      role: UserRole.CONSULTANT,
+      status: UserStatus.APPROVED,
+    },
+  });
+
+  const realConsultantPassword = await bcrypt.hash('Consultant123#', 12);
+  const realConsultantUser = await prisma.user.create({
+    data: {
+      email: 'ronformby@gmail.com',
+      name: 'Ron Consultant',
+      password: realConsultantPassword,
+      role: UserRole.CONSULTANT,
+      status: UserStatus.APPROVED,
+    },
+  });
+
   // Create a sample project
   const project = await prisma.project.create({
     data: {

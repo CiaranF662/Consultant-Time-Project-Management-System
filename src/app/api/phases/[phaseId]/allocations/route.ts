@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, ProjectRole } from '@prisma/client';
+import { PrismaClient, ProjectRole } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -71,8 +71,8 @@ export async function POST(
   }
 
   const isPM = phase.project.consultants.length > 0;
-  if (session.user.role !== UserRole.GROWTH_TEAM && !isPM) {
-    return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
+  if (!isPM) {
+    return new NextResponse(JSON.stringify({ error: 'Only Product Managers can create phase allocations' }), { status: 403 });
   }
 
   try {
@@ -151,10 +151,9 @@ export async function PUT(
     const isProductManager = phase.project.consultants.some(
       consultant => consultant.userId === session.user.id && consultant.role === ProjectRole.PRODUCT_MANAGER
     );
-    const isGrowthTeam = session.user.role === UserRole.GROWTH_TEAM;
 
-    if (!isProductManager && !isGrowthTeam) {
-      return new NextResponse(JSON.stringify({ error: 'Not authorized - must be Product Manager or Growth Team' }), { status: 403 });
+    if (!isProductManager) {
+      return new NextResponse(JSON.stringify({ error: 'Only Product Managers can update phase allocations' }), { status: 403 });
     }
 
     // Validate allocations

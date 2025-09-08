@@ -30,16 +30,49 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Validate that selected sprints are consecutive
+  const validateConsecutiveSprints = (sprintIds: string[]): boolean => {
+    if (sprintIds.length <= 1) return true;
+    
+    const selectedSprints = project.sprints
+      .filter(s => sprintIds.includes(s.id))
+      .sort((a, b) => a.sprintNumber - b.sprintNumber);
+    
+    for (let i = 1; i < selectedSprints.length; i++) {
+      if (selectedSprints[i].sprintNumber !== selectedSprints[i-1].sprintNumber + 1) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleSprintToggle = (sprintId: string) => {
     setSelectedSprintIds(prev => {
+      let newSelection;
+      
       if (prev.includes(sprintId)) {
-        return prev.filter(id => id !== sprintId);
+        // Removing a sprint
+        newSelection = prev.filter(id => id !== sprintId);
       } else {
-        return [...prev, sprintId].sort((a, b) => {
+        // Adding a sprint
+        newSelection = [...prev, sprintId].sort((a, b) => {
           const sprintA = project.sprints.find(s => s.id === a);
           const sprintB = project.sprints.find(s => s.id === b);
           return (sprintA?.sprintNumber || 0) - (sprintB?.sprintNumber || 0);
         });
+      }
+      
+      // Check if the new selection is consecutive
+      if (!validateConsecutiveSprints(newSelection)) {
+        // If not consecutive, don't update selection and show error
+        setError('Selected sprints must be consecutive within a phase');
+        return prev;
+      } else {
+        // Clear any previous error if it was about consecutive sprints
+        if (error === 'Selected sprints must be consecutive within a phase') {
+          setError(null);
+        }
+        return newSelection;
       }
     });
   };
@@ -60,9 +93,25 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
 
     setIsSubmitting(true);
     try {
+      // Calculate startDate and endDate from selected sprints
+      const selectedSprints = project.sprints
+        .filter(s => selectedSprintIds.includes(s.id))
+        .sort((a, b) => a.sprintNumber - b.sprintNumber);
+      
+      if (selectedSprints.length === 0) {
+        setError('At least one sprint must be selected');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      const startDate = new Date(selectedSprints[0].startDate);
+      const endDate = new Date(selectedSprints[selectedSprints.length - 1].endDate);
+      
       await axios.post(`/api/projects/${project.id}/phases`, {
         name: name.trim(),
         description: description.trim() || null,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
         sprintIds: selectedSprintIds
       });
       
@@ -155,9 +204,12 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
 
           {/* Sprint Selection */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Select Sprints *
             </label>
+            <p className="text-xs text-gray-600 mb-3">
+              Select consecutive sprints for this phase. Phases can overlap and share sprints.
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto border border-gray-200 rounded-md p-3">
               {project.sprints.map((sprint) => (
                 <label
