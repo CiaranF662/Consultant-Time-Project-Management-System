@@ -77,8 +77,13 @@ export async function GET(
           hours: allocation.totalHours,
           usedHours: allocation.weeklyAllocations.reduce((sum, wa) => sum + wa.plannedHours, 0)
         })),
-        // Remove the original allocations field to avoid confusion
-        allocations: undefined
+        // Keep allocations for phase status calculation
+        allocations: phase.allocations.map(allocation => ({
+          id: allocation.id,
+          consultantId: allocation.consultantId,
+          totalHours: allocation.totalHours,
+          weeklyAllocations: allocation.weeklyAllocations
+        }))
       }))
     };
 

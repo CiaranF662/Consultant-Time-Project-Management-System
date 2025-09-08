@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { FaCalendarWeek, FaClock, FaChartPie, FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa';
 import { formatHours } from '@/lib/dates';
+import { getPhaseStatus, getStatusColorClasses, getProgressBarColor } from '@/lib/phase-status';
 import WeeklyPlannerEnhanced from './WeeklyPlannerEnhanced';
 import AllocationCalendar from './AllocationCalendar';
 
@@ -76,7 +77,38 @@ interface AllocationsDashboardProps {
 export default function AllocationsDashboard({ data, userId, userName }: AllocationsDashboardProps) {
   const [activeView, setActiveView] = useState<'overview' | 'planner' | 'calendar'>('overview');
 
-  const getPhaseStatus = (allocation: PhaseAllocation) => {
+  const getEnhancedPhaseStatus = (allocation: PhaseAllocation) => {
+    // Transform allocation to match phase structure expected by getPhaseStatus
+    const phaseData = {
+      id: allocation.phase.id,
+      name: allocation.phase.name,
+      startDate: new Date(allocation.phase.startDate),
+      endDate: new Date(allocation.phase.endDate),
+      sprints: allocation.phase.sprints?.map(sprint => ({
+        id: sprint.id,
+        sprintNumber: sprint.sprintNumber,
+        startDate: new Date(sprint.startDate),
+        endDate: new Date(sprint.endDate)
+      })) || [],
+      allocations: [{
+        id: allocation.id,
+        totalHours: allocation.totalHours,
+        weeklyAllocations: allocation.weeklyAllocations.map(week => ({
+          id: week.id,
+          plannedHours: week.plannedHours,
+          weekStartDate: new Date(week.weekStartDate),
+          weekEndDate: new Date(week.weekEndDate),
+          weekNumber: week.weekNumber,
+          year: week.year
+        }))
+      }]
+    };
+    
+    return getPhaseStatus(phaseData);
+  };
+
+  // Keep the old function for backward compatibility where needed
+  const getLegacyPlanningStatus = (allocation: PhaseAllocation) => {
     const distributed = allocation.weeklyAllocations.reduce((sum, week) => sum + week.plannedHours, 0);
     const remaining = allocation.totalHours - distributed;
     
@@ -93,10 +125,17 @@ export default function AllocationsDashboard({ data, userId, userName }: Allocat
     switch (status) {
       case 'complete':
         return <FaCheckCircle className="h-5 w-5 text-green-500" />;
+      case 'overdue':
       case 'over':
         return <FaExclamationTriangle className="h-5 w-5 text-red-500" />;
+      case 'in_progress':
+        return <FaClock className="h-5 w-5 text-blue-500" />;
+      case 'ready':
+        return <FaCheckCircle className="h-5 w-5 text-purple-500" />;
+      case 'planning':
+        return <FaChartPie className="h-5 w-5 text-yellow-500" />;
       default:
-        return <FaClock className="h-5 w-5 text-yellow-500" />;
+        return <FaClock className="h-5 w-5 text-gray-500" />;
     }
   };
 
@@ -189,17 +228,18 @@ export default function AllocationsDashboard({ data, userId, userName }: Allocat
           </div>
 
           {/* Phase Allocations */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="bg-white rounded-lg shadow-md border">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div className="bg-white rounded-lg shadow-md border flex flex-col">
               <div className="p-4 border-b">
                 <h2 className="text-xl font-semibold text-gray-800">Phase Allocations</h2>
               </div>
-              <div className="p-4 space-y-4 max-h-96 overflow-y-auto">
+              <div className="p-4 space-y-4 flex-1 overflow-y-auto" style={{ minHeight: '400px', maxHeight: 'calc(100vh - 400px)' }}>
                 {data.phaseAllocations.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">No phase allocations assigned yet.</p>
                 ) : (
                   data.phaseAllocations.map((allocation) => {
-                    const phaseStatus = getPhaseStatus(allocation);
+                    const enhancedPhaseStatus = getEnhancedPhaseStatus(allocation);
+                    const legacyPlanningStatus = getLegacyPlanningStatus(allocation);
                     
                     return (
                       <div key={allocation.id} className="border border-gray-200 rounded-lg p-4">
@@ -209,8 +249,8 @@ export default function AllocationsDashboard({ data, userId, userName }: Allocat
                             <p className="text-sm text-gray-600">{allocation.phase.project.title}</p>
                           </div>
                           <div className="flex items-center gap-2">
-                            {getStatusIcon(phaseStatus.status)}
-                            <span className="text-sm font-medium">{phaseStatus.label}</span>
+                            {getStatusIcon(enhancedPhaseStatus.status)}
+                            <span className="text-sm font-medium">{enhancedPhaseStatus.label}</span>
                           </div>
                         </div>
 
@@ -230,24 +270,63 @@ export default function AllocationsDashboard({ data, userId, userName }: Allocat
                           </div>
                         </div>
 
-                        <div className="mt-3">
-                          <div className="flex justify-between text-xs mb-1">
-                            <span>Distribution Progress</span>
-                            <span>{Math.round((allocation.weeklyAllocations.reduce((sum, w) => sum + w.plannedHours, 0) / allocation.totalHours) * 100)}%</span>
+                        {/* Enhanced Status Display */}
+                        <div className="mt-3 space-y-3">
+                          {/* Planning Progress */}
+                          <div>
+                            <div className="flex justify-between text-xs mb-1">
+                              <span>Planning Progress</span>
+                              <span>{enhancedPhaseStatus.details.planning.completionPercentage}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className={`h-2 rounded-full ${
+                                  legacyPlanningStatus.status === 'complete' ? 'bg-green-500' :
+                                  legacyPlanningStatus.status === 'over' ? 'bg-red-500' : 'bg-yellow-500'
+                                }`}
+                                style={{ 
+                                  width: `${Math.min(enhancedPhaseStatus.details.planning.completionPercentage, 100)}%` 
+                                }}
+                              />
+                            </div>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
-                              className={`h-2 rounded-full ${
-                                phaseStatus.status === 'complete' ? 'bg-green-500' :
-                                phaseStatus.status === 'over' ? 'bg-red-500' : 'bg-yellow-500'
-                              }`}
-                              style={{ 
-                                width: `${Math.min(
-                                  (allocation.weeklyAllocations.reduce((sum, w) => sum + w.plannedHours, 0) / allocation.totalHours) * 100, 
-                                  100
-                                )}%` 
-                              }}
-                            />
+                          
+                          {/* Work Completion Progress */}
+                          <div>
+                            <div className="flex justify-between text-xs mb-1">
+                              <span>Work Progress</span>
+                              <span>{enhancedPhaseStatus.details.work.workCompletionPercentage}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className={`h-2 rounded-full ${getProgressBarColor(enhancedPhaseStatus.status, enhancedPhaseStatus.details.overall.isOnTrack)}`}
+                                style={{ 
+                                  width: `${Math.min(enhancedPhaseStatus.details.work.workCompletionPercentage, 100)}%` 
+                                }}
+                              />
+                            </div>
+                            {enhancedPhaseStatus.details.work.currentWeekProgress && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                {enhancedPhaseStatus.details.work.currentWeekProgress.sprintNumber && enhancedPhaseStatus.details.work.currentWeekProgress.sprintWeek ? (
+                                  <>Current: {Math.round(enhancedPhaseStatus.details.work.currentWeekProgress.weekProgress * 100)}% through Sprint {enhancedPhaseStatus.details.work.currentWeekProgress.sprintNumber}, Week {enhancedPhaseStatus.details.work.currentWeekProgress.sprintWeek}</>
+                                ) : (
+                                  <>Current week: {Math.round(enhancedPhaseStatus.details.work.currentWeekProgress.weekProgress * 100)}% through week {enhancedPhaseStatus.details.work.currentWeekProgress.weekNumber}</>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Phase Timeline Info */}
+                          <div className="text-xs text-gray-500 flex justify-between">
+                            <span>
+                              {new Date(allocation.phase.startDate).toLocaleDateString()} - {new Date(allocation.phase.endDate).toLocaleDateString()}
+                            </span>
+                            <span className={`font-medium ${
+                              enhancedPhaseStatus.details.overall.riskLevel === 'high' ? 'text-red-600' :
+                              enhancedPhaseStatus.details.overall.riskLevel === 'medium' ? 'text-yellow-600' : 'text-green-600'
+                            }`}>
+                              Risk: {enhancedPhaseStatus.details.overall.riskLevel}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -258,11 +337,11 @@ export default function AllocationsDashboard({ data, userId, userName }: Allocat
             </div>
 
             {/* Upcoming Week Allocations */}
-            <div className="bg-white rounded-lg shadow-md border">
+            <div className="bg-white rounded-lg shadow-md border flex flex-col">
               <div className="p-4 border-b">
                 <h2 className="text-xl font-semibold text-gray-800">Upcoming Weeks</h2>
               </div>
-              <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+              <div className="p-4 space-y-3 flex-1 overflow-y-auto" style={{ minHeight: '400px', maxHeight: 'calc(100vh - 400px)' }}>
                 {nextWeekAllocations.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">No upcoming allocations scheduled.</p>
                 ) : (

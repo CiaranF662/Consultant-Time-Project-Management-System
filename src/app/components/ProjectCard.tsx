@@ -64,7 +64,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         {/* Budget Progress Bar */}
         <div className="mb-4">
             <div className="flex justify-between mb-1">
-                <span className="text-sm font-medium text-gray-700">Budget Utilization</span>
+                <span className="text-sm font-medium text-gray-700">Budget Allocation</span>
                 <span className={`text-sm font-bold px-2 py-0.5 rounded ${getUtilizationColor(utilization)}`}>
                   {utilization}%
                 </span>

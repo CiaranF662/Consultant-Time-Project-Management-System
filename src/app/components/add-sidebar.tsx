@@ -13,7 +13,6 @@ import {
   FaBars,
   FaTimes,
   FaUserPlus,
-  FaCalendarAlt,
   FaChevronLeft,
   FaChevronRight,
   FaSignOutAlt,
@@ -21,7 +20,7 @@ import {
   FaMoneyBillWave,
   FaCalendarWeek
 } from 'react-icons/fa';
-import { UserRole, ProjectRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 import { signOut } from 'next-auth/react';
 
 interface SidebarProps {
@@ -67,12 +66,6 @@ export default function Sidebar({ children }: SidebarProps) {
           label: 'All Projects',
           href: '/dashboard/projects',
           icon: FaProjectDiagram,
-          roles: [UserRole.GROWTH_TEAM]
-        },
-        {
-          label: 'Create Project',
-          href: '/dashboard/create-project',
-          icon: FaCalendarAlt,
           roles: [UserRole.GROWTH_TEAM]
         },
         {

@@ -34,6 +34,8 @@ interface TimelineData {
       projectId: string;
       phase: string;
       phaseId: string;
+      phaseAllocationId: string;
+      consultantDescription?: string;
       isProductManager: boolean;
       sprint?: {
         sprintNumber: number;
@@ -301,7 +303,13 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
                               </span>
                             </div>
                           )}
-                          <div className="flex items-center gap-2">
+                          {alloc.consultantDescription && (
+                            <div className="mt-2 p-3 bg-gray-50 rounded-md border-l-4 border-blue-200">
+                              <div className="text-xs font-medium text-gray-700 mb-1">Consultant Plan:</div>
+                              <div className="text-sm text-gray-600">{alloc.consultantDescription}</div>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 mt-2">
                             <span className="text-lg font-bold text-blue-600">{formatHours(alloc.hours)}</span>
                             <span className="text-sm text-gray-500">
                               ({Math.round((alloc.hours / selectedWeek.weekData.totalHours) * 100)}% of week)
