@@ -100,12 +100,6 @@ export default function Sidebar({ children }: SidebarProps) {
           href: '/dashboard/admin/user-approvals',
           icon: FaUserPlus,
           roles: [UserRole.GROWTH_TEAM]
-        },
-        {
-          label: 'Hour Requests',
-          href: '/dashboard/admin/hour-changes',
-          icon: FaClock,
-          roles: [UserRole.GROWTH_TEAM]
         }
       );
     } else {
@@ -150,6 +144,12 @@ export default function Sidebar({ children }: SidebarProps) {
             label: 'Team Allocations',
             href: '/dashboard/team-allocations',
             icon: FaUsers,
+            requiresPM: true
+          },
+          {
+            label: 'Hour Change Approvals',
+            href: '/dashboard/admin/hour-changes',
+            icon: FaClock,
             requiresPM: true
           },
           {

@@ -10,8 +10,12 @@ import EditPhaseModal from '../EditPhaseModal';
 interface Sprint {
   id: string;
   sprintNumber: number;
-  startDate: Date | string;
-  endDate: Date | string;
+  startDate: Date;
+  endDate: Date;
+  projectId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  phaseId: string | null;
 }
 
 interface PhaseAllocation {
@@ -42,6 +46,7 @@ interface Project {
   id: string;
   title: string;
   budgetedHours: number;
+  productManagerId: string | null;
   phases: Phase[];
   sprints: Sprint[];
   consultants: Array<{
@@ -173,13 +178,15 @@ export default function PhasePlanningDashboard({ data, userId }: PhasePlanningDa
           <div className="bg-white rounded-lg shadow-md border">
             <div className="p-4 border-b flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-800">Project Phases</h2>
-              <button
-                onClick={() => setShowPhaseCreation(true)}
-                className="inline-flex items-center gap-2 py-2 px-4 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-              >
-                <FaPlus />
-                Add Phase
-              </button>
+              {selectedProject.productManagerId === userId && (
+                <button
+                  onClick={() => setShowPhaseCreation(true)}
+                  className="inline-flex items-center gap-2 py-2 px-4 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  <FaPlus />
+                  Add Phase
+                </button>
+              )}
             </div>
 
             <div className="p-4">
@@ -281,9 +288,10 @@ export default function PhasePlanningDashboard({ data, userId }: PhasePlanningDa
 
       // ...existing code...
 
-      {showEditPhase && (
+      {showEditPhase && selectedProject && (
         <EditPhaseModal
           phase={showEditPhase as any}
+          projectSprints={selectedProject.sprints}
           onClose={() => {
             setShowEditPhase(null);
             handlePhaseCreated();

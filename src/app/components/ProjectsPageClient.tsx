@@ -54,8 +54,8 @@ export default function ProjectsPageClient({ projects, isGrowthTeam }: ProjectsP
           isOpen={showCreateModal} 
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => {
-            // Refresh the page to show the new project
-            window.location.reload();
+            // Modal handles navigation to project page automatically
+            setShowCreateModal(false);
           }}
         />
       )}

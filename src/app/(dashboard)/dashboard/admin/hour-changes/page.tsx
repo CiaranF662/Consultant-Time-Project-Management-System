@@ -7,11 +7,38 @@ import HourChangeApprovalsManager from '@/app/components/admin/HourChangeApprova
 
 const prisma = new PrismaClient();
 
-async function getPendingHourRequests() {
+async function getPendingHourRequests(userId: string, isGrowthTeam: boolean) {
+  let whereClause: any = { status: ChangeStatus.PENDING };
+
+  if (!isGrowthTeam) {
+    // Product Managers only see requests for their projects
+    const managedProjects = await prisma.project.findMany({
+      where: { productManagerId: userId },
+      select: { id: true }
+    });
+    
+    const projectIds = managedProjects.map(p => p.id);
+    
+    // Get all phase allocations for managed projects
+    const phaseAllocations = await prisma.phaseAllocation.findMany({
+      where: {
+        phase: {
+          projectId: { in: projectIds }
+        }
+      },
+      select: { id: true }
+    });
+    
+    const phaseAllocationIds = phaseAllocations.map(pa => pa.id);
+    
+    whereClause = {
+      ...whereClause,
+      phaseAllocationId: { in: phaseAllocationIds }
+    };
+  }
+
   const requests = await prisma.hourChangeRequest.findMany({
-    where: { 
-      status: ChangeStatus.PENDING 
-    },
+    where: whereClause,
     include: {
       requester: {
         select: { id: true, name: true, email: true }
@@ -29,8 +56,20 @@ export default async function HourChangeApprovalsPage() {
     redirect('/login');
   }
 
-  // Only Growth Team can access this page
-  if (session.user.role !== UserRole.GROWTH_TEAM) {
+  // Check if user can access this page (Growth Team or Product Manager)
+  const isGrowthTeam = session.user.role === UserRole.GROWTH_TEAM;
+  let isProductManager = false;
+  
+  if (!isGrowthTeam) {
+    // Check if user is a Product Manager
+    const managedProjects = await prisma.project.findMany({
+      where: { productManagerId: session.user.id },
+      select: { id: true }
+    });
+    isProductManager = managedProjects.length > 0;
+  }
+  
+  if (!isGrowthTeam && !isProductManager) {
     return (
       <DashboardLayout>
         <div className="p-8">
@@ -43,7 +82,7 @@ export default async function HourChangeApprovalsPage() {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-red-700">
-                  Access denied. Only Growth Team members can approve hour change requests.
+                  Access denied. Only Growth Team members and Product Managers can approve hour change requests.
                 </p>
               </div>
             </div>
@@ -53,7 +92,7 @@ export default async function HourChangeApprovalsPage() {
     );
   }
 
-  const requests = await getPendingHourRequests();
+  const requests = await getPendingHourRequests(session.user.id, isGrowthTeam);
 
   return (
     <DashboardLayout>

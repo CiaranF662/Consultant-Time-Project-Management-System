@@ -14,10 +14,6 @@ async function getGrowthTeamData() {
     where: { status: UserStatus.PENDING }
   });
   
-  const pendingHoursCount = await prisma.hourChangeRequest.count({
-    where: { status: ChangeStatus.PENDING }
-  });
-
   // Get all consultants for timeline
   const consultants = await prisma.user.findMany({
     where: { role: UserRole.CONSULTANT },
@@ -47,7 +43,7 @@ async function getGrowthTeamData() {
     take: 5
   });
 
-  return { pendingUserCount, pendingHoursCount, consultants, projects };
+  return { pendingUserCount, consultants, projects };
 }
 
 async function getConsultantData(userId: string) {
@@ -68,6 +64,30 @@ async function getConsultantData(userId: string) {
   });
 
   const isPM = pmProjects.length > 0;
+
+  // Get pending hour change requests count for PM
+  let pendingHourChangesCount = 0;
+  if (isPM) {
+    // Get all phase allocations for projects this user manages
+    const managedProjectIds = pmProjects.map(p => p.id);
+    const phaseAllocationsForManagedProjects = await prisma.phaseAllocation.findMany({
+      where: {
+        phase: {
+          projectId: { in: managedProjectIds }
+        }
+      },
+      select: { id: true }
+    });
+    
+    const phaseAllocationIds = phaseAllocationsForManagedProjects.map(pa => pa.id);
+    
+    pendingHourChangesCount = await prisma.hourChangeRequest.count({
+      where: {
+        status: ChangeStatus.PENDING,
+        phaseAllocationId: { in: phaseAllocationIds }
+      }
+    });
+  }
 
   // Get current week allocations using the same date logic as the app
   const { getWeekNumber, getYear } = await import('@/lib/dates');
@@ -156,6 +176,7 @@ async function getConsultantData(userId: string) {
   return {
     isPM,
     pmProjects,
+    pendingHourChangesCount,
     weeklyAllocations: allWeeklyAllocations, // Pass ALL weekly allocations for planner
     currentWeekAllocations, // Pass current week for stats
     phaseAllocations,

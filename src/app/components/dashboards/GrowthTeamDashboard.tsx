@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FaPlus, FaUsers, FaClock, FaChartBar, FaExclamationCircle } from 'react-icons/fa';
+import { FaPlus, FaUsers, FaChartBar, FaExclamationCircle } from 'react-icons/fa';
 import ResourceTimeline from '@/app/components/timeline/ResourceTimeline';
 import CreateProjectModal from '@/app/components/CreateProjectModal';
 
@@ -41,7 +41,6 @@ interface Project {
 interface GrowthTeamDashboardProps {
   data: {
     pendingUserCount: number;
-    pendingHoursCount: number;
     consultants: Array<{
       id: string;
       name: string | null;
@@ -74,7 +73,7 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <div className="flex items-center justify-between">
             <div>
@@ -103,18 +102,6 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
             </div>
             {data.pendingUserCount > 0 && (
               <FaExclamationCircle className="h-8 w-8 text-yellow-500" />
-            )}
-          </div>
-        </Link>
-
-        <Link href="/dashboard/admin/hour-changes" className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Hour Requests</p>
-              <p className="text-2xl font-bold text-gray-900">{data.pendingHoursCount}</p>
-            </div>
-            {data.pendingHoursCount > 0 && (
-              <FaClock className="h-8 w-8 text-orange-500" />
             )}
           </div>
         </Link>
@@ -234,8 +221,8 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
         isOpen={showCreateModal} 
         onClose={() => setShowCreateModal(false)}
         onSuccess={() => {
-          // Refresh the page to show the new project
-          window.location.reload();
+          // Modal handles navigation to project page automatically
+          setShowCreateModal(false);
         }}
       />
     </div>

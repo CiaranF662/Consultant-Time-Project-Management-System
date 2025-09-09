@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, ProjectRole } from '@prisma/client';
+import { sendEmail, renderEmailTemplate } from '@/lib/email';
+import ProjectAssignmentEmail from '@/emails/ProjectAssignmentEmail';
 
 const prisma = new PrismaClient();
 
@@ -109,6 +111,50 @@ export async function POST(request: Request) {
         sprints: true
       }
     });
+
+    // Send project assignment notifications to all consultants
+    try {
+      // Send emails in parallel to all consultants
+      await Promise.allSettled(
+        newProject.consultants.map(async (consultant) => {
+          try {
+            const productManager = newProject.consultants.find(c => c.role === ProjectRole.PRODUCT_MANAGER);
+            const otherConsultants = newProject.consultants
+              .filter(c => c.userId !== consultant.userId)
+              .map(c => ({
+                name: c.user.name || c.user.email || 'Unknown',
+                email: c.user.email || ''
+              }));
+            
+            const emailTemplate = ProjectAssignmentEmail({
+              consultantName: consultant.user.name || consultant.user.email || 'Consultant',
+              projectName: newProject.title,
+              projectDescription: newProject.description || undefined,
+              userRole: consultant.role === ProjectRole.PRODUCT_MANAGER ? 'Product Manager' : 'Team Member',
+              productManagerName: productManager?.user.name || productManager?.user.email || 'Product Manager',
+              productManagerEmail: productManager?.user.email || '',
+              otherConsultants: otherConsultants,
+              projectStartDate: newProject.startDate.toISOString(),
+              projectEndDate: newProject.endDate?.toISOString()
+            });
+            
+            const { html, text } = await renderEmailTemplate(emailTemplate);
+            
+            await sendEmail({
+              to: consultant.user.email!,
+              subject: `New Project Assignment: ${newProject.title}`,
+              html,
+              text
+            });
+          } catch (emailError) {
+            console.error(`Failed to send project assignment email to ${consultant.user.email}:`, emailError);
+          }
+        })
+      );
+    } catch (emailError) {
+      console.error('Error sending project assignment notifications:', emailError);
+      // Don't fail project creation if emails fail
+    }
 
     return NextResponse.json(newProject, { status: 201 });
 
