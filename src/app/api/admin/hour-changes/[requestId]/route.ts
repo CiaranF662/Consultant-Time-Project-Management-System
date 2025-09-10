@@ -3,6 +3,7 @@ import { PrismaClient, ChangeStatus, ChangeType } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { sendEmail, renderEmailTemplate } from '@/lib/email';
+import { createNotification, NotificationTemplates } from '@/lib/notifications';
 import HourChangeRequestEmail from '@/emails/HourChangeRequestEmail';
 
 const prisma = new PrismaClient();
@@ -205,6 +206,51 @@ export async function PATCH(
             html,
             text
           });
+
+          // Create in-app notifications
+          const isApproved = status === ChangeStatus.APPROVED;
+          const consultantNotificationTemplate = isApproved 
+            ? NotificationTemplates.HOUR_CHANGE_APPROVED(project.title)
+            : NotificationTemplates.HOUR_CHANGE_REJECTED(project.title);
+          
+          // Notification for the consultant who made the request
+          await createNotification({
+            userId: updatedRequest.consultantId,
+            type: isApproved ? 'HOUR_CHANGE_APPROVED' : 'HOUR_CHANGE_REJECTED',
+            title: consultantNotificationTemplate.title,
+            message: consultantNotificationTemplate.message,
+            actionUrl: `/dashboard/projects/${project.id}`,
+            metadata: {
+              requestId: updatedRequest.id,
+              projectId: project.id,
+              projectTitle: project.title,
+              status: status,
+              approverName: updatedRequest.approver?.name || 'Administrator'
+            }
+          });
+
+          // Notification for Product Manager (if they didn't approve it themselves)
+          if (project.productManagerId && project.productManagerId !== session.user.id) {
+            const consultantName = updatedRequest.requester.name || 'A consultant';
+            const pmNotificationTitle = `Hour Change Request ${isApproved ? 'Approved' : 'Rejected'}`;
+            const pmNotificationMessage = `${consultantName}'s hour change request for "${project.title}" has been ${isApproved ? 'approved' : 'rejected'}.`;
+            
+            await createNotification({
+              userId: project.productManagerId,
+              type: isApproved ? 'HOUR_CHANGE_APPROVED' : 'HOUR_CHANGE_REJECTED',
+              title: pmNotificationTitle,
+              message: pmNotificationMessage,
+              actionUrl: `/dashboard/projects/${project.id}`,
+              metadata: {
+                requestId: updatedRequest.id,
+                projectId: project.id,
+                projectTitle: project.title,
+                status: status,
+                consultantName,
+                approverName: updatedRequest.approver?.name || 'Administrator'
+              }
+            });
+          }
         }
       }
     } catch (emailError) {

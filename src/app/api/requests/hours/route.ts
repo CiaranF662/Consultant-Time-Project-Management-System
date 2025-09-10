@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, ChangeType } from '@prisma/client';
 import { sendEmail, renderEmailTemplate } from '@/lib/email';
+import { createMultipleNotifications, NotificationTemplates } from '@/lib/notifications';
 import HourChangeRequestEmail from '@/emails/HourChangeRequestEmail';
 
 const prisma = new PrismaClient();
@@ -141,7 +142,7 @@ export async function POST(request: Request) {
         // Get Growth Team users for CC
         const growthTeamUsers = await prisma.user.findMany({
           where: { role: 'GROWTH_TEAM' },
-          select: { email: true }
+          select: { id: true, email: true }
         });
 
         // Get consultant name for shift requests
@@ -182,6 +183,93 @@ export async function POST(request: Request) {
             html,
             text
           });
+
+          // Send confirmation email to the consultant who made the request
+          if (changeRequest.requester.email && 
+              changeRequest.requester.email !== productManager.email && 
+              !ccRecipients.includes(changeRequest.requester.email)) {
+            
+            const consultantEmailTemplate = HourChangeRequestEmail({
+              type: 'submitted',
+              consultantName: changeRequest.requester.name || 'Unknown',
+              consultantEmail: changeRequest.requester.email || '',
+              projectName: project.title,
+              phaseName: projectData.phase.name,
+              changeType: changeType as 'ADJUSTMENT' | 'SHIFT',
+              originalHours: originalHours || 0,
+              requestedHours: requestedHours || 0,
+              reason,
+              toConsultantName
+            });
+
+            const consultantEmailRendered = await renderEmailTemplate(consultantEmailTemplate);
+
+            await sendEmail({
+              to: [changeRequest.requester.email],
+              subject: `Confirmation: Hour Change Request Submitted - ${project.title}`,
+              html: consultantEmailRendered.html,
+              text: consultantEmailRendered.text
+            });
+          }
+
+          // Create in-app notifications
+          const consultantName = changeRequest.requester.name || 'A consultant';
+          const notificationsToCreate: any[] = [];
+
+          // Notification for Growth Team
+          const growthTeamNotificationTemplate = NotificationTemplates.HOUR_CHANGE_REQUEST(consultantName, project.title);
+          
+          growthTeamUsers.forEach(user => {
+            notificationsToCreate.push({
+              userId: user.id,
+              type: 'HOUR_CHANGE_REQUEST' as const,
+              title: growthTeamNotificationTemplate.title,
+              message: growthTeamNotificationTemplate.message,
+              actionUrl: '/dashboard/hour-requests',
+              metadata: {
+                requestId: changeRequest.id,
+                projectId: project.id,
+                projectTitle: project.title,
+                consultantId: changeRequest.consultantId,
+                consultantName
+              }
+            });
+          });
+
+          // Notification for Product Manager (if different from Growth Team)
+          if (productManager?.id && !growthTeamUsers.some(user => user.id === productManager.id)) {
+            notificationsToCreate.push({
+              userId: productManager.id,
+              type: 'HOUR_CHANGE_REQUEST' as const,
+              title: growthTeamNotificationTemplate.title,
+              message: growthTeamNotificationTemplate.message,
+              actionUrl: '/dashboard/hour-requests',
+              metadata: {
+                requestId: changeRequest.id,
+                projectId: project.id,
+                projectTitle: project.title,
+                consultantId: changeRequest.consultantId,
+                consultantName
+              }
+            });
+          }
+
+          // Confirmation notification for the requesting consultant
+          notificationsToCreate.push({
+            userId: changeRequest.consultantId,
+            type: 'HOUR_CHANGE_REQUEST' as const,
+            title: 'Hour Change Request Submitted',
+            message: `Your hour change request for project "${project.title}" has been submitted and is awaiting approval.`,
+            actionUrl: '/dashboard/hour-requests',
+            metadata: {
+              requestId: changeRequest.id,
+              projectId: project.id,
+              projectTitle: project.title,
+              isRequestor: true
+            }
+          });
+
+          await createMultipleNotifications(notificationsToCreate);
         }
       }
     } catch (emailError) {

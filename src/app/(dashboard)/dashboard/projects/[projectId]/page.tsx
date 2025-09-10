@@ -8,7 +8,7 @@ import axios from 'axios';
 import { FaArrowLeft, FaUsers, FaPlus, FaEdit, FaClock, FaDollarSign } from 'react-icons/fa';
 import { UserRole, Sprint, User, Phase, Project } from '@prisma/client';
 
-import AddPhaseForm from '@/app/components/AddPhaseForm';
+import PhaseCreationModal from '@/app/components/phase-planning/PhaseCreationModal';
 import PhaseAllocationForm from '@/app/components/allocation/PhaseAllocationForm';
 import EditPhaseModal from '@/app/components/EditPhaseModal';
 import EditProjectModal from '@/app/components/EditProjectModal';
@@ -388,14 +388,18 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
         </div>
 
         {/* Modals */}
-        {projectId && (
-          <AddPhaseForm 
-            projectId={projectId} 
-            isOpen={isAddPhaseModalOpen} 
-            onClose={() => {
+        {isAddPhaseModalOpen && project && (
+          <PhaseCreationModal
+            project={{
+              id: project.id,
+              title: project.title,
+              sprints: project.sprints
+            }}
+            onClose={() => setIsAddPhaseModalOpen(false)}
+            onPhaseCreated={() => {
               setIsAddPhaseModalOpen(false);
               fetchProjectDetails();
-            }} 
+            }}
           />
         )}
 

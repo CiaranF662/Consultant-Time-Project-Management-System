@@ -18,8 +18,10 @@ import {
   FaSignOutAlt,
   FaClipboardList,
   FaMoneyBillWave,
-  FaCalendarWeek
+  FaCalendarWeek,
+  FaBell
 } from 'react-icons/fa';
+import NotificationBadge from './notifications/NotificationBadge';
 import { UserRole } from '@prisma/client';
 import { signOut } from 'next-auth/react';
 
@@ -100,6 +102,12 @@ export default function Sidebar({ children }: SidebarProps) {
           href: '/dashboard/admin/user-approvals',
           icon: FaUserPlus,
           roles: [UserRole.GROWTH_TEAM]
+        },
+        {
+          label: 'Notifications',
+          href: '/dashboard/notifications',
+          icon: FaBell,
+          roles: [UserRole.GROWTH_TEAM]
         }
       );
     } else {
@@ -127,6 +135,12 @@ export default function Sidebar({ children }: SidebarProps) {
           label: 'Hour Requests',
           href: '/dashboard/hour-requests',
           icon: FaClock,
+          roles: [UserRole.CONSULTANT]
+        },
+        {
+          label: 'Notifications',
+          href: '/dashboard/notifications',
+          icon: FaBell,
           roles: [UserRole.CONSULTANT]
         }
       );
@@ -184,12 +198,15 @@ export default function Sidebar({ children }: SidebarProps) {
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200">
         <div className="flex items-center justify-between p-4">
           <h1 className="text-xl font-bold text-gray-800">Resource System</h1>
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-          >
-            {isMobileMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
-          </button>
+          <div className="flex items-center gap-2">
+            <NotificationBadge />
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            >
+              {isMobileMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -251,14 +268,17 @@ export default function Sidebar({ children }: SidebarProps) {
             {!isCollapsed && (
               <h1 className="text-xl font-bold text-gray-800">Resource System</h1>
             )}
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className={`p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors ${
-                isCollapsed ? 'w-full flex justify-center' : ''
-              }`}
-            >
-              {isCollapsed ? <FaChevronRight size={16} /> : <FaChevronLeft size={16} />}
-            </button>
+            <div className="flex items-center gap-2">
+              <NotificationBadge />
+              <button
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className={`p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors ${
+                  isCollapsed ? 'w-full flex justify-center' : ''
+                }`}
+              >
+                {isCollapsed ? <FaChevronRight size={16} /> : <FaChevronLeft size={16} />}
+              </button>
+            </div>
           </div>
 
           {/* User info */}

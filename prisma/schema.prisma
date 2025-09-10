@@ -26,6 +26,7 @@ model User {
   managedProjects    Project[]               @relation("ProductManager")
   sessions           Session[]
   weeklyAllocations  WeeklyAllocation[]
+  notifications      Notification[]
 }
 
 model Project {
@@ -172,6 +173,33 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String
+  type        NotificationType
+  title       String
+  message     String
+  isRead      Boolean          @default(false)
+  actionUrl   String?          // Optional link to relevant page
+  metadata    Json?            // Additional data (projectId, phaseId, etc.)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
+
+enum NotificationType {
+  PROJECT_ASSIGNMENT
+  HOUR_CHANGE_REQUEST
+  HOUR_CHANGE_APPROVED
+  HOUR_CHANGE_REJECTED
+  PHASE_DEADLINE_WARNING
+  USER_APPROVAL_NEEDED
+  OVERDUE_APPROVAL_ALERT
 }
 
 enum UserRole {

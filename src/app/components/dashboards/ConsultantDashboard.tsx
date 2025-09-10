@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { FaCalendarWeek, FaProjectDiagram, FaClock, FaExclamationCircle, FaClipboardList } from 'react-icons/fa';
 import WeeklyPlannerEnhanced from '@/app/components/allocation/WeeklyPlannerEnhanced';
+import NotificationSummaryCard from '@/app/components/notifications/NotificationSummaryCard';
 import { formatHours } from '@/lib/dates';
 
 interface Sprint {
@@ -137,7 +138,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
       )}
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <div className="flex items-center justify-between">
             <div>
@@ -194,6 +195,8 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
             </div>
           </Link>
         )}
+
+        <NotificationSummaryCard />
       </div>
 
       {/* Weekly Planner */}

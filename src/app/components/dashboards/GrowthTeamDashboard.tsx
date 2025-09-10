@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { FaPlus, FaUsers, FaChartBar, FaExclamationCircle } from 'react-icons/fa';
 import ResourceTimeline from '@/app/components/timeline/ResourceTimeline';
 import CreateProjectModal from '@/app/components/CreateProjectModal';
+import NotificationSummaryCard from '@/app/components/notifications/NotificationSummaryCard';
 
 interface ProjectConsultant {
   user: {
@@ -73,7 +74,7 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <div className="flex items-center justify-between">
             <div>
@@ -105,6 +106,8 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
             )}
           </div>
         </Link>
+
+        <NotificationSummaryCard />
       </div>
 
       {/* Timeline Controls */}

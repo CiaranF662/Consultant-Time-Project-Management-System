@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, ProjectRole } from '@prisma/client';
 import { sendEmail, renderEmailTemplate } from '@/lib/email';
+import { createNotification, NotificationTemplates } from '@/lib/notifications';
 import ProjectAssignmentEmail from '@/emails/ProjectAssignmentEmail';
 
 const prisma = new PrismaClient();
@@ -198,6 +199,24 @@ export async function PATCH(
                 html,
                 text
               });
+
+              // Create in-app notification
+              const roleText = consultant.role === ProjectRole.PRODUCT_MANAGER ? 'Product Manager' : 'Team Member';
+              const notificationTemplate = NotificationTemplates.PROJECT_ASSIGNMENT(updatedProject.title, roleText);
+              
+              await createNotification({
+                userId: consultant.userId,
+                type: 'PROJECT_ASSIGNMENT',
+                title: notificationTemplate.title,
+                message: notificationTemplate.message,
+                actionUrl: `/dashboard/projects/${updatedProject.id}`,
+                metadata: {
+                  projectId: updatedProject.id,
+                  projectTitle: updatedProject.title,
+                  userRole: roleText
+                }
+              });
+
             } catch (emailError) {
               console.error(`Failed to send project assignment email to ${consultant.user.email}:`, emailError);
             }
