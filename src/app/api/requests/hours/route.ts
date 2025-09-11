@@ -139,9 +139,12 @@ export async function POST(request: Request) {
         const { project } = projectData.phase;
         const { productManager } = project;
         
-        // Get Growth Team users for CC
+        // Get approved Growth Team users for CC
         const growthTeamUsers = await prisma.user.findMany({
-          where: { role: 'GROWTH_TEAM' },
+          where: { 
+            role: 'GROWTH_TEAM',
+            status: 'APPROVED' 
+          },
           select: { id: true, email: true }
         });
 
