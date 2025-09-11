@@ -161,9 +161,12 @@ export async function PATCH(
         const { project } = projectData.phase;
         const { phase } = projectData;
         
-        // Get Growth Team users for CC
+        // Get approved Growth Team users for CC
         const growthTeamUsers = await prisma.user.findMany({
-          where: { role: 'GROWTH_TEAM' },
+          where: { 
+            role: 'GROWTH_TEAM',
+            status: 'APPROVED' 
+          },
           select: { email: true }
         });
 

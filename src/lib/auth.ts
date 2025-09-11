@@ -72,6 +72,75 @@ export const authOptions: NextAuthOptions = {
     maxAge: 4 * 60 * 60, // 4 hours
   },
   callbacks: {
+    async signIn({ user, account }) {
+      // Handle Google OAuth sign-in with account linking
+      if (account?.provider === 'google' && user.email) {
+        try {
+          // Check if user already exists with this email
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email },
+            include: {
+              projectAssignments: {
+                where: { role: ProjectRole.PRODUCT_MANAGER }
+              }
+            }
+          });
+
+          if (existingUser) {
+            // Check Growth Team approval status
+            if (existingUser.role === UserRole.GROWTH_TEAM && existingUser.status !== UserStatus.APPROVED) {
+              return false;
+            }
+
+            // Check if Google account is already linked
+            const existingAccount = await prisma.account.findFirst({
+              where: {
+                provider: 'google',
+                providerAccountId: account.providerAccountId
+              }
+            });
+
+            // If account not linked, link it to existing user
+            if (!existingAccount) {
+              await prisma.account.create({
+                data: {
+                  userId: existingUser.id,
+                  type: account.type,
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                  access_token: account.access_token,
+                  expires_at: account.expires_at,
+                  id_token: account.id_token,
+                  refresh_token: account.refresh_token,
+                  scope: account.scope,
+                  session_state: account.session_state,
+                  token_type: account.token_type,
+                }
+              });
+            }
+
+            return true;
+          }
+        } catch (error) {
+          console.error('Error during Google sign-in account linking:', error);
+          return false;
+        }
+      }
+
+      // For all other cases (credentials, new Google users), check Growth Team approval
+      if (user.email) {
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email },
+          select: { role: true, status: true }
+        });
+
+        if (existingUser?.role === UserRole.GROWTH_TEAM && existingUser.status !== UserStatus.APPROVED) {
+          return false;
+        }
+      }
+
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
