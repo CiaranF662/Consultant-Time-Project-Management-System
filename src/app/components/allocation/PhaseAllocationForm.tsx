@@ -165,8 +165,12 @@ export default function PhaseAllocationForm({
 
     setIsSaving(true);
     try {
-      await axios.post(`/api/phases/${phaseId}/allocations`, {
-        allocations: allocations.filter(a => a.consultantId)
+      // Use PUT for bulk allocation updates
+      await axios.put(`/api/phases/${phaseId}/allocations`, {
+        allocations: allocations.filter(a => a.consultantId).map(a => ({
+          consultantId: a.consultantId,
+          totalHours: a.hours // Map 'hours' to 'totalHours' to match API expectation
+        }))
       });
       onSaved();
       onClose();
