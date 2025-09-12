@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
+import { useSession } from 'next-auth/react';
 import { FaBell, FaSpinner, FaExternalLinkAlt, FaCheck } from 'react-icons/fa';
 
 type NotificationType = 
@@ -40,9 +41,41 @@ const notificationTypeConfig: Record<NotificationType, { icon: string; color: st
 };
 
 export default function NotificationDropdown({ onClose, onNotificationUpdate }: NotificationDropdownProps) {
+  const { data: session } = useSession();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Get role-appropriate action URL for notifications
+  const getRoleAwareActionUrl = (notification: Notification): string | null => {
+    const userRole = session?.user?.role;
+    
+    // For Growth Team members, provide admin-focused routes
+    if (userRole === 'GROWTH_TEAM') {
+      switch (notification.type) {
+        case 'HOUR_CHANGE_REQUEST':
+          return '/dashboard/admin/hour-changes';
+        case 'USER_APPROVAL_NEEDED':
+          return '/dashboard/admin/user-approvals';
+        case 'OVERDUE_APPROVAL_ALERT':
+          return '/dashboard/admin/hour-changes';
+        case 'PROJECT_ASSIGNMENT':
+          // Growth team can view all projects
+          return '/dashboard/projects';
+        case 'PHASE_DEADLINE_WARNING':
+          return '/dashboard/projects';
+        case 'HOUR_CHANGE_APPROVED':
+        case 'HOUR_CHANGE_REJECTED':
+          // These are informational for Growth Team - no action needed
+          return null;
+        default:
+          return notification.actionUrl || null;
+      }
+    }
+    
+    // For consultants, use the original actionUrl
+    return notification.actionUrl || null;
+  };
 
   useEffect(() => {
     fetchNotifications();
@@ -192,6 +225,7 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
           <div className="divide-y divide-gray-100">
             {notifications.map((notification) => {
               const config = notificationTypeConfig[notification.type];
+              const actionUrl = getRoleAwareActionUrl(notification);
               
               const content = (
                 <div
@@ -219,7 +253,7 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
                           {formatTimeAgo(notification.createdAt)}
                         </span>
                         
-                        {notification.actionUrl && (
+                        {actionUrl && (
                           <FaExternalLinkAlt className="text-xs text-blue-500" />
                         )}
                       </div>
@@ -244,8 +278,8 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
               );
 
               // Wrap in Link if there's an actionUrl, otherwise return content directly
-              return notification.actionUrl ? (
-                <Link key={notification.id} href={notification.actionUrl} className="block group">
+              return actionUrl ? (
+                <Link key={notification.id} href={actionUrl} className="block group">
                   {content}
                 </Link>
               ) : (

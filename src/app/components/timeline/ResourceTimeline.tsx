@@ -164,7 +164,22 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
         </div>
 
         {/* Consultant Rows */}
-        {consultants.map((consultant) => {
+        {consultants
+          .sort((a, b) => {
+            const consultantDataA = timelineData.find(td => td.consultantId === a.id);
+            const consultantDataB = timelineData.find(td => td.consultantId === b.id);
+            
+            // Sort by Product Manager status first (PMs at top), then by name
+            if (consultantDataA?.isProductManager !== consultantDataB?.isProductManager) {
+              return consultantDataB?.isProductManager ? 1 : -1;
+            }
+            
+            // If both are PMs or both are not PMs, sort alphabetically by name
+            const nameA = (a.name || a.email || '').toLowerCase();
+            const nameB = (b.name || b.email || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+          })
+          .map((consultant) => {
           const consultantData = timelineData.find(td => td.consultantId === consultant.id);
           
           return (

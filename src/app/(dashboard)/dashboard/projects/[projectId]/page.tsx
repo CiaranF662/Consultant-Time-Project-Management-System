@@ -183,8 +183,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
           
           {/* Breadcrumb */}
           <div className="mb-6">
-            <Link href="/dashboard" className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600">
-              <FaArrowLeft /> Back to Dashboard
+            <Link href="/dashboard/projects" className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600">
+              <FaArrowLeft /> Back to All Projects
             </Link>
           </div>
 

@@ -37,10 +37,10 @@ async function getGrowthTeamData() {
         include: {
           user: true
         }
-      }
+      },
+      sprints: true
     },
-    orderBy: { createdAt: 'desc' },
-    take: 5
+    orderBy: { createdAt: 'desc' }
   });
 
   return { pendingUserCount, consultants, projects };

@@ -1,43 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { FaPlus, FaUsers, FaChartBar, FaExclamationCircle } from 'react-icons/fa';
 import ResourceTimeline from '@/app/components/timeline/ResourceTimeline';
 import CreateProjectModal from '@/app/components/CreateProjectModal';
 import NotificationSummaryCard from '@/app/components/notifications/NotificationSummaryCard';
+import ProjectCard from '@/app/components/ProjectCard';
 
-interface ProjectConsultant {
-  user: {
-    id: string;
-    name: string | null;
-    email: string | null;
-  };
-  userId: string;
-  projectId: string;
-  role: string;
-}
+import type { Project, Phase, Sprint, ConsultantsOnProjects, PhaseAllocation } from '@prisma/client';
 
-interface PhaseAllocation {
-  id: string;
-  phaseId: string;
-  consultantId: string;
-  totalHours: number;
-}
-
-interface Phase {
-  id: string;
-  name: string;
-  allocations: PhaseAllocation[];
-}
-
-interface Project {
-  id: string;
-  title: string;
-  budgetedHours: number;
-  phases: Phase[];
-  consultants: ProjectConsultant[];
-}
+type ProjectWithDetails = Project & {
+  sprints: Sprint[];
+  phases: (Phase & {
+    allocations: PhaseAllocation[];
+  })[];
+  consultants: (ConsultantsOnProjects & { 
+    user: { 
+      id: string; 
+      name: string | null;
+      email: string | null;
+    } 
+  })[];
+};
 
 interface GrowthTeamDashboardProps {
   data: {
@@ -47,14 +32,48 @@ interface GrowthTeamDashboardProps {
       name: string | null;
       email: string | null;
     }>;
-    projects: Project[];
+    projects: ProjectWithDetails[];
   };
 }
 
 export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) {
   const [timelineWeeks, setTimelineWeeks] = useState(12);
-  const [selectedConsultant, setSelectedConsultant] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Helper function to categorize projects based on dates
+  const categorizeProjects = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const current: ProjectWithDetails[] = [];
+    const upcoming: ProjectWithDetails[] = [];
+    const past: ProjectWithDetails[] = [];
+
+    data.projects.forEach(project => {
+      const startDate = new Date(project.startDate);
+      const endDate = project.endDate ? new Date(project.endDate) : null;
+
+      startDate.setHours(0, 0, 0, 0);
+      if (endDate) {
+        endDate.setHours(23, 59, 59, 999);
+      }
+
+      if (startDate > today) {
+        // Project hasn't started yet
+        upcoming.push(project);
+      } else if (endDate && endDate < today) {
+        // Project has ended
+        past.push(project);
+      } else {
+        // Project is currently active
+        current.push(project);
+      }
+    });
+
+    return { current, upcoming, past };
+  };
+
+  const { current, upcoming, past } = categorizeProjects();
 
   return (
     <div className="p-4 md:p-8">
@@ -78,8 +97,8 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Active Projects</p>
-              <p className="text-2xl font-bold text-gray-900">{data.projects.length}</p>
+              <p className="text-sm font-medium text-gray-600">Current Projects</p>
+              <p className="text-2xl font-bold text-gray-900">{current.length}</p>
             </div>
             <FaChartBar className="h-8 w-8 text-blue-500" />
           </div>
@@ -167,56 +186,88 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
         <ResourceTimeline 
           consultants={data.consultants}
           weeks={timelineWeeks}
-          onConsultantClick={setSelectedConsultant}
+          onConsultantClick={() => {}} // No action needed for now
         />
       </div>
 
-      {/* Recent Projects */}
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Projects</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.projects.slice(0, 6).map((project) => {
-            const totalAllocated = project.phases.reduce((sum: number, phase: any) => {
-              return sum + phase.allocations.reduce((phaseSum: number, allocation: any) => {
-                return phaseSum + allocation.totalHours;
-              }, 0);
-            }, 0);
+      {/* Projects by Status */}
+      <div className="mt-8 space-y-8">
+        {/* Current Projects */}
+        {current.length > 0 && (
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">Current Projects</h2>
+              <span className="bg-green-100 text-green-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
+                {current.length} active
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {current.map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+          </div>
+        )}
 
-            const utilization = project.budgetedHours > 0 
-              ? Math.round((totalAllocated / project.budgetedHours) * 100)
-              : 0;
+        {/* Upcoming Projects */}
+        {upcoming.length > 0 && (
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">Upcoming Projects</h2>
+              <span className="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
+                {upcoming.length} scheduled
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {upcoming.map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+          </div>
+        )}
 
-            return (
-              <Link key={project.id} href={`/dashboard/projects/${project.id}`}>
-                <div className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
-                  <h3 className="font-semibold text-gray-800 truncate">{project.title}</h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {project.phases.length} phases • {project.consultants.length} team members
-                  </p>
-                  <div className="mt-4">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>Budget Allocation</span>
-                      <span className="font-medium">{utilization}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full ${
-                          utilization > 90 ? 'bg-red-500' : 
-                          utilization > 75 ? 'bg-yellow-500' : 
-                          'bg-green-500'
-                        }`}
-                        style={{ width: `${Math.min(utilization, 100)}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {totalAllocated} / {project.budgetedHours} hours
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+        {/* Past Projects */}
+        {past.length > 0 && (
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">Past Projects</h2>
+              <span className="bg-gray-100 text-gray-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
+                {past.length} completed
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {past.slice(0, 6).map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+            {past.length > 6 && (
+              <div className="text-center mt-4">
+                <Link 
+                  href="/dashboard/projects"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                >
+                  View all {past.length} past projects
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* No Projects Message */}
+        {current.length === 0 && upcoming.length === 0 && past.length === 0 && (
+          <div className="text-center py-12">
+            <FaChartBar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No projects found</h3>
+            <p className="text-gray-500 mb-6">Get started by creating your first project.</p>
+            <button 
+              onClick={() => setShowCreateModal(true)}
+              className="inline-flex items-center gap-2 py-2 px-4 text-sm font-semibold rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+            >
+              <FaPlus />
+              Create New Project
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Create Project Modal */}
