@@ -4,6 +4,17 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { formatHours, getUtilizationColor } from '@/lib/dates';
 
+interface ProjectConsultant {
+  user: {
+    id: string;
+    name: string | null;
+    email: string | null;
+  };
+  userId: string;
+  projectId: string;
+  role: string;
+}
+
 interface ResourceTimelineProps {
   consultants: Array<{
     id: string;
@@ -58,6 +69,7 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
   } | null>(null);
   const [weekHeaders, setWeekHeaders] = useState<Array<{label: string; isCurrent: boolean; isPast: boolean}>>([]);
 
+  
   useEffect(() => {
     fetchTimelineData();
   }, [weeks]);

@@ -118,6 +118,16 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
             <span className="text-sm font-medium text-gray-700">Time Period:</span>
             <div className="flex bg-gray-50 border border-gray-200 rounded-lg p-1 shadow-sm">
               <button
+                onClick={() => setTimelineWeeks(4)}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                  timelineWeeks === 4
+                    ? 'bg-blue-600 text-white shadow-sm' 
+                    : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
+                }`}
+              >
+                4 weeks
+              </button>
+              <button
                 onClick={() => setTimelineWeeks(8)}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                   timelineWeeks === 8 
@@ -146,16 +156,6 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
                 }`}
               >
                 24 weeks
-              </button>
-              <button
-                onClick={() => setTimelineWeeks(32)}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                  timelineWeeks === 32 
-                    ? 'bg-blue-600 text-white shadow-sm' 
-                    : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
-                }`}
-              >
-                32 weeks
               </button>
             </div>
           </div>
