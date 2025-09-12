@@ -1,9 +1,11 @@
 'use client';
 
 import { Skeleton } from '@/app/components/ui/skeleton';
+import DashboardLayout from '@/app/components/DashboardLayout';
 
 export default function DashboardSkeleton() {
   return (
+    <DashboardLayout>
     <div className="p-6 space-y-6 animate-pulse">
       {/* Header Section */}
       <div className="flex justify-between items-center">
@@ -37,5 +39,6 @@ export default function DashboardSkeleton() {
         </div>
       </div>
     </div>
+    </DashboardLayout>
   );
 }

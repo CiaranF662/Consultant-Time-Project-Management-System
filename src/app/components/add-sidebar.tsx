@@ -72,8 +72,14 @@ export default function Sidebar({ children }: SidebarProps) {
       // Growth Team Menu
       items.push(
         {
-          label: 'Resource Timeline',
+          label: 'Dashboard',
           href: '/dashboard',
+          icon: FaHome,
+          roles: [UserRole.GROWTH_TEAM]
+        },
+        {
+          label: 'Resource Timeline',
+          href: '/resource-timeline',
           icon: FaChartBar,
           roles: [UserRole.GROWTH_TEAM]
         },
@@ -112,8 +118,14 @@ export default function Sidebar({ children }: SidebarProps) {
       // Consultant Menu
       items.push(
         {
-          label: 'Weekly Planner',
+          label: 'Dashboard',
           href: '/dashboard',
+          icon: FaHome,
+          roles: [UserRole.CONSULTANT]
+        },
+        {
+          label: 'Weekly Planner',
+          href: '/weekly-planner',
           icon: FaCalendarWeek,
           roles: [UserRole.CONSULTANT]
         },
@@ -320,14 +332,10 @@ export default function Sidebar({ children }: SidebarProps) {
                       <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-blue-700 rounded-l-full"></div>
                     )}
                   </Link>
+
                   
-                  {/* Tooltip for collapsed mode */}
-                  {isCollapsed && (
-                    <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 top-1/2 transform -translate-y-1/2">
-                      {item.label}
-                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 border-4 border-transparent border-r-gray-900"></div>
-                    </div>
-                  )}
+                  
+                  
                 </div>
               );
             })}

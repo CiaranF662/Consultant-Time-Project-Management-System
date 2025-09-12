@@ -3,8 +3,8 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, UserStatus, ChangeStatus, ProjectRole } from '@prisma/client';
 import DashboardLayout from '@/app/components/DashboardLayout';
-import GrowthTeamDashboard from '@/app/components/dashboards/GrowthTeamDashboard';
-import ConsultantDashboard from '@/app/components/dashboards/ConsultantDashboard';
+import GrowthTeamDashboard from '@/app/components/dashboard/GrowthTeamDashboard';
+import ConsultantDashboard from '@/app/components/dashboard/ConsultantDashboard';
 
 const prisma = new PrismaClient();
 
