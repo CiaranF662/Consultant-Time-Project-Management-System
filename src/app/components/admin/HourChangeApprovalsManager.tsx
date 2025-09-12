@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FaArrowLeft, FaClock, FaExchangeAlt, FaCheck, FaTimes, FaEye, FaCheckCircle } from 'react-icons/fa';
 import { formatHours } from '@/lib/dates';
 import axios from 'axios';
+import DashboardLayout from '@/app/components/DashboardLayout';
 
 interface HourRequest {
   id: string;
@@ -41,6 +42,21 @@ export default function HourChangeApprovalsManager({ requests, userId }: HourCha
     type: 'success' | 'error';
     message: string;
   }>({ show: false, type: 'success', message: '' });
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  if (loading) return(
+    <DashboardLayout>
+          <div className="flex items-center justify-center p-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+    </DashboardLayout>
+  );
+  if (error) return(
+  <div className="text-red-600 text-center">Error: {error}</div>
+);
+  
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ show: true, type, message });

@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import type { User, UserRole } from '@prisma/client';
-import Link from 'next/link';
-import { FaArrowLeft } from 'react-icons/fa';
 import DashboardLayout from '@/app/components/DashboardLayout';
 
 export default function ManageUsersPage() {
@@ -39,18 +37,12 @@ export default function ManageUsersPage() {
     }
   };
 
-  if (isLoading) return <div className="text-center p-12">Loading...</div>;
   if (error) return <div className="text-center p-12 text-red-500">{error}</div>;
 
   return (
     <DashboardLayout>
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto p-4 md:p-8">
-        <div className="mb-6">
-            <Link href="/dashboard" className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600">
-                <FaArrowLeft /> Back to Dashboard
-            </Link>
-        </div>
         <h1 className="text-3xl font-bold text-gray-800 mb-6">Manage Users</h1>
         <div className="bg-white rounded-lg shadow-md border">
           <ul className="divide-y divide-gray-200">

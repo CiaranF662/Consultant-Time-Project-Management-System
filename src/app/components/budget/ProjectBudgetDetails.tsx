@@ -134,12 +134,6 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
     <div className="p-4 md:p-8">
       {/* Header */}
       <div className="mb-8">
-        <Link
-          href="/dashboard/budget"
-          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4"
-        >
-          <FaArrowLeft /> Back to Budget Overview
-        </Link>
         <h1 className="text-3xl font-bold text-gray-800 mb-2">{data.project.title}</h1>
         <p className="text-lg text-gray-600">Detailed budget breakdown and resource allocation</p>
       </div>

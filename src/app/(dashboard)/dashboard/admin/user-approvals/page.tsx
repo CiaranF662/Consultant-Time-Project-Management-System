@@ -40,18 +40,19 @@ export default function UserApprovalsPage() {
     }
   };
 
-  if (isLoading) return <div className="text-center p-12">Loading...</div>;
+  if (isLoading) return(
+    <DashboardLayout>
+          <div className="flex items-center justify-center p-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+    </DashboardLayout>
+  );
   if (error) return <div className="text-center p-12 text-red-500">{error}</div>;
 
   return (
     <DashboardLayout>
     <div className="bg-gray-50 min-h-screen">
         <div className="container mx-auto p-4 md:p-8">
-            <div className="mb-6">
-                <Link href="/dashboard" className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600">
-                    <FaArrowLeft /> Back to Dashboard
-                </Link>
-            </div>
             <h1 className="text-3xl font-bold text-gray-800 mb-6">User Sign-Up Approvals</h1>
             <div className="bg-white rounded-lg shadow-md border">
                 {pendingUsers.length > 0 ? (

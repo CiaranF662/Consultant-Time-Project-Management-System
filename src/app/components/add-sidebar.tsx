@@ -94,12 +94,6 @@ const toggleCollapse = () => {
           roles: [UserRole.GROWTH_TEAM]
         },
         {
-          label: 'Resource Timeline',
-          href: '/resource-timeline',
-          icon: FaChartBar,
-          roles: [UserRole.GROWTH_TEAM]
-        },
-        {
           label: 'All Projects',
           href: '/dashboard/projects',
           icon: FaProjectDiagram,
