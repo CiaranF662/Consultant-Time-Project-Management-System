@@ -8,7 +8,7 @@ import axios from 'axios';
 import { FaArrowLeft, FaUsers, FaPlus, FaEdit, FaClock, FaDollarSign } from 'react-icons/fa';
 import { UserRole, Sprint, User, Phase, Project } from '@prisma/client';
 
-import AddPhaseForm from '@/app/components/AddPhaseForm';
+import PhaseCreationModal from '@/app/components/phase-planning/PhaseCreationModal';
 import PhaseAllocationForm from '@/app/components/allocation/PhaseAllocationForm';
 import EditPhaseModal from '@/app/components/EditPhaseModal';
 import EditProjectModal from '@/app/components/EditProjectModal';
@@ -195,8 +195,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                 <h1 className="text-3xl font-bold text-gray-800">{project.title}</h1>
                 <p className="text-gray-600 mt-2 max-w-prose">{project.description || 'No description provided.'}</p>
               </div>
-              {isGrowthTeam && (
-                <div className="flex items-center gap-2 ml-4">
+              <div className="flex items-center gap-2 ml-4">
+                {isGrowthTeam && (
                   <button 
                     onClick={() => setIsEditProjectModalOpen(true)} 
                     className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
@@ -204,6 +204,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                     <FaEdit />
                     Edit Project
                   </button>
+                )}
+                {canManagePhases && (
                   <button 
                     onClick={() => setIsAddPhaseModalOpen(true)} 
                     className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
@@ -211,8 +213,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                     <FaPlus />
                     Add Phase
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
             
             <div className="mt-6 pt-6 border-t border-gray-200">
@@ -386,14 +388,18 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
         </div>
 
         {/* Modals */}
-        {projectId && (
-          <AddPhaseForm 
-            projectId={projectId} 
-            isOpen={isAddPhaseModalOpen} 
-            onClose={() => {
+        {isAddPhaseModalOpen && project && (
+          <PhaseCreationModal
+            project={{
+              id: project.id,
+              title: project.title,
+              sprints: project.sprints
+            }}
+            onClose={() => setIsAddPhaseModalOpen(false)}
+            onPhaseCreated={() => {
               setIsAddPhaseModalOpen(false);
               fetchProjectDetails();
-            }} 
+            }}
           />
         )}
 

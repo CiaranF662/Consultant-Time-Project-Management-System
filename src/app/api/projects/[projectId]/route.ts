@@ -134,13 +134,89 @@ export async function DELETE(
 
     try {
         const { projectId } = await params;
-        await prisma.project.delete({
+        
+        // First, check if the project exists
+        const project = await prisma.project.findUnique({
             where: { id: projectId },
+            include: {
+                phases: {
+                    include: {
+                        allocations: {
+                            include: {
+                                weeklyAllocations: true
+                            }
+                        }
+                    }
+                },
+                consultants: true,
+                sprints: true
+            }
+        });
+
+        if (!project) {
+            return new NextResponse(JSON.stringify({ error: 'Project not found' }), { status: 404 });
+        }
+
+        // Use a transaction to ensure all deletions are atomic
+        await prisma.$transaction(async (tx) => {
+            // 1. Delete any HourChangeRequests related to this project's phase allocations
+            const phaseAllocationIds = project.phases.flatMap(phase => 
+                phase.allocations.map(allocation => allocation.id)
+            );
+            
+            if (phaseAllocationIds.length > 0) {
+                await tx.hourChangeRequest.deleteMany({
+                    where: {
+                        phaseAllocationId: {
+                            in: phaseAllocationIds
+                        }
+                    }
+                });
+            }
+
+            // 2. Delete weekly allocations (should cascade from phase allocations, but being explicit)
+            for (const phase of project.phases) {
+                for (const allocation of phase.allocations) {
+                    await tx.weeklyAllocation.deleteMany({
+                        where: { phaseAllocationId: allocation.id }
+                    });
+                }
+            }
+
+            // 3. Delete phase allocations (should cascade from phases, but being explicit)
+            for (const phase of project.phases) {
+                await tx.phaseAllocation.deleteMany({
+                    where: { phaseId: phase.id }
+                });
+            }
+
+            // 4. Delete phases (should cascade from project, but being explicit)
+            await tx.phase.deleteMany({
+                where: { projectId: projectId }
+            });
+
+            // 5. Delete sprints (should cascade from project)
+            await tx.sprint.deleteMany({
+                where: { projectId: projectId }
+            });
+
+            // 6. Delete consultant assignments (this is the key missing cascade)
+            await tx.consultantsOnProjects.deleteMany({
+                where: { projectId: projectId }
+            });
+
+            // 7. Finally, delete the project itself
+            await tx.project.delete({
+                where: { id: projectId }
+            });
         });
 
         return new NextResponse(null, { status: 204 });
     } catch (error) {
         console.error('Error deleting project:', error);
-        return new NextResponse(JSON.stringify({ error: 'Failed to delete project' }), { status: 500 });
+        return new NextResponse(JSON.stringify({ 
+            error: 'Failed to delete project', 
+            details: error instanceof Error ? error.message : 'Unknown error' 
+        }), { status: 500 });
     }
 }

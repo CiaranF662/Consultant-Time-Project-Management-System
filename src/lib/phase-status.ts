@@ -320,12 +320,13 @@ function getWorkStatusEnhanced(phase: PhaseWithAllocations, currentDate: Date): 
   } else if (expectedCompletionByNow > 0) {
     status = 'in_progress';
   } else if (sortedWeeks.length > 0) {
-    // Check if we should have started based on first planned week
-    const firstWeek = sortedWeeks[0];
-    if (currentDate >= firstWeek.weekStartDate) {
-      // We're past the first planned week but no progress
+    // Check if we should have started based on PHASE start date, not first weekly allocation
+    const phaseStartDate = new Date(phase.startDate);
+    if (currentDate >= phaseStartDate) {
+      // We're past the phase start date but no progress - truly behind schedule
       status = 'behind_schedule';
     } else {
+      // Phase hasn't started yet, regardless of weekly allocation dates
       status = 'not_started';
     }
   } else {

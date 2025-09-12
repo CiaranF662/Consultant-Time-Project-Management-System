@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { FaCalendarWeek, FaProjectDiagram, FaClock, FaExclamationCircle, FaClipboardList } from 'react-icons/fa';
 import WeeklyPlannerEnhanced from '@/app/components/allocation/WeeklyPlannerEnhanced';
+import NotificationSummaryCard from '@/app/components/notifications/NotificationSummaryCard';
 import { formatHours } from '@/lib/dates';
 
 interface Sprint {
@@ -75,6 +76,7 @@ interface ConsultantDashboardProps {
   data: {
     isPM: boolean;
     pmProjects: Array<{ id: string; title: string }>;
+    pendingHourChangesCount?: number;
     weeklyAllocations: ConsultantAllocation[];
     currentWeekAllocations?: ConsultantAllocation[];
     phaseAllocations: PhaseAllocation[];
@@ -136,7 +138,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
       )}
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <div className="flex items-center justify-between">
             <div>
@@ -168,17 +170,33 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
           </div>
         </div>
 
-        <Link href="/dashboard/hour-requests" className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Pending Requests</p>
-              <p className="text-2xl font-bold text-gray-900">{data.pendingRequests.length}</p>
+        {data.isPM ? (
+          <Link href="/dashboard/admin/hour-changes" className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Hour Change Approvals</p>
+                <p className="text-2xl font-bold text-gray-900">{data.pendingHourChangesCount || 0}</p>
+              </div>
+              {(data.pendingHourChangesCount || 0) > 0 && (
+                <FaExclamationCircle className="h-8 w-8 text-orange-500" />
+              )}
             </div>
-            {data.pendingRequests.length > 0 && (
-              <FaExclamationCircle className="h-8 w-8 text-yellow-500" />
-            )}
-          </div>
-        </Link>
+          </Link>
+        ) : (
+          <Link href="/dashboard/hour-requests" className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Pending Requests</p>
+                <p className="text-2xl font-bold text-gray-900">{data.pendingRequests.length}</p>
+              </div>
+              {data.pendingRequests.length > 0 && (
+                <FaExclamationCircle className="h-8 w-8 text-yellow-500" />
+              )}
+            </div>
+          </Link>
+        )}
+
+        <NotificationSummaryCard />
       </div>
 
       {/* Weekly Planner */}

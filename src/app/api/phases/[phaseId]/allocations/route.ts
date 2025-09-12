@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, ProjectRole } from '@prisma/client';
+import { sendEmail, renderEmailTemplate } from '@/lib/email';
+import PhaseAllocationEmail from '@/emails/PhaseAllocationEmail';
 
 const prisma = new PrismaClient();
 
@@ -105,8 +107,49 @@ export async function POST(
           consultantId,
           totalHours
         },
-        include: { consultant: true }
+        include: { 
+          consultant: true,
+          phase: {
+            include: {
+              project: {
+                include: {
+                  consultants: {
+                    where: { role: ProjectRole.PRODUCT_MANAGER },
+                    include: { user: true }
+                  }
+                }
+              }
+            }
+          }
+        }
       });
+      
+      // Send email notification for new allocation
+      try {
+        const emailTemplate = PhaseAllocationEmail({
+          type: "allocated",
+          consultantName: allocation.consultant.name || allocation.consultant.email || 'Consultant',
+          projectName: allocation.phase.project.title,
+          phaseName: allocation.phase.name,
+          phaseDescription: allocation.phase.description || undefined,
+          totalHours: allocation.totalHours,
+          productManagerName: allocation.phase.project.consultants[0]?.user.name || undefined,
+          startDate: allocation.phase.startDate.toISOString(),
+          endDate: allocation.phase.endDate.toISOString()
+        });
+        
+        const { html, text } = await renderEmailTemplate(emailTemplate);
+        
+        await sendEmail({
+          to: allocation.consultant.email!,
+          subject: `New Phase Allocation: ${allocation.phase.name}`,
+          html,
+          text
+        });
+      } catch (emailError) {
+        console.error('Failed to send phase allocation email:', emailError);
+        // Don't fail the allocation creation if email fails
+      }
     }
 
     return NextResponse.json(allocation, { status: existing ? 200 : 201 });
@@ -180,20 +223,30 @@ export async function PUT(
 
       // Create new allocations
       if (allocations.length > 0) {
+        const allocationData = allocations.map((alloc: any) => ({
+          phaseId,
+          consultantId: alloc.consultantId,
+          totalHours: parseFloat(alloc.totalHours)
+        }));
+        
         await tx.phaseAllocation.createMany({
-          data: allocations.map((alloc: any) => ({
-            phaseId,
-            consultantId: alloc.consultantId,
-            totalHours: parseFloat(alloc.totalHours)
-          }))
+          data: allocationData
         });
       }
     });
 
-    // Fetch updated phase with allocations
+    // Fetch updated phase with allocations and send emails for new allocations
     const updatedPhase = await prisma.phase.findUnique({
       where: { id: phaseId },
       include: {
+        project: {
+          include: {
+            consultants: {
+              where: { role: ProjectRole.PRODUCT_MANAGER },
+              include: { user: true }
+            }
+          }
+        },
         allocations: {
           include: {
             consultant: {
@@ -203,6 +256,41 @@ export async function PUT(
         }
       }
     });
+    
+    // Send email notifications for all new allocations
+    if (updatedPhase && allocations.length > 0) {
+      const productManagerName = updatedPhase.project.consultants[0]?.user.name || undefined;
+      
+      // Send emails in parallel
+      await Promise.allSettled(
+        updatedPhase.allocations.map(async (allocation) => {
+          try {
+            const emailTemplate = PhaseAllocationEmail({
+              type: "allocated",
+              consultantName: allocation.consultant.name || allocation.consultant.email || 'Consultant',
+              projectName: updatedPhase.project.title,
+              phaseName: updatedPhase.name,
+              phaseDescription: updatedPhase.description || undefined,
+              totalHours: allocation.totalHours,
+              productManagerName: productManagerName,
+              startDate: updatedPhase.startDate.toISOString(),
+              endDate: updatedPhase.endDate.toISOString()
+            });
+            
+            const { html, text } = await renderEmailTemplate(emailTemplate);
+            
+            await sendEmail({
+              to: allocation.consultant.email!,
+              subject: `New Phase Allocation: ${updatedPhase.name}`,
+              html,
+              text
+            });
+          } catch (emailError) {
+            console.error(`Failed to send phase allocation email to ${allocation.consultant.email}:`, emailError);
+          }
+        })
+      );
+    }
 
     return NextResponse.json(updatedPhase);
 

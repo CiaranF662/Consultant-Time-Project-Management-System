@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { FaArrowLeft, FaClock, FaExchangeAlt, FaCheck, FaTimes, FaEye } from 'react-icons/fa';
+import { FaArrowLeft, FaClock, FaExchangeAlt, FaCheck, FaTimes, FaEye, FaCheckCircle } from 'react-icons/fa';
 import { formatHours } from '@/lib/dates';
 import axios from 'axios';
 
@@ -36,6 +36,18 @@ interface HourChangeApprovalsManagerProps {
 export default function HourChangeApprovalsManager({ requests, userId }: HourChangeApprovalsManagerProps) {
   const [processingRequests, setProcessingRequests] = useState<Set<string>>(new Set());
   const [processedRequests, setProcessedRequests] = useState<Set<string>>(new Set());
+  const [notification, setNotification] = useState<{
+    show: boolean;
+    type: 'success' | 'error';
+    message: string;
+  }>({ show: false, type: 'success', message: '' });
+
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ show: true, type, message });
+    setTimeout(() => {
+      setNotification(prev => ({ ...prev, show: false }));
+    }, 5000);
+  };
 
   const handleApproval = async (requestId: string, newStatus: 'APPROVED' | 'REJECTED') => {
     setProcessingRequests(prev => new Set(prev).add(requestId));
@@ -47,14 +59,16 @@ export default function HourChangeApprovalsManager({ requests, userId }: HourCha
       
       setProcessedRequests(prev => new Set(prev).add(requestId));
       
-      // Simple success feedback
+      // Show success notification
       const action = newStatus === 'APPROVED' ? 'approved' : 'rejected';
-      alert(`Request ${action} successfully!`);
+      showNotification('success', `✓ Hour change request ${action} successfully!`);
       
       // Reload page to show updated data
-      window.location.reload();
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to update request');
+      showNotification('error', err.response?.data?.error || 'Failed to update request');
     } finally {
       setProcessingRequests(prev => {
         const newSet = new Set(prev);
@@ -85,7 +99,24 @@ export default function HourChangeApprovalsManager({ requests, userId }: HourCha
   const pendingRequests = requests.filter(req => !processedRequests.has(req.id));
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="p-4 md:p-8 relative">
+      {/* Notification Toast */}
+      {notification.show && (
+        <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ${
+          notification.type === 'success' 
+            ? 'bg-green-500 text-white' 
+            : 'bg-red-500 text-white'
+        }`}>
+          {notification.type === 'success' ? <FaCheckCircle /> : <FaTimes />}
+          <span>{notification.message}</span>
+          <button
+            onClick={() => setNotification(prev => ({ ...prev, show: false }))}
+            className="ml-2 text-white hover:text-gray-200"
+          >
+            <FaTimes size={12} />
+          </button>
+        </div>
+      )}
       {/* Header */}
       <div className="mb-6">
         <Link 

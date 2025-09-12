@@ -18,7 +18,11 @@ async function getProductManagerData(userId: string) {
         }
       }
     },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      budgetedHours: true,
+      productManagerId: true,
       phases: {
         include: {
           sprints: {
