@@ -42,6 +42,20 @@ export default function Sidebar({ children }: SidebarProps) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+// Load collapse state from localStorage
+useEffect(() => {
+  const collapsed = localStorage.getItem('sidebar-collapsed');
+  if (collapsed) setIsCollapsed(collapsed === 'true');
+}, []);
+
+// Toggle function
+const toggleCollapse = () => {
+  setIsCollapsed(prev => {
+    localStorage.setItem('sidebar-collapsed', (!prev).toString());
+    return !prev;
+  });
+};
   const [isDynamicPM, setIsDynamicPM] = useState(false);
 
   // Dynamically check if user is a Product Manager
@@ -209,7 +223,7 @@ export default function Sidebar({ children }: SidebarProps) {
       {/* Mobile menu button */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200">
         <div className="flex items-center justify-between p-4">
-          <h1 className="text-xl font-bold text-gray-800">Resource System</h1>
+          <h1 className="text-xl font-bold text-gray-800">AgileRS</h1>
           <div className="flex items-center gap-2">
             <NotificationBadge />
             <button
@@ -233,7 +247,7 @@ export default function Sidebar({ children }: SidebarProps) {
       }`}>
         <div className="flex flex-col h-full">
           <div className="p-4 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-gray-800">Resource System</h1>
+            <h1 className="text-xl font-bold text-gray-800">AgileRS</h1>
           </div>
           <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
@@ -278,12 +292,13 @@ export default function Sidebar({ children }: SidebarProps) {
           {/* Header */}
           <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
             {!isCollapsed && (
-              <h1 className="text-xl font-bold text-gray-800">Resource System</h1>
+              <h1 className="text-xl font-bold text-gray-800">AgileRS</h1>
             )}
+            {/* Collapse/Expand Notifications */}
             <div className="flex items-center gap-2">
-              <NotificationBadge />
-              <button
-                onClick={() => setIsCollapsed(!isCollapsed)}
+              {!isCollapsed && <NotificationBadge />}
+              <button onClick={toggleCollapse}
+
                 className={`p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors ${
                   isCollapsed ? 'w-full flex justify-center' : ''
                 }`}
@@ -353,9 +368,19 @@ export default function Sidebar({ children }: SidebarProps) {
                     )}
                   </Link>
 
-                  
-                  
-                  
+                  {/* Tooltip for collapsed mode */}
+                  {isCollapsed && (
+                    <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 px-3 py-2 bg-gray-900 text-white text-sm 
+                    rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible
+                    translate-x-[-10px] group-hover:translate-x-0
+                    transition-all duration-300 ease-out whitespace-nowrap
+                    pointer-events-none z-999999"
+                    >
+                      {item.label}
+                      {/* Tooltip arrow */}
+                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                  )}
                 </div>
               );
             })}

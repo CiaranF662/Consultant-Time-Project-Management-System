@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Sidebar from '@/app/components/add-sidebar';
-import Loading from '@/app/loading';
+import {Skeleton} from '@/app/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 interface DashboardLayoutProps {
@@ -41,7 +41,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
     return (
-      <Loading className={cn("min-h-screen flex items-center justify-center", sizeClasses["lg"])} />
+      <Skeleton className={cn("min-h-screen flex items-center justify-center", sizeClasses["lg"])} />
     )
   }
 
