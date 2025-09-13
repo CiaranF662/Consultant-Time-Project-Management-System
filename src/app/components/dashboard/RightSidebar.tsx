@@ -3,14 +3,14 @@
 import { UserRole } from '@prisma/client';
 import { ScrollArea } from '@/app/components/ui/scroll-area';
 import { DashboardData } from '@/types/dashboard';
-import MyAllocationsWidget from '@/app/(dashboard)/dashboard/widgets/MyAllocationsWidget';
-import PendingApprovalsWidget from '@/app/(dashboard)/dashboard/widgets/PendingApprovalsWidget';
-import WorkloadBalanceWidget from '@/app/(dashboard)/dashboard/widgets/WorkloadBalanceWidget';
-import ROISnapshotWidget from '@/app/(dashboard)/dashboard/widgets/ROISnapshotWidget';
-import PortfolioHealthWidget from '@/app/(dashboard)/dashboard/widgets/PortfolioHealthWidget';
-import QuickActionsWidget from '@/app/(dashboard)/dashboard/widgets/QuickActionsWidget';
-import UpcomingDeadlinesWidget from '@/app/(dashboard)/dashboard/widgets/UpcomingDeadlinesWidget';
-import TeamAvailabilityWidget from '@/app/(dashboard)/dashboard/widgets/TeamAvailabilityWidget';
+import MyAllocationsWidget from '@/app/(pages)/dashboard/widgets-components/MyAllocationsWidget';
+import PendingApprovalsWidget from '@/app/(pages)/dashboard/widgets-components/PendingApprovalsWidget';
+import WorkloadBalanceWidget from '@/app/(pages)/dashboard/widgets-components/WorkloadBalanceWidget';
+import ROISnapshotWidget from '@/app/(pages)/dashboard/widgets-components/ROISnapshotWidget';
+import PortfolioHealthWidget from '@/app/(pages)/dashboard/widgets-components/PortfolioHealthWidget';
+import QuickActionsWidget from '@/app/(pages)/dashboard/widgets-components/QuickActionsWidget';
+import UpcomingDeadlinesWidget from '@/app/(pages)/dashboard/widgets-components/UpcomingDeadlinesWidget';
+import TeamAvailabilityWidget from '@/app/(pages)/dashboard/widgets-components/TeamAvailabilityWidget';
 
 interface RightSidebarProps {
   dashboardData: DashboardData;
