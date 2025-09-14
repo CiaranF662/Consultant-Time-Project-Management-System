@@ -25,7 +25,7 @@ export default function Loading({ size = "md", fullScreen = true }: LoadingProps
       <div className="flex flex-col items-center gap-6 rounded-xl ">
         {/* Spinner */}
         <div className={`relative ${sizeClasses[size]}`}>
-          <div className="absolute inset-0 rounded-full border-4 border-gray-300"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-gray-300 animate-spin"></div>
           <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
           <div
             className="absolute inset-2 rounded-full border-2 border-blue-400 border-b-transparent animate-spin"

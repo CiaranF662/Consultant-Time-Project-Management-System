@@ -18,7 +18,7 @@ function TooltipProvider({
   )
 }
 
-function Tooltip({
+export default function Tooltip({
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
   return (
@@ -58,4 +58,4 @@ function TooltipContent({
   )
 }
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+export {TooltipTrigger, TooltipContent, TooltipProvider }
