@@ -49,22 +49,22 @@ export async function POST(request: Request) {
     const projectEndDate = new Date(projectStartDate);
     projectEndDate.setDate(projectEndDate.getDate() + durationInWeeks * 7);
 
-    // Sprint Generation Logic
+    // Sprint Generation Logic - Always create Sprint 0 (Project Kickoff)
     const sprintsToCreate = [];
     let currentSprintStartDate = new Date(projectStartDate);
 
-    // Handle Sprint 0 if project doesn't start on Monday
-    if (projectStartDate.getDay() !== 1) {
-      const sprint0EndDate = new Date(currentSprintStartDate);
-      sprint0EndDate.setDate(sprint0EndDate.getDate() + (7 - sprint0EndDate.getDay()));
-      sprintsToCreate.push({
-        sprintNumber: 0,
-        startDate: currentSprintStartDate,
-        endDate: sprint0EndDate,
-      });
-      currentSprintStartDate = new Date(sprint0EndDate);
-      currentSprintStartDate.setDate(currentSprintStartDate.getDate() + 1);
-    }
+    // Always create Sprint 0 for Project Kickoff (1 week duration)
+    const sprint0EndDate = new Date(currentSprintStartDate);
+    sprint0EndDate.setDate(sprint0EndDate.getDate() + 6); // 7 days = 1 week
+    sprintsToCreate.push({
+      sprintNumber: 0,
+      startDate: new Date(currentSprintStartDate),
+      endDate: sprint0EndDate,
+    });
+
+    // Set start date for regular sprints (day after Sprint 0 ends)
+    currentSprintStartDate = new Date(sprint0EndDate);
+    currentSprintStartDate.setDate(currentSprintStartDate.getDate() + 1);
 
     // Generate regular 2-week sprints
     let sprintCounter = 1;
@@ -88,6 +88,7 @@ export async function POST(request: Request) {
       role: id === productManagerId ? ProjectRole.PRODUCT_MANAGER : ProjectRole.TEAM_MEMBER
     }));
 
+    // Create project with sprints first
     const newProject = await prisma.project.create({
       data: {
         title: title.trim(),
@@ -110,6 +111,30 @@ export async function POST(request: Request) {
           }
         },
         sprints: true
+      }
+    });
+
+    // Create Project Kickoff phase and link Sprint 0 to it
+    const kickoffPhase = await prisma.phase.create({
+      data: {
+        name: 'Project Kickoff',
+        description: 'Initial project setup, planning, and stakeholder alignment',
+        startDate: projectStartDate,
+        endDate: sprintsToCreate[0].endDate,
+        projectId: newProject.id,
+      }
+    });
+
+    // Update Sprint 0 to link it to the Project Kickoff phase
+    await prisma.sprint.update({
+      where: {
+        projectId_sprintNumber: {
+          projectId: newProject.id,
+          sprintNumber: 0
+        }
+      },
+      data: {
+        phaseId: kickoffPhase.id
       }
     });
 
