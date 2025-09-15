@@ -102,7 +102,7 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
     return (
       <div className="p-8">
         <Link
-          href="/dashboard/budget"
+          href="/budget"
           className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4"
         >
           <FaArrowLeft /> Back to Budget Overview
@@ -118,7 +118,7 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
     return (
       <div className="p-8">
         <Link
-          href="/dashboard/budget"
+          href="/budget"
           className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4"
         >
           <FaArrowLeft /> Back to Budget Overview

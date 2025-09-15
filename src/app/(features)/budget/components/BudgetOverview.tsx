@@ -230,7 +230,7 @@ export default function BudgetOverview() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <Link
-                        href={`/dashboard/budget/${project.id}`}
+                        href={`/budget/${project.id}`}
                         className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-900"
                       >
                         <FaEye className="h-4 w-4" />

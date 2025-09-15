@@ -262,7 +262,7 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
       {notifications.length > 0 && (
         <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
           <Link
-            href="/dashboard/notifications"
+            href="/notifications"
             className="block text-center text-sm text-blue-600 hover:text-blue-800 font-medium"
             onClick={onClose}
           >

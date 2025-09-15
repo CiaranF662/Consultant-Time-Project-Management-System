@@ -57,7 +57,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
   };
 
   return (
-    <Link href={`/dashboard/projects/${project.id}`}>
+    <Link href={`/projects/${project.id}`}>
       <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 flex flex-col h-full cursor-pointer">
         <h3 className="text-xl font-bold text-gray-800 truncate mb-2">{project.title}</h3>
         

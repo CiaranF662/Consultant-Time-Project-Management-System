@@ -8,12 +8,12 @@ import axios from 'axios';
 import { FaArrowLeft, FaUsers, FaPlus, FaEdit, FaClock, FaDollarSign } from 'react-icons/fa';
 import { UserRole, Sprint, User, Phase, Project } from '@prisma/client';
 
-import PhaseCreationModal from '@/app/(features)/phase-planning/phase-planning/PhaseCreationModal';
-import PhaseAllocationForm from '@/app/(features)/team-allocations/allocation/PhaseAllocationForm';
-import EditPhaseModal from '@/app/(features)/projects/project/EditPhaseModal';
-import EditProjectModal from '@/app/(features)/projects/project/EditProjectModal';
-import BudgetTracker from '@/app/(features)/team-allocations/allocation/BudgetTracker';
-import PhaseStatusCard from '@/app/(features)/phase-planning/phase-planning/PhaseStatusCard';
+import PhaseCreationModal from '@/app/(features)/phase-planning/components/PhaseCreationModal';
+import PhaseAllocationForm from '@/app/(features)/team-allocations/ components/PhaseAllocationForm';
+import EditPhaseModal from '@/app/(features)/projects/components/EditPhaseModal';
+import EditProjectModal from '@/app/(features)/projects/components/EditProjectModal';
+import BudgetTracker from '@/app/(features)/team-allocations/ components/BudgetTracker';
+import PhaseStatusCard from '@/app/(features)/phase-planning/components/PhaseStatusCard';
 import { generateColorFromString } from '@/lib/colors';
 import DashboardLayout from '@/app/(features)/dashboard/components/DashboardLayout';
 

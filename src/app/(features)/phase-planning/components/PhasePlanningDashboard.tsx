@@ -5,7 +5,7 @@ import { FaPlus, FaCalendarAlt, FaUsers, FaClock, FaEdit, FaTrash } from 'react-
 import { formatHours } from '@/lib/dates';
 import PhaseCreationModal from './PhaseCreationModal';
 import PhaseAllocationModal from './PhaseAllocationModal';
-import EditPhaseModal from '../../projects/project/EditPhaseModal';
+import EditPhaseModal from '../../projects/components/EditPhaseModal';
 
 interface Sprint {
   id: string;

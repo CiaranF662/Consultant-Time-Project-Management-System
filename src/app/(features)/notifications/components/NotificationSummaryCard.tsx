@@ -39,7 +39,7 @@ export default function NotificationSummaryCard({ className = '' }: Notification
   }
 
   return (
-    <Link href="/dashboard/notifications" className="block">
+    <Link href="/notifications" className="block">
       <div className={`bg-white p-6 rounded-lg shadow-md border hover:shadow-lg transition-shadow cursor-pointer ${className}`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">

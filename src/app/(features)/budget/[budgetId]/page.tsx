@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { UserRole } from '@prisma/client';
 import DashboardLayout from '@/app/(features)/dashboard/components/DashboardLayout';
-import ProjectBudgetDetails from '@/app/(features)/budget/budget/ProjectBudgetDetails';
+import ProjectBudgetDetails from '@/app/(features)/budget/components/ProjectBudgetDetails';
 
 interface PageProps {
   params: Promise<{ projectId: string }>;

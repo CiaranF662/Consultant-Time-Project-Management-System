@@ -15,7 +15,7 @@ type NotificationType =
   | 'USER_APPROVAL_NEEDED'
   | 'OVERDUE_APPROVAL_ALERT';
 import DashboardLayout from '@/app/(features)/dashboard/components/DashboardLayout';
-import NotificationCard from '@/app/(features)/notifications/notifications/NotificationCard';
+import NotificationCard from '@/app/(features)/notifications/components/NotificationCard';
 
 interface Notification {
   id: string;

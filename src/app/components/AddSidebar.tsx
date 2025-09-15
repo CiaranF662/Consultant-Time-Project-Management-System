@@ -21,7 +21,7 @@ import {
   FaCalendarWeek,
   FaBell
 } from 'react-icons/fa';
-import NotificationBadge from '../../notifications/notifications/NotificationBadge';
+import NotificationBadge from '@/app/(features)/notifications/components/NotificationBadge';
 import { UserRole } from '@prisma/client';
 import { signOut } from 'next-auth/react';
 import Tooltip from '@/app/components/ui/tooltip';
@@ -116,13 +116,13 @@ const toggleCollapse = () => {
         },
         {
           label: 'Manage Users',
-          href: '/admin/manage-users',
+          href: '/manage-users',
           icon: FaUsers,
           roles: [UserRole.GROWTH_TEAM]
         },
         {
           label: 'User Approvals',
-          href: '/admin/user-approvals',
+          href: '/user-approvals',
           icon: FaUserPlus,
           roles: [UserRole.GROWTH_TEAM]
         },
@@ -179,19 +179,19 @@ const toggleCollapse = () => {
         items.push(
           {
             label: 'Phase Planning',
-            href: '/admin/phase-planning',
+            href: '/phase-planning',
             icon: FaClipboardList,
             requiresPM: true
           },
           {
             label: 'Team Allocations',
-            href: '/admin/team-allocations',
+            href: '/team-allocations',
             icon: FaUsers,
             requiresPM: true
           },
           {
             label: 'Hour Change Approvals',
-            href: '/admin/hour-changes',
+            href: '/hour-changes',
             icon: FaClock,
             requiresPM: true
           },

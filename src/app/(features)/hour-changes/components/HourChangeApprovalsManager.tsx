@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { FaArrowLeft, FaClock, FaExchangeAlt, FaCheck, FaTimes, FaEye, FaCheckCircle } from 'react-icons/fa';
 import { formatHours } from '@/lib/dates';
 import axios from 'axios';
@@ -135,12 +134,6 @@ export default function HourChangeApprovalsManager({ requests, userId }: HourCha
       )}
       {/* Header */}
       <div className="mb-6">
-        <Link 
-          href="/dashboard" 
-          className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600 mb-4"
-        >
-          <FaArrowLeft /> Back to Dashboard
-        </Link>
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Hour Change Requests</h1>

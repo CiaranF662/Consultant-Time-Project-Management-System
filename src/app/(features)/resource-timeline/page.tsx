@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient } from '@prisma/client';
 import DashboardLayout from '@/app/(features)/dashboard/components/DashboardLayout';
-import AllocationsDashboard from '@/app/(features)/team-allocations/allocation/AllocationsDashboard';
+import AllocationsDashboard from '@/app/(features)/team-allocations/ components/AllocationsDashboard';
 
 const prisma = new PrismaClient();
 

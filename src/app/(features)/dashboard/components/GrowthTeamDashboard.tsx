@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FaPlus, FaUsers, FaChartBar, FaExclamationCircle } from 'react-icons/fa';
-import ResourceTimeline from '@/app/(features)/resource-timeline/timeline/ResourceTimeline';
-import CreateProjectModal from '@/app/(features)/projects/project/CreateProjectModal';
-import NotificationSummaryCard from '@/app/(features)/notifications/notifications/NotificationSummaryCard';
+import ResourceTimeline from '@/app/(features)/resource-timeline/components/ResourceTimeline';
+import CreateProjectModal from '@/app/(features)/projects/components/CreateProjectModal';
+import NotificationSummaryCard from '@/app/(features)/notifications/components/NotificationSummaryCard';
 
 interface ProjectConsultant {
   user: {
@@ -95,7 +95,7 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
           </div>
         </div>
 
-        <Link href="/dashboard/admin/user-approvals" className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
+        <Link href="/user-approvals" className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Pending Approvals</p>

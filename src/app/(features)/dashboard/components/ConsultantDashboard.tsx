@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { FaCalendarWeek, FaProjectDiagram, FaClock, FaExclamationCircle, FaClipboardList } from 'react-icons/fa';
-import WeeklyPlannerEnhanced from '@/app/(features)/team-allocations/allocation/WeeklyPlannerEnhanced';
-import NotificationSummaryCard from '@/app/(features)/notifications/notifications/NotificationSummaryCard';
+import WeeklyPlannerEnhanced from '@/app/(features)/team-allocations/ components/WeeklyPlannerEnhanced';
+import NotificationSummaryCard from '@/app/(features)/notifications/components/NotificationSummaryCard';
 import { formatHours } from '@/lib/dates';
 
 interface Sprint {
@@ -128,7 +128,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
               <p className="text-sm text-blue-700">
                 You are the Product Manager for {data.pmProjects.length} project{data.pmProjects.length !== 1 ? 's' : ''}.
                 {' '}
-                <Link href="/dashboard/phase-planning" className="font-medium underline">
+                <Link href="/phase-planning" className="font-medium underline">
                   Manage phase allocations
                 </Link>
               </p>
@@ -171,7 +171,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
         </div>
 
         {data.isPM ? (
-          <Link href="/dashboard/admin/hour-changes" className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
+          <Link href="/hour-changes" className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Hour Change Approvals</p>
@@ -183,7 +183,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
             </div>
           </Link>
         ) : (
-          <Link href="/dashboard/hour-requests" className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
+          <Link href="/hour-requests" className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Pending Requests</p>
@@ -280,7 +280,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Your Projects</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {data.projects.map((project) => (
-            <Link key={project.id} href={`/dashboard/projects/${project.id}`}>
+            <Link key={project.id} href={`/projects/${project.id}`}>
               <div className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
                 <h3 className="font-semibold text-gray-800 truncate">{project.title}</h3>
                 <p className="text-sm text-gray-500 mt-1">
