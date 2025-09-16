@@ -7,6 +7,7 @@ import WeeklyPlannerEnhanced from '@/app/(features)/team-allocations/ components
 import NotificationSummaryCard from '@/app/(features)/notifications/components/NotificationSummaryCard';
 import { formatHours } from '@/lib/dates';
 
+//#region Interfaces
 interface Sprint {
   id: string;
   sprintNumber: number;
@@ -86,8 +87,10 @@ interface ConsultantDashboardProps {
   userId: string;
   userName: string;
 }
+//#endregion
 
 export default function ConsultantDashboard({ data, userId, userName }: ConsultantDashboardProps) {
+  //state for selected week in Weekly Planner
   const [selectedWeek, setSelectedWeek] = useState(new Date());
 
   // Calculate current week's total hours
@@ -149,6 +152,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
           </div>
         </div>
 
+        {/* Active Projects */}
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <div className="flex items-center justify-between">
             <div>
@@ -159,6 +163,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
           </div>
         </div>
 
+        {/* Total Allocated Hours */}
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <div className="flex items-center justify-between">
             <div>
@@ -170,6 +175,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
           </div>
         </div>
 
+        {/* Pending Requests / Approvals */}
         {data.isPM ? (
           <Link href="/hour-changes" className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
             <div className="flex items-center justify-between">
@@ -196,6 +202,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
           </Link>
         )}
 
+        {/* Notifications */}
         <NotificationSummaryCard />
       </div>
 
@@ -226,6 +233,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
 
             return (
               <div key={allocation.id} className="bg-white p-6 rounded-lg shadow-md border">
+                {/* Header */}
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="font-semibold text-gray-800">{allocation.phase.name}</h3>
@@ -242,6 +250,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                   </span>
                 </div>
 
+                 {/* Progress Bars */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Total Allocated</span>
@@ -263,6 +272,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                   </div>
                 </div>
 
+                {/* Sprints Info */}
                 <div className="mt-4 pt-4 border-t">
                   <p className="text-xs text-gray-500">
                     Sprint {allocation.phase.sprints[0]?.sprintNumber || 'N/A'} - 
@@ -275,7 +285,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
         </div>
       </div>
 
-      {/* Your Projects */}
+      {/* Your Projects Overview */}
       <div>
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Your Projects</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

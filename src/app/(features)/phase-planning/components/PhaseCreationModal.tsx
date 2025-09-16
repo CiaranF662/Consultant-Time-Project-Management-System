@@ -314,7 +314,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="phaseName" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <label htmlFor="phaseName" className="block text-sm font-semibold text-gray-700 mb-2 md:flex items-center gap-2">
                     <FaLayerGroup className="w-3 h-3 text-purple-600" />
                     Phase Name *
                   </label>
@@ -357,7 +357,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
               </div>
               
               <div className="mb-4">
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2 md:flex items-center gap-2">
                   <FaCalendarAlt className="w-3 h-3 text-blue-600" />
                   Select Sprints *
                 </label>
@@ -435,7 +435,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
               </div>
               
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2 md:flex items-center gap-2">
                   <FaUsers className="w-3 h-3 text-green-600" />
                   Phase Team Members
                 </label>

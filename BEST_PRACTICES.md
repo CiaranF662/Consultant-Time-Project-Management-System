@@ -2,17 +2,17 @@
 
 ### 1. **Project Structure & Organization**
 
-- Use a **feature-based folder structure** (e.g., `features/auth`, `features/dashboard`) instead of dumping everything into `pages` or `components`.
+- Use a **feature-based folder structure** (e.g., `features/auth`, `features/dashboard`) instead of dumping everything into `pages` or `components`.✅
 - Keep **UI components** (buttons, modals, inputs) separate in a `components/ui` directory. ✅
 - Use `lib/` for utilities (e.g., API wrappers, helpers).
-- Store **types** in a central `types/` directory or co-locate them with the feature they belong to.
-- Prefer **absolute imports** (`@/components/...`) over relative imports (`../../../`).
+- Store **types** in a central `types/` directory or co-locate them with the feature they belong to. // need to go over
+- Prefer **absolute imports** (`@/components/...`) over relative imports (`../../../`). ✅
 
 ---
 
 ### 2. **TypeScript Practices**
 
-- Define **strict types** everywhere (`strict: true` in `tsconfig.json`).
+- Define **strict types** everywhere (`strict: true` in `tsconfig.json`). ✅
 - Use **interfaces for props** and `type` for unions.
 - Avoid using `any`; instead, use `unknown` or proper type inference.
 - For API responses, create **typed DTOs** (Data Transfer Objects) instead of relying on `any`.
@@ -34,7 +34,7 @@
 ### 4. **Next.js Practices**
 
 - Use **Server Components (RSC)** where possible (faster, no client-side bundle).
-- Leverage **`app/` directory** (if using Next.js 13+) for layouts, routing, and data fetching.
+- Leverage **`app/` directory** (if using Next.js 13+) for layouts, routing, and data fetching. ✅
 - Use **dynamic imports** (`next/dynamic`) for heavy components.
 - Optimize images with **`next/image`** (automatic resizing, lazy loading).
 - Use **API routes (`/api`)** only for server-side logic — don’t overload the frontend.

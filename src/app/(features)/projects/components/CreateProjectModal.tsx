@@ -265,7 +265,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                 {/* Left Column */}
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-2 md:flex items-center gap-2">
                       <FaBriefcase className="w-3 h-3 text-blue-600" />
                       Project Title *
                     </label>

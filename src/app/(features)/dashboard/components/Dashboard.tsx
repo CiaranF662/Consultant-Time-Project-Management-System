@@ -2,22 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { UserRole } from '@prisma/client';
-import { Bell, Settings, LayoutGrid, Eye } from 'lucide-react';
+import { Bell, Settings, LayoutGrid } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/app/components/ui/dropdown-menu';
+import NotificationCenter from '@/app/(features)/dashboard/components/NotificationCenter';
 
 // Dashboard Components
 import TopBanner from '@/app/(features)/dashboard/components/TopBanner';
 import MainPanel from '@/app/(features)/dashboard/components/MainPanel';
 import RightSidebar from '@/app/(features)/dashboard/components/RightSidebar';
-import NotificationCenter from '@/app/(features)/dashboard/components/NotificationCenter';
 import { DashboardData } from '@/types/dashboard';
 
 interface DashboardShellProps {
@@ -27,43 +20,27 @@ interface DashboardShellProps {
   dashboardData: DashboardData;
 }
 
-/**
- * DashboardShell - Main layout container with responsive design
- * 
- * Features:
- * - Adaptive layout based on screen size
- * - Role-based view switching
- * - Notification center integration
- * - Customizable widget arrangement (future enhancement)
- */
 export default function DashboardShell({
   userRole,
   userId,
   userName,
   dashboardData
 }: DashboardShellProps) {
-  const [selectedRole, setSelectedRole] = useState<UserRole>(userRole);
-  const [notificationCount, setNotificationCount] = useState(0);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Calculate notification count from dashboard data
+  const [notificationCount, setNotificationCount] = useState(0);
+
+  // Compute total unread notifications and pending items
   useEffect(() => {
-    const count = (dashboardData.pendingApprovals?.length || 0) + 
+    const count = (dashboardData.pendingApprovals?.length || 0) +
                   (dashboardData.alerts?.length || 0) +
                   (dashboardData.conflicts?.length || 0);
     setNotificationCount(count);
   }, [dashboardData]);
 
-  // Role display mapping
   const roleLabels = {
     [UserRole.CONSULTANT]: 'Resource User',
     [UserRole.GROWTH_TEAM]: 'Portfolio Manager'
   };
-
-  // Available role views (for cross-role awareness)
-  const availableRoleViews = userRole === UserRole.GROWTH_TEAM 
-    ? [UserRole.GROWTH_TEAM, UserRole.CONSULTANT]
-    : [userRole];
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -81,48 +58,18 @@ export default function DashboardShell({
             
             {/* Role Badge */}
             <Badge variant="secondary" className="hidden sm:inline-flex">
-              {roleLabels[selectedRole]}
+              {roleLabels[userRole]}
             </Badge>
           </div>
 
           {/* Right: Controls */}
           <div className="flex items-center space-x-3">
-            {/* Role Switcher (Admin only) */}
-            {userRole === UserRole.GROWTH_TEAM && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="hidden md:flex">
-                    <Eye className="w-4 h-4 mr-2" />
-                    View as...
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  {availableRoleViews.map((role) => (
-                    <DropdownMenuItem
-                      key={role}
-                      onClick={() => setSelectedRole(role)}
-                      className={selectedRole === role ? 'bg-blue-50' : ''}
-                    >
-                      {roleLabels[role]}
-                      {selectedRole === role && (
-                        <Badge variant="secondary" className="ml-2">Current</Badge>
-                      )}
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-gray-500 text-sm">
-                    Cross-role awareness helps understand different perspectives
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-
             {/* Notification Bell */}
             <NotificationCenter
               notifications={dashboardData.notifications || []}
               pendingApprovals={dashboardData.pendingApprovals || []}
               alerts={dashboardData.alerts || []}
-              userRole={selectedRole}
+              userRole={userRole}
             />
 
             {/* Settings */}
@@ -133,44 +80,32 @@ export default function DashboardShell({
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <div className="flex-1 flex flex-col lg:flex-row">
-        {/* Top Banner - Project Context */}
+        {/* Top Banner */}
         <div className="w-full lg:hidden">
-          <TopBanner 
-            dashboardData={dashboardData}
-            userRole={selectedRole}
-          />
+          <TopBanner dashboardData={dashboardData} userRole={userRole} />
         </div>
 
-        {/* Main Content */}
         <main className="flex-1 flex flex-col lg:flex-row">
-          {/* Top Banner - Desktop */}
           <div className="hidden lg:block w-full">
-            <TopBanner 
-              dashboardData={dashboardData}
-              userRole={selectedRole}
-            />
+            <TopBanner dashboardData={dashboardData} userRole={userRole} />
           </div>
         </main>
       </div>
 
-      {/* Two-column layout for main content */}
+      {/* Two-column layout */}
       <div className="flex-1 flex flex-col lg:flex-row">
-        {/* Main Panel - Charts and Analytics */}
+        {/* Main Panel */}
         <div className="flex-1 p-4 lg:p-6 space-y-6">
-          <MainPanel 
-            dashboardData={dashboardData}
-            userRole={selectedRole}
-            userId={userId}
-          />
+          <MainPanel dashboardData={dashboardData} userRole={userRole} userId={userId} />
         </div>
 
-        {/* Right Sidebar - Role-specific widgets */}
+        {/* Right Sidebar */}
         <aside className="w-full lg:w-80 xl:w-96 border-l border-gray-200 bg-white">
-          <RightSidebar 
+          <RightSidebar
             dashboardData={dashboardData}
-            userRole={selectedRole}
+            userRole={userRole}
             userId={userId}
             userName={userName}
           />

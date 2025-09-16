@@ -7,6 +7,7 @@ import ResourceTimeline from '@/app/(features)/resource-timeline/components/Reso
 import CreateProjectModal from '@/app/(features)/projects/components/CreateProjectModal';
 import NotificationSummaryCard from '@/app/(features)/notifications/components/NotificationSummaryCard';
 
+//#region Interfaces
 interface ProjectConsultant {
   user: {
     id: string;
@@ -50,12 +51,16 @@ interface GrowthTeamDashboardProps {
     projects: Project[];
   };
 }
+//#endregion
 
 export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) {
+
+  {/* State for timeline weeks selection and modal visibility */}
   const [timelineWeeks, setTimelineWeeks] = useState(12);
   const [selectedConsultant, setSelectedConsultant] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
+  //#region Return
   return (
     <div className="p-4 md:p-8">
       {/* Header */}
@@ -85,6 +90,7 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
           </div>
         </div>
 
+        {/* Total Consultants */}
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <div className="flex items-center justify-between">
             <div>
@@ -95,6 +101,7 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
           </div>
         </div>
 
+        {/* Pending User Approvals */}
         <Link href="/user-approvals" className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
           <div className="flex items-center justify-between">
             <div>
@@ -107,6 +114,7 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
           </div>
         </Link>
 
+        {/* Notifications */}
         <NotificationSummaryCard />
       </div>
 
@@ -161,7 +169,7 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
           </div>
         </div>
       </div>
-
+      
       {/* Resource Timeline */}
       <div className="bg-white rounded-lg shadow-md border overflow-hidden">
         <ResourceTimeline 
@@ -171,7 +179,7 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
         />
       </div>
 
-      {/* Recent Projects */}
+      {/* Recent Projects Overview */}
       <div className="mt-8">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Projects</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -231,3 +239,4 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
     </div>
   );
 }
+//#endregion

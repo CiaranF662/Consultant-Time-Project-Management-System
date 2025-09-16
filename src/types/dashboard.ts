@@ -10,6 +10,7 @@ export interface DashboardData {
   userId: string;
   userRole: UserRole;
   userName: string;
+  phaseAllocations: any[];
 
   // Active project context
   activeProject?: {

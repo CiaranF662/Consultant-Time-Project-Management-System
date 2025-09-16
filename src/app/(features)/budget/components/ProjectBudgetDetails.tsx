@@ -1,3 +1,14 @@
+/*Client Component ('use client') that:
+Fetches budget data from /api/budget using axios.
+Displays loading skeletons while fetching.
+Handles errors gracefully with a styled message.
+Shows summary cards (total budget, allocated hours, utilization, active projects).
+Renders a table of projects with breakdown info:
+Title & phases
+Budget, allocated, planned, remaining hours
+Utilization badge (with color based on percentage)
+Team size
+Action link → "View Details"*/
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -5,6 +16,8 @@ import { FaArrowLeft, FaUsers, FaClock, FaChartBar, FaCalendarAlt } from 'react-
 import axios from 'axios';
 import Link from 'next/link';
 
+// #region Types
+// Strongly typed data models for budget breakdown
 interface ConsultantAllocation {
   consultantId: string;
   consultantName: string;
@@ -43,19 +56,29 @@ interface ProjectBudgetData {
 interface ProjectBudgetDetailsProps {
   projectId: string;
 }
+// #endregion Types
 
+// #region Component
 export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetailsProps) {
+  // #region State
   const [data, setData] = useState<ProjectBudgetData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // #endregion State
 
+  // #region Data Fetching
   useEffect(() => {
     const fetchProjectBudget = async () => {
       try {
-        const response = await axios.get(`/api/budget/${projectId}`);
+        const response = await axios.get<ProjectBudgetData>(`/api/budget/${projectId}`);
         setData(response.data);
-      } catch (err: any) {
-        setError(err.response?.data?.error || 'Failed to load project budget');
+      } catch (err: unknown) {
+        // Safer error handling (avoid `any`)
+        if (axios.isAxiosError(err)) {
+          setError(err.response?.data?.error || 'Failed to load project budget');
+        } else {
+          setError('Unexpected error occurred');
+        }
       } finally {
         setLoading(false);
       }
@@ -63,7 +86,10 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
 
     fetchProjectBudget();
   }, [projectId]);
+  // #endregion Data Fetching
 
+  // #region Helpers
+  // Returns Tailwind classes based on utilization %
   const getUtilizationColor = (rate: string) => {
     const numRate = parseFloat(rate);
     if (numRate < 70) return 'text-red-600 bg-red-100';
@@ -72,22 +98,28 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
     return 'text-red-600 bg-red-100';
   };
 
+  // Returns color for remaining hours
   const getRemainingColor = (remaining: number) => {
     if (remaining < 0) return 'text-red-600';
     if (remaining === 0) return 'text-gray-600';
     return 'text-green-600';
   };
+  // #endregion Helpers
 
+  // #region Loading State
   if (loading) {
     return (
       <div className="p-8">
         <div className="animate-pulse">
+          {/* Title placeholder */}
           <div className="h-8 bg-gray-200 rounded w-64 mb-4"></div>
+          {/* Summary cards placeholder */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="h-32 bg-gray-200 rounded"></div>
             ))}
           </div>
+          {/* Phases placeholder */}
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="h-48 bg-gray-200 rounded"></div>
@@ -97,7 +129,9 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
       </div>
     );
   }
+  // #endregion Loading State
 
+  // #region Error State
   if (error) {
     return (
       <div className="p-8">
@@ -113,7 +147,9 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
       </div>
     );
   }
+  // #endregion Error State
 
+  // #region Empty State
   if (!data) {
     return (
       <div className="p-8">
@@ -129,17 +165,22 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
       </div>
     );
   }
+  // #endregion Empty State
 
+  // #region Render
   return (
     <div className="p-4 md:p-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">{data.project.title}</h1>
-        <p className="text-lg text-gray-600">Detailed budget breakdown and resource allocation</p>
+        <p className="text-lg text-gray-600">
+          Detailed budget breakdown and resource allocation
+        </p>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Total Budget */}
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <div className="flex items-center justify-between">
             <div>
@@ -150,6 +191,7 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
           </div>
         </div>
 
+        {/* Total Allocated */}
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <div className="flex items-center justify-between">
             <div>
@@ -160,11 +202,16 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
           </div>
         </div>
 
+        {/* Utilization Rate */}
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Utilization Rate</p>
-              <p className={`text-2xl font-bold ${getUtilizationColor(data.summary.utilizationRate).split(' ')[0]}`}>
+              <p
+                className={`text-2xl font-bold ${getUtilizationColor(
+                  data.summary.utilizationRate
+                ).split(' ')[0]}`}
+              >
                 {data.summary.utilizationRate}%
               </p>
             </div>
@@ -172,12 +219,16 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
           </div>
         </div>
 
+        {/* Remaining Budget */}
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Remaining Budget</p>
-              <p className={`text-2xl font-bold ${getRemainingColor(data.summary.remaining)}`}>
-                {data.summary.remaining > 0 ? '+' : ''}{data.summary.remaining}h
+              <p
+                className={`text-2xl font-bold ${getRemainingColor(data.summary.remaining)}`}
+              >
+                {data.summary.remaining > 0 ? '+' : ''}
+                {data.summary.remaining}h
               </p>
             </div>
             <FaCalendarAlt className="h-8 w-8 text-orange-500" />
@@ -194,16 +245,22 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
         ) : (
           data.phaseBreakdown.map((phase) => (
             <div key={phase.phaseId} className="bg-white rounded-lg shadow-md border">
+              {/* Phase Header */}
               <div className="p-6 border-b bg-gray-50">
                 <div className="flex justify-between items-center">
                   <h2 className="text-xl font-semibold text-gray-800">{phase.phaseName}</h2>
                   <div className="flex items-center gap-6 text-sm text-gray-600">
-                    <span>Allocated: <span className="font-medium">{phase.allocated}h</span></span>
-                    <span>Planned: <span className="font-medium">{phase.planned}h</span></span>
+                    <span>
+                      Allocated: <span className="font-medium">{phase.allocated}h</span>
+                    </span>
+                    <span>
+                      Planned: <span className="font-medium">{phase.planned}h</span>
+                    </span>
                   </div>
                 </div>
               </div>
-              
+
+              {/* Consultant Allocations */}
               <div className="p-6">
                 <h3 className="text-lg font-medium text-gray-800 mb-4">Consultant Allocations</h3>
                 {phase.consultants.length === 0 ? (
@@ -211,8 +268,13 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {phase.consultants.map((consultant) => (
-                      <div key={consultant.consultantId} className="bg-gray-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-gray-900 mb-2">{consultant.consultantName}</h4>
+                      <div
+                        key={consultant.consultantId}
+                        className="bg-gray-50 p-4 rounded-lg"
+                      >
+                        <h4 className="font-medium text-gray-900 mb-2">
+                          {consultant.consultantName}
+                        </h4>
                         <div className="space-y-1 text-sm text-gray-600">
                           <div className="flex justify-between">
                             <span>Allocated:</span>
@@ -224,7 +286,11 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
                           </div>
                           <div className="flex justify-between">
                             <span>Remaining:</span>
-                            <span className={`font-medium ${getRemainingColor(consultant.allocated - consultant.planned)}`}>
+                            <span
+                              className={`font-medium ${getRemainingColor(
+                                consultant.allocated - consultant.planned
+                              )}`}
+                            >
                               {consultant.allocated - consultant.planned}h
                             </span>
                           </div>
@@ -240,4 +306,6 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
       </div>
     </div>
   );
+  // #endregion Render
 }
+// #endregion Component
