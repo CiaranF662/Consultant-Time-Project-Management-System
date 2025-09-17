@@ -25,6 +25,11 @@ interface Project {
 
 interface PhaseCreationModalProps {
   project: Project;
+  existingPhases?: Array<{
+    id: string;
+    name: string;
+    sprints: Sprint[];
+  }>;
   onClose: () => void;
   onPhaseCreated: () => void;
 }
@@ -106,14 +111,32 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
     };
   }, [onClose]);
 
+  // Check if Sprint 0 is available for selection (only for Project Kickoff phase)
+  const isSprintAvailableForSelection = (sprint: Sprint): boolean => {
+    const today = new Date();
+    const sprintEndDate = new Date(sprint.endDate);
+
+    // Sprint 0 can NEVER be selected when creating new phases - it's reserved for Project Kickoff only
+    if (sprint.sprintNumber === 0) {
+      return false;
+    }
+
+    // Past sprints (end date has passed) cannot be selected
+    if (sprintEndDate < today) {
+      return false;
+    }
+
+    return true;
+  };
+
   // Validate that selected sprints are consecutive
   const validateConsecutiveSprints = (sprintIds: string[]): boolean => {
     if (sprintIds.length <= 1) return true;
-    
+
     const selectedSprints = project.sprints
       .filter(s => sprintIds.includes(s.id))
       .sort((a, b) => a.sprintNumber - b.sprintNumber);
-    
+
     for (let i = 1; i < selectedSprints.length; i++) {
       if (selectedSprints[i].sprintNumber !== selectedSprints[i-1].sprintNumber + 1) {
         return false;
@@ -367,30 +390,51 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                 
                 {project.sprints.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-4">
-                    {project.sprints.map((sprint) => (
-                      <label
-                        key={sprint.id}
-                        className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-gray-50 ${
-                          selectedSprintIds.includes(sprint.id) ? 'bg-blue-50 border-2 border-blue-300' : 'border border-gray-200'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedSprintIds.includes(sprint.id)}
-                          onChange={() => handleSprintToggle(sprint.id)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          disabled={isSubmitting}
-                        />
-                        <div className="ml-3 flex-1">
-                          <div className="text-sm font-semibold text-gray-800">
-                            Sprint {sprint.sprintNumber}
+                    {project.sprints.map((sprint) => {
+                      const isAvailable = isSprintAvailableForSelection(sprint);
+                      const isSelected = selectedSprintIds.includes(sprint.id);
+                      const isPastSprint = new Date(sprint.endDate) < new Date();
+
+                      return (
+                        <label
+                          key={sprint.id}
+                          className={`flex items-center p-3 rounded-lg transition-all duration-200 ${
+                            !isAvailable
+                              ? 'cursor-not-allowed bg-gray-100 border border-gray-200 opacity-60'
+                              : 'cursor-pointer hover:bg-gray-50'
+                          } ${
+                            isSelected ? 'bg-blue-50 border-2 border-blue-300' : 'border border-gray-200'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => isAvailable && handleSprintToggle(sprint.id)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            disabled={isSubmitting || !isAvailable}
+                          />
+                          <div className="ml-3 flex-1">
+                            <div className={`text-sm font-semibold ${!isAvailable ? 'text-gray-500' : 'text-gray-800'}`}>
+                              Sprint {sprint.sprintNumber}
+                              {sprint.sprintNumber === 0 && (
+                                <span className="ml-2 text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
+                                  Project Kickoff
+                                </span>
+                              )}
+                            </div>
+                            <div className={`text-xs ${!isAvailable ? 'text-gray-400' : 'text-gray-600'}`}>
+                              {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}
+                            </div>
+                            {!isAvailable && (
+                              <div className="text-xs text-red-500 mt-1">
+                                {isPastSprint && 'Phase has ended'}
+                                {sprint.sprintNumber === 0 && 'Sprint 0 reserved for Project Kickoff only'}
+                              </div>
+                            )}
                           </div>
-                          <div className="text-xs text-gray-600">
-                            {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </label>
-                    ))}
+                        </label>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-500">

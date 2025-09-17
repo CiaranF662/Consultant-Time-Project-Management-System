@@ -68,7 +68,15 @@ export async function GET(request: Request) {
 
   } catch (error) {
     console.error('Error fetching notifications:', error);
-    return new NextResponse(JSON.stringify({ error: 'Failed to fetch notifications' }), { status: 500 });
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      userId: session.user.id
+    });
+    return new NextResponse(JSON.stringify({
+      error: 'Failed to fetch notifications',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }), { status: 500 });
   }
 }
 

@@ -2,15 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
-  getWeeksBetween, 
-  formatWeekLabel, 
+import {
+  getWeeksBetween,
+  formatWeekLabel,
   formatHours,
   getWeekStart,
   getWeekEnd,
   getWeekNumber,
   getYear
 } from '@/lib/dates';
+import { notifyTimelineDataChanged } from '@/lib/timeline-events';
 import { FaSave, FaExclamationTriangle } from 'react-icons/fa';
 
 interface WeeklyPlannerProps {
@@ -114,12 +115,15 @@ export default function WeeklyPlanner({ consultantId, phaseAllocations, weeklyAl
 
       await Promise.all(promises);
       setUnsavedChanges(new Set());
-      
+
       // Trigger parent data refresh
       if (onDataChanged) {
         onDataChanged();
       }
-      
+
+      // Trigger timeline data update for real-time updates
+      notifyTimelineDataChanged();
+
       // Show success message
       alert('Weekly allocations saved successfully! Your time distribution has been updated.');
     } catch (error) {

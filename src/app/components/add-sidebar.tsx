@@ -74,7 +74,7 @@ export default function Sidebar({ children }: SidebarProps) {
       // Growth Team Menu
       items.push(
         {
-          label: 'Resource Timeline',
+          label: 'Dashboard',
           href: '/dashboard',
           icon: FaChartBar,
           roles: [UserRole.GROWTH_TEAM]
