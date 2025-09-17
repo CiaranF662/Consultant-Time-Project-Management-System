@@ -121,6 +121,12 @@ const toggleCollapse = () => {
           roles: [UserRole.GROWTH_TEAM]
         },
         {
+          label: 'Reports',
+          href: '/reports',
+          icon: FaUsers,
+          roles: [UserRole.GROWTH_TEAM]
+        },
+        {
           label: 'Notifications',
           href: '/notifications',
           icon: FaBell,

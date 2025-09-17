@@ -1,54 +1,50 @@
+// src/app/(dashboard)/dashboard/gantt/page.tsx
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, UserStatus, ChangeStatus, ProjectRole } from '@prisma/client';
+import { UserRole, ProjectRole } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import DashboardLayout from '@/app/(features)/dashboard/components/DashboardLayout';
-import GrowthTeamDashboard from '@/app/(features)/dashboard/components/GrowthTeamDashboard';
-import ConsultantDashboard from '@/app/(features)/dashboard/components/ConsultantDashboard';
+import GrowthTeamGanttClient from '@/app/(features)/reports/components/GrowthTeamGanttClient';
+import ProductManagerGanttClient from '@/app/(features)/reports/components//ProductManagerGanttClient';
+import ConsultantGanttClient from '@/app/(features)/reports/components//ConsultantGanttClient';
 
 const prisma = new PrismaClient();
 
-async function getGrowthTeamData() {
-  // Get pending approvals count
-  const pendingUserCount = await prisma.user.count({
-    where: { status: UserStatus.PENDING }
-  });
-  
-  // Get all consultants for timeline
-  const consultants = await prisma.user.findMany({
-    where: { role: UserRole.CONSULTANT },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-    },
-    orderBy: { name: 'asc' }
-  });
-
-  // Get recent projects
+// Growth Team Data Fetcher
+async function getGrowthTeamGanttData() {
   const projects = await prisma.project.findMany({
     include: {
       phases: {
         include: {
-          allocations: true
+          sprints: {
+            orderBy: { sprintNumber: 'asc' }
+          },
+          allocations: {
+            include: {
+              consultant: {
+                select: { name: true }
+              }
+            }
+          }
         }
       },
       consultants: {
         include: {
-          user: true
+          user: {
+            select: { name: true }
+          }
         }
       }
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 5
+    }
   });
 
-  return { pendingUserCount, consultants, projects };
+  return { projects };
 }
 
-async function getConsultantData(userId: string) {
-  // Check if user is a PM
-  const pmProjects = await prisma.project.findMany({
+// Product Manager Data Fetcher
+async function getProductManagerGanttData(userId: string) {
+  const projects = await prisma.project.findMany({
     where: {
       consultants: {
         some: {
@@ -57,66 +53,50 @@ async function getConsultantData(userId: string) {
         }
       }
     },
-    select: {
-      id: true,
-      title: true
-    }
+    include: {
+      phases: {
+        include: {
+          sprints: {
+            orderBy: { sprintNumber: 'asc' }
+          },
+          allocations: {
+            include: {
+              consultant: {
+                select: { id: true, name: true, email: true }
+              },
+              weeklyAllocations: {
+                orderBy: { weekStartDate: 'asc' }
+              }
+            }
+          }
+        },
+        orderBy: { startDate: 'asc' }
+      },
+      sprints: {
+        orderBy: { sprintNumber: 'asc' }
+      },
+      consultants: {
+        include: {
+          user: {
+            select: { id: true, name: true, email: true }
+          }
+        }
+      }
+    },
+    orderBy: { createdAt: 'desc' }
   });
 
-  const isPM = pmProjects.length > 0;
+  return { projects };
+}
 
-  // Get pending hour change requests count for PM
-  let pendingHourChangesCount = 0;
-  if (isPM) {
-    // Get all phase allocations for projects this user manages
-    const managedProjectIds = pmProjects.map(p => p.id);
-    const phaseAllocationsForManagedProjects = await prisma.phaseAllocation.findMany({
-      where: {
-        phase: {
-          projectId: { in: managedProjectIds }
-        }
-      },
-      select: { id: true }
-    });
-    
-    const phaseAllocationIds = phaseAllocationsForManagedProjects.map(pa => pa.id);
-    
-    pendingHourChangesCount = await prisma.hourChangeRequest.count({
-      where: {
-        status: ChangeStatus.PENDING,
-        phaseAllocationId: { in: phaseAllocationIds }
-      }
-    });
-  }
-
-  // Get current week allocations using the same date logic as the app
+// Consultant Data Fetcher
+async function getConsultantGanttData(userId: string) {
   const { getWeekNumber, getYear } = await import('@/lib/dates');
   const today = new Date();
   const currentWeekNumber = getWeekNumber(today);
   const currentYear = getYear(today);
 
-  // Get current week allocations for stats
-  const currentWeekAllocations = await prisma.weeklyAllocation.findMany({
-    where: {
-      consultantId: userId,
-      weekNumber: currentWeekNumber,
-      year: currentYear
-    },
-    include: {
-      phaseAllocation: {
-        include: {
-          phase: {
-            include: {
-              project: true
-            }
-          }
-        }
-      }
-    }
-  });
-
-  // Get ALL weekly allocations for the consultant (for weekly planner)
-  const allWeeklyAllocations = await prisma.weeklyAllocation.findMany({
+  const weeklyAllocations = await prisma.weeklyAllocation.findMany({
     where: {
       consultantId: userId
     },
@@ -125,7 +105,17 @@ async function getConsultantData(userId: string) {
         include: {
           phase: {
             include: {
-              project: true
+              project: {
+                select: {
+                  id: true,
+                  title: true,
+                  startDate: true,
+                  endDate: true
+                }
+              },
+              sprints: {
+                orderBy: { sprintNumber: 'asc' }
+              }
             }
           }
         }
@@ -134,14 +124,23 @@ async function getConsultantData(userId: string) {
     orderBy: { weekStartDate: 'asc' }
   });
 
-  // Get all phase allocations for the consultant
   const phaseAllocations = await prisma.phaseAllocation.findMany({
     where: { consultantId: userId },
     include: {
       phase: {
         include: {
-          project: true,
-          sprints: true
+          project: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              startDate: true,
+              endDate: true
+            }
+          },
+          sprints: {
+            orderBy: { sprintNumber: 'asc' }
+          }
         }
       },
       weeklyAllocations: {
@@ -150,15 +149,6 @@ async function getConsultantData(userId: string) {
     }
   });
 
-  // Get pending hour change requests
-  const pendingRequests = await prisma.hourChangeRequest.findMany({
-    where: {
-      consultantId: userId,
-      status: ChangeStatus.PENDING
-    }
-  });
-
-  // Get assigned projects
   const projects = await prisma.project.findMany({
     where: {
       consultants: {
@@ -166,7 +156,13 @@ async function getConsultantData(userId: string) {
       }
     },
     include: {
-      phases: true,
+      phases: {
+        include: {
+          sprints: {
+            orderBy: { sprintNumber: 'asc' }
+          }
+        }
+      },
       consultants: {
         include: { user: true }
       }
@@ -174,42 +170,64 @@ async function getConsultantData(userId: string) {
   });
 
   return {
-    isPM,
-    pmProjects,
-    pendingHourChangesCount,
-    weeklyAllocations: allWeeklyAllocations, // Pass ALL weekly allocations for planner
-    currentWeekAllocations, // Pass current week for stats
+    weeklyAllocations,
     phaseAllocations,
-    pendingRequests,
-    projects
+    projects,
+    currentWeekNumber,
+    currentYear
   };
 }
 
-export default async function ResourceTimeline() {
+export default async function GanttPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     redirect('/login');
   }
 
-  const isGrowthTeam = session.user.role === UserRole.GROWTH_TEAM;
+  const userRole = session.user.role as UserRole;
 
-  if (isGrowthTeam) {
-    const data = await getGrowthTeamData();
+  // Route to appropriate Gantt view based on user role
+  if (userRole === UserRole.GROWTH_TEAM) {
+    const data = await getGrowthTeamGanttData();
     return (
       <DashboardLayout>
-        <GrowthTeamDashboard data={data} />
-      </DashboardLayout>
-    );
-  } else {
-    const data = await getConsultantData(session.user.id);
-    return (
-      <DashboardLayout>
-        <ConsultantDashboard 
-          data={data} 
-          userId={session.user.id}
-          userName={session.user.name || session.user.email || 'User'}
-        />
+        <GrowthTeamGanttClient />
       </DashboardLayout>
     );
   }
+
+  // Check if user is a Product Manager
+  const pmProjects = await prisma.project.findMany({
+    where: {
+      consultants: {
+        some: {
+          userId: session.user.id,
+          role: ProjectRole.PRODUCT_MANAGER
+        }
+      }
+    },
+    select: { id: true }
+  });
+
+  if (pmProjects.length > 0) {
+    // User is a Product Manager
+    const data = await getProductManagerGanttData(session.user.id);
+    return (
+      <DashboardLayout>
+        <ProductManagerGanttClient data={data} userId={session.user.id} />
+      </DashboardLayout>
+    );
+  }
+
+  // User is a regular Consultant
+  const data = await getConsultantGanttData(session.user.id);
+  return (
+    <DashboardLayout>
+      <ConsultantGanttClient 
+        data={data} 
+        userId={session.user.id}
+        userName={session.user.name || session.user.email || 'User'}
+      />
+    </DashboardLayout>
+  );
 }
