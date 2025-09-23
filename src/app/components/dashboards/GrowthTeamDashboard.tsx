@@ -151,7 +151,7 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
           <nav className="-mb-px flex space-x-8">
             {[
               { key: 'timeline', label: 'Resource Timeline', icon: FaClock },
-              { key: 'gantt', label: 'Gantt Chart', icon: FaProjectDiagram },
+              { key: 'gantt', label: 'Portfolio Timeline', icon: FaProjectDiagram },
               { key: 'projects', label: 'Projects', icon: FaTh }
             ].map(({ key, label, icon: Icon }) => (
               <button
@@ -237,11 +237,11 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
         </>
       )}
 
-      {/* Gantt Chart View */}
+      {/* Portfolio Timeline View */}
       {activeView === 'gantt' && (
         <div className="bg-white rounded-lg shadow-md border">
           <div className="p-4 border-b">
-            <h2 className="text-xl font-semibold text-gray-800">Project Portfolio Gantt Chart</h2>
+            <h2 className="text-xl font-semibold text-gray-800">Project Portfolio Timeline</h2>
             <p className="text-sm text-gray-600">Strategic timeline view of all projects and their phases</p>
           </div>
           <div className="p-4">
