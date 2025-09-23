@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import axios from 'axios';
-import { FaArrowLeft, FaUsers, FaPlus, FaEdit, FaClock, FaDollarSign } from 'react-icons/fa';
+import { FaArrowLeft, FaUsers, FaPlus, FaEdit, FaClock, FaDollarSign, FaChartLine, FaProjectDiagram } from 'react-icons/fa';
 import { UserRole, Sprint, User, Phase, Project } from '@prisma/client';
 
 import PhaseCreationModal from '@/app/components/phase-planning/PhaseCreationModal';
@@ -14,6 +14,7 @@ import EditPhaseModal from '@/app/components/EditPhaseModal';
 import EditProjectModal from '@/app/components/EditProjectModal';
 import BudgetTracker from '@/app/components/allocation/BudgetTracker';
 import PhaseStatusCard from '@/app/components/PhaseStatusCard';
+import ProjectGanttChart from '@/app/components/gantt/ProjectGanttChart';
 import { generateColorFromString } from '@/lib/colors';
 import DashboardLayout from '@/app/components/DashboardLayout';
 
@@ -70,6 +71,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
 
   const [project, setProject] = useState<ProjectWithDetails | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<'details' | 'gantt'>('details');
   const [isAddPhaseModalOpen, setIsAddPhaseModalOpen] = useState(false);
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
   const [allocationModal, setAllocationModal] = useState<{
@@ -161,19 +163,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   const unassignedSprints = project.sprints.filter(s => !sprintsInPhases.has(s.id));
   const isProductManager = session.user.id === project.productManagerId;
   const isGrowthTeam = session.user.role === UserRole.GROWTH_TEAM;
-  const canViewProject = isGrowthTeam || isProductManager; // Growth Team can view projects
   const canManagePhases = isProductManager; // Only Product Managers can manage phases
   const canManageAllocations = isProductManager; // Only Product Managers can manage allocations
 
   // Calculate project-level statistics
   const totalAllocatedHours = project.phases.reduce((total, phase) => {
-    return total + (phase.phaseAllocations?.reduce((phaseTotal, allocation) => 
+    return total + (phase.phaseAllocations?.reduce((phaseTotal, allocation) =>
       phaseTotal + allocation.hours, 0) || 0); // Changed from allocatedHours to hours
-  }, 0);
-
-  const totalUsedHours = project.phases.reduce((total, phase) => {
-    return total + (phase.phaseAllocations?.reduce((phaseTotal, allocation) => 
-      phaseTotal + allocation.usedHours, 0) || 0);
   }, 0);
 
   return (
@@ -183,8 +179,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
           
           {/* Breadcrumb */}
           <div className="mb-6">
-            <Link href="/dashboard" className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600">
-              <FaArrowLeft /> Back to Dashboard
+            <Link href="/dashboard/projects" className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600">
+              <FaArrowLeft /> Back to All Projects
             </Link>
           </div>
 
@@ -192,13 +188,20 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
           <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-8">
             <div className="flex justify-between items-start">
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-gray-800">{project.title}</h1>
-                <p className="text-gray-600 mt-2 max-w-prose">{project.description || 'No description provided.'}</p>
+                <h1 className="text-3xl font-bold text-gray-800">
+                  {activeView === 'details' ? project.title : `${project.title} - Timeline`}
+                </h1>
+                <p className="text-gray-600 mt-2 max-w-prose">
+                  {activeView === 'details'
+                    ? (project.description || 'No description provided.')
+                    : 'Visual timeline showing project phases and their schedules'
+                  }
+                </p>
               </div>
               <div className="flex items-center gap-2 ml-4">
                 {isGrowthTeam && (
-                  <button 
-                    onClick={() => setIsEditProjectModalOpen(true)} 
+                  <button
+                    onClick={() => setIsEditProjectModalOpen(true)}
                     className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                   >
                     <FaEdit />
@@ -206,8 +209,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                   </button>
                 )}
                 {canManagePhases && (
-                  <button 
-                    onClick={() => setIsAddPhaseModalOpen(true)} 
+                  <button
+                    onClick={() => setIsAddPhaseModalOpen(true)}
                     className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
                   >
                     <FaPlus />
@@ -279,9 +282,35 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
               </div>
             </div>
           </div>
-          
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+          {/* View Switcher */}
+          <div className="mb-6">
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                {[
+                  { key: 'details', label: 'Project Details', icon: FaChartLine },
+                  { key: 'gantt', label: 'Timeline View', icon: FaProjectDiagram }
+                ].map(({ key, label, icon: Icon }) => (
+                  <button
+                    key={key}
+                    onClick={() => setActiveView(key as any)}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                      activeView === key
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <Icon />
+                    {label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+          </div>
+
+          {/* Project Details View */}
+          {activeView === 'details' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
             {/* Left Column - Phases */}
             <div className="lg:col-span-2">
@@ -385,6 +414,39 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
               </div>
             </div>
           </div>
+          )}
+
+          {/* Gantt Timeline View */}
+          {activeView === 'gantt' && (
+            <div className="bg-white rounded-lg shadow-md border">
+              <div className="p-4 border-b">
+                <h2 className="text-xl font-semibold text-gray-800">Project Timeline</h2>
+                <p className="text-sm text-gray-600">Visual representation of project phases and their schedules</p>
+              </div>
+              <div className="p-4">
+                <ProjectGanttChart
+                  project={{
+                    id: project.id,
+                    title: project.title,
+                    startDate: project.startDate,
+                    endDate: project.endDate,
+                    phases: project.phases.map(phase => ({
+                      id: phase.id,
+                      name: phase.name,
+                      startDate: phase.startDate,
+                      endDate: phase.endDate,
+                      sprints: phase.sprints,
+                      allocations: phase.phaseAllocations?.map(allocation => ({
+                        consultantId: allocation.consultantId,
+                        consultantName: allocation.consultantName,
+                        hours: allocation.hours
+                      })) || []
+                    }))
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Modals */}

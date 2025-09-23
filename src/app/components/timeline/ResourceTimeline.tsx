@@ -12,6 +12,10 @@ interface ResourceTimelineProps {
   }>;
   weeks: number;
   onConsultantClick?: (consultantId: string) => void;
+  initialTimelineData?: {
+    timeline: TimelineData[];
+    weeks: Array<{label: string; isCurrent: boolean; isPast: boolean}>;
+  };
 }
 
 interface TimelineData {
@@ -46,39 +50,75 @@ interface TimelineData {
   }>;
 }
 
-export default function ResourceTimeline({ consultants, weeks, onConsultantClick }: ResourceTimelineProps) {
-  const [timelineData, setTimelineData] = useState<TimelineData[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function ResourceTimeline({ consultants, weeks, onConsultantClick, initialTimelineData }: ResourceTimelineProps) {
+  const [timelineData, setTimelineData] = useState<TimelineData[]>(initialTimelineData?.timeline || []);
+  const [loading, setLoading] = useState(!initialTimelineData);
   const [selectedWeek, setSelectedWeek] = useState<{
-    consultant: string; 
-    week: string; 
-    consultantName: string; 
-    weekData: any; 
+    consultant: string;
+    week: string;
+    consultantName: string;
+    weekData: any;
     weekLabel: string;
   } | null>(null);
   const [weekHeaders, setWeekHeaders] = useState<Array<{label: string; isCurrent: boolean; isPast: boolean}>>([]);
+  const [lastFetchedWeeks, setLastFetchedWeeks] = useState<number>(initialTimelineData ? weeks : 0);
+  const [lastDataUpdate, setLastDataUpdate] = useState<number>(Date.now());
+
+  // Initialize week headers from initial data
+  useEffect(() => {
+    if (initialTimelineData?.weeks) {
+      setWeekHeaders(initialTimelineData.weeks);
+    }
+  }, [initialTimelineData]);
 
   useEffect(() => {
-    fetchTimelineData();
-  }, [weeks]);
+    // Only fetch if weeks changed or if we don't have initial data
+    if (!initialTimelineData || weeks !== lastFetchedWeeks) {
+      fetchTimelineData();
+    }
+  }, [weeks, lastFetchedWeeks, initialTimelineData]);
+
+  // Add real-time refetch capability for data updates
+  useEffect(() => {
+    // Listen for custom events that indicate data has changed
+    const handleDataUpdate = () => {
+      console.log('Timeline data update detected, refetching...');
+      fetchTimelineData();
+    };
+
+    // Listen for storage events (for cross-tab updates)
+    const handleStorageUpdate = (e: StorageEvent) => {
+      if (e.key === 'timeline-data-updated') {
+        handleDataUpdate();
+      }
+    };
+
+    window.addEventListener('timeline-data-updated', handleDataUpdate as EventListener);
+    window.addEventListener('storage', handleStorageUpdate);
+
+    return () => {
+      window.removeEventListener('timeline-data-updated', handleDataUpdate as EventListener);
+      window.removeEventListener('storage', handleStorageUpdate);
+    };
+  }, []);
 
   const fetchTimelineData = async () => {
     try {
       setLoading(true);
       const response = await axios.get(`/api/timeline?weeks=${weeks}`);
       const { timeline, weeks: apiWeeks } = response.data;
-      
+
       // Ensure all consultants have exactly the same number of weeks
       const normalizedTimeline = timeline.map((consultant: any) => ({
         ...consultant,
         weeklyData: apiWeeks.map((week: any, index: number) => {
           // Find matching week data or return empty week
           const existingWeek = consultant.weeklyData[index];
-          if (existingWeek && 
+          if (existingWeek &&
               new Date(existingWeek.weekStart).getTime() === new Date(week.weekStart).getTime()) {
             return existingWeek;
           }
-          
+
           // Return empty week with correct structure
           return {
             week: week.label,
@@ -89,16 +129,18 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
           };
         })
       }));
-      
+
       setTimelineData(normalizedTimeline);
-      
+      setLastFetchedWeeks(weeks);
+      setLastDataUpdate(Date.now());
+
       // Use API weeks for headers to ensure perfect alignment
       setWeekHeaders(apiWeeks.map((w: any) => {
         const weekDate = new Date(w.weekStart);
         const today = new Date();
         const isCurrentWeek = weekDate <= today && today <= new Date(w.weekEnd);
         const isPastWeek = new Date(w.weekEnd) < today;
-        
+
         return {
           label: w.label,
           isCurrent: isCurrentWeek,
@@ -164,7 +206,22 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
         </div>
 
         {/* Consultant Rows */}
-        {consultants.map((consultant) => {
+        {consultants
+          .sort((a, b) => {
+            const consultantDataA = timelineData.find(td => td.consultantId === a.id);
+            const consultantDataB = timelineData.find(td => td.consultantId === b.id);
+            
+            // Sort by Product Manager status first (PMs at top), then by name
+            if (consultantDataA?.isProductManager !== consultantDataB?.isProductManager) {
+              return consultantDataB?.isProductManager ? 1 : -1;
+            }
+            
+            // If both are PMs or both are not PMs, sort alphabetically by name
+            const nameA = (a.name || a.email || '').toLowerCase();
+            const nameB = (b.name || b.email || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+          })
+          .map((consultant) => {
           const consultantData = timelineData.find(td => td.consultantId === consultant.id);
           
           return (

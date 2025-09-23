@@ -142,6 +142,8 @@ export async function POST(request: Request) {
       });
     }
 
+    // Note: Timeline update is handled on the client side after successful API response
+    // This ensures real-time updates when allocation data changes
     return NextResponse.json(allocation);
   } catch (error: any) {
     console.error('Error saving weekly allocation:', error);

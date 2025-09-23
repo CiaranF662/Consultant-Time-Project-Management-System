@@ -1,3 +1,4 @@
+
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
@@ -5,15 +6,15 @@ import { PrismaClient, UserRole, UserStatus, ChangeStatus, ProjectRole } from '@
 import DashboardLayout from '@/app/components/DashboardLayout';
 import GrowthTeamDashboard from '@/app/components/dashboards/GrowthTeamDashboard';
 import ConsultantDashboard from '@/app/components/dashboards/ConsultantDashboard';
-
 const prisma = new PrismaClient();
+
 
 async function getGrowthTeamData() {
   // Get pending approvals count
   const pendingUserCount = await prisma.user.count({
     where: { status: UserStatus.PENDING }
   });
-  
+
   // Get all consultants for timeline
   const consultants = await prisma.user.findMany({
     where: { role: UserRole.CONSULTANT },
@@ -37,10 +38,10 @@ async function getGrowthTeamData() {
         include: {
           user: true
         }
-      }
+      },
+      sprints: true
     },
-    orderBy: { createdAt: 'desc' },
-    take: 5
+    orderBy: { createdAt: 'desc' }
   });
 
   return { pendingUserCount, consultants, projects };
