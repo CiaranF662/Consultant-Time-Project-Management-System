@@ -21,7 +21,7 @@ import {
   FaCalendarWeek,
   FaBell
 } from 'react-icons/fa';
-import NotificationBadge from '@/app/(features)/notifications/components/NotificationBadge';
+import NotificationBadge from '@/app/components/components/NotificationBadge';
 import { UserRole } from '@prisma/client';
 import { signOut } from 'next-auth/react';
 import Tooltip from '@/app/components/ui/tooltip';

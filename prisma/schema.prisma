@@ -228,3 +228,80 @@ enum ProjectRole {
   PRODUCT_MANAGER
   TEAM_MEMBER
 }
+
+model JiraIssue {
+  id            String   @id @default(cuid())
+  jiraKey       String   @unique
+  agileRsTaskId String?  // Link to your local Task model
+  status        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+#region Intergration
+
+model ProjectIntegration {
+  id                String   @id @default(cuid())
+  projectId         String   @unique
+  jiraProjectKey    String?
+  jiraEpicKey       String?
+  slackChannelId    String?
+  slackChannelName  String?
+  googleDriveFolder String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model TaskIntegration {
+  id               String  @id @default(cuid())
+  internalTaskId   String  // If you add tasks back to your schema
+  jiraIssueKey     String  @unique
+  projectId        String
+  createdAt        DateTime @default(now())
+  
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model PhaseMeeting {
+  id              String    @id @default(cuid())
+  phaseId         String
+  googleEventId   String?
+  meetingUrl      String?
+  scheduledFor    DateTime
+  createdAt       DateTime  @default(now())
+  
+  phase Phase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+}
+
+model IntegrationSettings {
+  id                    String  @id @default(cuid())
+  userId                String  @unique
+  jiraEmail             String?
+  jiraApiToken          String? // Encrypted
+  slackUserId           String?
+  googleRefreshToken    String? // Encrypted
+  notificationSettings  Json?   // Preferences for notifications
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Update existing models
+model Project {
+  // ... existing fields
+  integrations    ProjectIntegration?
+  taskIntegrations TaskIntegration[]
+}
+
+model Phase {
+  // ... existing fields
+  meetings PhaseMeeting[]
+}
+
+model User {
+  // ... existing fields
+  integrationSettings IntegrationSettings?
+}

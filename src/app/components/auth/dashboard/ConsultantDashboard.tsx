@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { FaCalendarWeek, FaProjectDiagram, FaClock, FaExclamationCircle, FaClipboardList } from 'react-icons/fa';
 import WeeklyPlannerEnhanced from '@/app/(features)/team-allocations/ components/WeeklyPlannerEnhanced';
-import NotificationSummaryCard from '@/app/(features)/notifications/components/NotificationSummaryCard';
+import NotificationSummaryCard from '@/app/components/components/NotificationSummaryCard';
 import { formatHours } from '@/lib/dates';
 
 //#region Interfaces

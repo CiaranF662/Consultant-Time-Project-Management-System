@@ -113,6 +113,7 @@ export async function POST(request: Request) {
       }
     });
 
+    
     // Send project assignment notifications to all consultants
     try {
       // Send emails in parallel to all consultants
@@ -174,6 +175,17 @@ export async function POST(request: Request) {
       console.error('Error sending project assignment notifications:', emailError);
       // Don't fail project creation if emails fail
     }
+    
+    // Trigger integration sync for the new project
+    if (createdProject) {
+    try {
+      const dbIntegrator = new DatabaseIntegrator(prisma);
+      await dbIntegrator.syncProjectCreation(createdProject.id);
+    } catch (error) {
+      console.warn('Integration sync failed:', error);
+      // Don't fail the project creation if integration fails
+    }
+  }
 
     return NextResponse.json(newProject, { status: 201 });
 

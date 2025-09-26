@@ -23,6 +23,16 @@ export async function GET(request: Request) {
         createdAt: 'asc',
       },
     });
+    // After request is created
+    // Integration ttigger 
+  if (request) {
+    try {
+      const dbIntegrator = new DatabaseIntegrator(prisma);
+      await dbIntegrator.notifyHourChangeRequest(request.id);
+    } catch (error) {
+      console.warn('Notification failed:', error);
+    }
+  }
     return NextResponse.json(requests);
   } catch (error) {
     console.error('Error fetching hour change requests:', error);
