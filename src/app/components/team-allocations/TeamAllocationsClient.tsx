@@ -22,7 +22,8 @@ type ProjectWithAllocations = {
         email: string | null;
       };
       weeklyAllocations: Array<{
-        plannedHours: number;
+        proposedHours?: number | null;
+        approvedHours?: number | null;
       }>;
     }>;
   }>;
@@ -190,7 +191,7 @@ export default function TeamAllocationsClient({ projects }: TeamAllocationsClien
                               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                                 {phase.allocations.map((allocation) => {
                                   const distributedHours = allocation.weeklyAllocations.reduce(
-                                    (sum, weekly) => sum + weekly.plannedHours, 
+                                    (sum, weekly) => sum + (weekly.approvedHours || weekly.proposedHours || 0), 
                                     0
                                   );
                                   const remainingHours = allocation.totalHours - distributedHours;

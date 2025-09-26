@@ -100,12 +100,13 @@ export async function POST(
         include: { consultant: true }
       });
     } else {
-      // Create new allocation
+      // Create new allocation (requires Growth Team approval)
       allocation = await prisma.phaseAllocation.create({
         data: {
           phaseId,
           consultantId,
-          totalHours
+          totalHours,
+          approvalStatus: 'PENDING'
         },
         include: { 
           consultant: true,
@@ -214,21 +215,56 @@ export async function PUT(
       return new NextResponse(JSON.stringify({ error: 'Some consultants are not part of the project' }), { status: 400 });
     }
 
+    // Get existing allocations to preserve their approval status
+    const existingAllocations = await prisma.phaseAllocation.findMany({
+      where: { phaseId },
+      select: {
+        consultantId: true,
+        approvalStatus: true,
+        approvedBy: true,
+        approvedAt: true,
+        rejectionReason: true
+      }
+    });
+
     // Use transaction to update allocations
     await prisma.$transaction(async (tx) => {
+
+      // Create a map of existing approval statuses
+      const existingApprovalMap = new Map(
+        existingAllocations.map(alloc => [
+          alloc.consultantId,
+          {
+            approvalStatus: alloc.approvalStatus,
+            approvedBy: alloc.approvedBy,
+            approvedAt: alloc.approvedAt,
+            rejectionReason: alloc.rejectionReason
+          }
+        ])
+      );
+
       // Delete existing allocations
       await tx.phaseAllocation.deleteMany({
         where: { phaseId }
       });
 
-      // Create new allocations
+      // Create new allocations, preserving approval status for existing consultants
       if (allocations.length > 0) {
-        const allocationData = allocations.map((alloc: any) => ({
-          phaseId,
-          consultantId: alloc.consultantId,
-          totalHours: parseFloat(alloc.totalHours)
-        }));
-        
+        const allocationData = allocations.map((alloc: any) => {
+          const existingApproval = existingApprovalMap.get(alloc.consultantId);
+
+          return {
+            phaseId,
+            consultantId: alloc.consultantId,
+            totalHours: parseFloat(alloc.totalHours),
+            // Preserve existing approval status, or set to PENDING for new consultants
+            approvalStatus: existingApproval?.approvalStatus || 'PENDING',
+            approvedBy: existingApproval?.approvedBy || null,
+            approvedAt: existingApproval?.approvedAt || null,
+            rejectionReason: existingApproval?.rejectionReason || null
+          };
+        });
+
         await tx.phaseAllocation.createMany({
           data: allocationData
         });
@@ -257,13 +293,19 @@ export async function PUT(
       }
     });
     
-    // Send email notifications for all new allocations
+    // Send email notifications only for newly added consultants
     if (updatedPhase && allocations.length > 0) {
       const productManagerName = updatedPhase.project.consultants[0]?.user.name || undefined;
-      
-      // Send emails in parallel
+
+      // Identify new consultants (those not in existingApprovalMap)
+      const existingConsultantIds = new Set(existingAllocations.map(alloc => alloc.consultantId));
+      const newAllocations = updatedPhase.allocations.filter(
+        allocation => !existingConsultantIds.has(allocation.consultantId)
+      );
+
+      // Send emails in parallel only to new consultants
       await Promise.allSettled(
-        updatedPhase.allocations.map(async (allocation) => {
+        newAllocations.map(async (allocation) => {
           try {
             const emailTemplate = PhaseAllocationEmail({
               type: "allocated",

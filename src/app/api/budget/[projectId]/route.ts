@@ -50,7 +50,7 @@ export async function GET(
     const totalPlanned = project.phases.reduce((sum, phase) => {
       return sum + phase.allocations.reduce((phaseSum, allocation) => {
         return phaseSum + allocation.weeklyAllocations.reduce((weekSum, week) => {
-          return weekSum + week.plannedHours;
+          return weekSum + (week.approvedHours || week.proposedHours || 0);
         }, 0);
       }, 0);
     }, 0);
@@ -69,7 +69,7 @@ export async function GET(
     const phaseBreakdown = project.phases.map(phase => {
       const phaseAllocated = phase.allocations.reduce((sum, a) => sum + a.totalHours, 0);
       const phasePlanned = phase.allocations.reduce((sum, a) => {
-        return sum + a.weeklyAllocations.reduce((weekSum, w) => weekSum + w.plannedHours, 0);
+        return sum + a.weeklyAllocations.reduce((weekSum, w) => weekSum + (w.approvedHours || w.proposedHours || 0), 0);
       }, 0);
 
       return {

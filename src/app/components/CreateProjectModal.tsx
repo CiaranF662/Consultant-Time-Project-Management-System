@@ -29,7 +29,8 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
   const [consultants, setConsultants] = useState<User[]>([]);
   const [selectedProductManagerId, setSelectedProductManagerId] = useState<string>('');
   const [selectedConsultantIds, setSelectedConsultantIds] = useState<string[]>([]);
-  
+  const [consultantAllocations, setConsultantAllocations] = useState<Record<string, number>>({});
+
   // Search functionality
   const [pmSearchQuery, setPmSearchQuery] = useState('');
   const [consultantSearchQuery, setConsultantSearchQuery] = useState('');
@@ -55,6 +56,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
       setBudgetedHours('');
       setSelectedProductManagerId('');
       setSelectedConsultantIds([]);
+      setConsultantAllocations({});
       setPmSearchQuery('');
       setConsultantSearchQuery('');
       setShowPmDropdown(false);
@@ -138,18 +140,48 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
     const selectedConsultant = consultants.find(c => c.id === consultantId);
     setPmSearchQuery(selectedConsultant?.name || selectedConsultant?.email || '');
     setShowPmDropdown(false);
+
+    // Initialize PM allocation if not already set
+    if (!(consultantId in consultantAllocations)) {
+      setConsultantAllocations(prev => ({
+        ...prev,
+        [consultantId]: 0
+      }));
+    }
   };
 
   const handleConsultantToggle = (consultantId: string) => {
-    setSelectedConsultantIds(prev => 
-      prev.includes(consultantId) 
-        ? prev.filter(id => id !== consultantId)
-        : [...prev, consultantId]
-    );
+    setSelectedConsultantIds(prev => {
+      const isCurrentlySelected = prev.includes(consultantId);
+      if (isCurrentlySelected) {
+        // Remove consultant and their allocation
+        const newAllocations = { ...consultantAllocations };
+        delete newAllocations[consultantId];
+        setConsultantAllocations(newAllocations);
+        return prev.filter(id => id !== consultantId);
+      } else {
+        // Add consultant and initialize their allocation
+        setConsultantAllocations(prevAllocations => ({
+          ...prevAllocations,
+          [consultantId]: 0
+        }));
+        return [...prev, consultantId];
+      }
+    });
   };
 
   const removeConsultant = (consultantId: string) => {
     setSelectedConsultantIds(prev => prev.filter(id => id !== consultantId));
+    const newAllocations = { ...consultantAllocations };
+    delete newAllocations[consultantId];
+    setConsultantAllocations(newAllocations);
+  };
+
+  const handleAllocationChange = (consultantId: string, hours: number) => {
+    setConsultantAllocations(prev => ({
+      ...prev,
+      [consultantId]: hours
+    }));
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -170,6 +202,26 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
       return;
     }
 
+    // Validate consultant allocations (including Product Manager)
+    const allTeamMemberIds = [selectedProductManagerId, ...selectedConsultantIds];
+    const totalAllocatedHours = allTeamMemberIds.reduce((sum, id) => {
+      return sum + (consultantAllocations[id] || 0);
+    }, 0);
+
+    if (totalAllocatedHours === 0) {
+      setError('You must allocate hours to at least one team member (including Product Manager).');
+      setIsLoading(false);
+      return;
+    }
+
+    // Check for team members with zero hours
+    const teamMembersWithoutHours = allTeamMemberIds.filter(id => !consultantAllocations[id] || consultantAllocations[id] <= 0);
+    if (teamMembersWithoutHours.length > 0) {
+      setError('All team members (including Product Manager) must have allocated hours greater than 0.');
+      setIsLoading(false);
+      return;
+    }
+
     if (!budgetedHours || parseInt(budgetedHours, 10) <= 0) {
       setError('You must specify a valid budget in hours.');
       setIsLoading(false);
@@ -182,6 +234,15 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
       return;
     }
 
+    // Warn if total allocated hours exceed budget
+    const budget = parseInt(budgetedHours, 10);
+    if (totalAllocatedHours > budget) {
+      if (!confirm(`Total allocated hours (${totalAllocatedHours}) exceed project budget (${budget}). Do you want to continue?`)) {
+        setIsLoading(false);
+        return;
+      }
+    }
+
     try {
       const response = await axios.post('/api/projects', {
         title,
@@ -191,6 +252,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
         budgetedHours: parseInt(budgetedHours, 10),
         productManagerId: selectedProductManagerId,
         consultantIds: selectedConsultantIds,
+        consultantAllocations: consultantAllocations,
       });
 
       if (response.status === 201) {
@@ -247,6 +309,49 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
             <FaTimes className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Budget Progress Indicator - Fixed at top */}
+        {budgetedHours && parseInt(budgetedHours) > 0 && Object.keys(consultantAllocations).length > 0 && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200 p-4">
+            <div className="space-y-3">
+              <div className="flex justify-between items-center text-sm">
+                <span className="font-semibold text-blue-800">Budget Allocation Progress</span>
+                <span className="font-bold text-blue-900">
+                  {[selectedProductManagerId, ...selectedConsultantIds].reduce((sum, id) => sum + (consultantAllocations[id] || 0), 0)} / {budgetedHours} hours
+                  <span className="ml-2 text-xs">
+                    ({Math.round(([selectedProductManagerId, ...selectedConsultantIds].reduce((sum, id) => sum + (consultantAllocations[id] || 0), 0) / parseInt(budgetedHours)) * 100)}%)
+                  </span>
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    ([selectedProductManagerId, ...selectedConsultantIds].reduce((sum, id) => sum + (consultantAllocations[id] || 0), 0) / parseInt(budgetedHours)) > 1
+                      ? 'bg-gradient-to-r from-red-500 to-red-600' // Over budget
+                      : ([selectedProductManagerId, ...selectedConsultantIds].reduce((sum, id) => sum + (consultantAllocations[id] || 0), 0) / parseInt(budgetedHours)) >= 0.8
+                      ? 'bg-gradient-to-r from-yellow-500 to-orange-500' // Almost full
+                      : 'bg-gradient-to-r from-green-500 to-blue-500' // Good
+                  }`}
+                  style={{
+                    width: `${Math.min(([selectedProductManagerId, ...selectedConsultantIds].reduce((sum, id) => sum + (consultantAllocations[id] || 0), 0) / parseInt(budgetedHours)) * 100, 100)}%`
+                  }}
+                />
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className={`font-medium ${
+                  parseInt(budgetedHours) >= [selectedProductManagerId, ...selectedConsultantIds].reduce((sum, id) => sum + (consultantAllocations[id] || 0), 0)
+                    ? 'text-green-700'
+                    : 'text-red-700'
+                }`}>
+                  Remaining: {parseInt(budgetedHours) - [selectedProductManagerId, ...selectedConsultantIds].reduce((sum, id) => sum + (consultantAllocations[id] || 0), 0)} hours
+                </span>
+                <span className="text-gray-600">
+                  Team Members: {[selectedProductManagerId, ...selectedConsultantIds].filter(id => id).length}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Modal Content */}
         <div className="flex-1 overflow-y-auto">
@@ -508,6 +613,98 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                   </div>
                 </div>
 
+                {/* Hour Allocation Section */}
+                {(selectedProductManagerId || selectedConsultantIds.length > 0) && (
+                  <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-6 rounded-lg border border-orange-100">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 bg-orange-600 text-white rounded-lg flex items-center justify-center">
+                        <FaClock className="w-4 h-4" />
+                      </div>
+                      <h2 className="text-lg font-bold text-gray-800">Initial Hour Allocation</h2>
+                    </div>
+
+                    <div className="space-y-3">
+                      {/* Product Manager Allocation */}
+                      {selectedProductManagerId && (
+                        <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200 shadow-sm">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium mr-4">
+                                <FaUser className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <p className="font-semibold text-gray-900 flex items-center gap-2">
+                                  {consultants.find(c => c.id === selectedProductManagerId)?.name}
+                                  <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-medium">
+                                    Product Manager
+                                  </span>
+                                </p>
+                                <p className="text-sm text-gray-500">{consultants.find(c => c.id === selectedProductManagerId)?.email}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                min="0"
+                                value={consultantAllocations[selectedProductManagerId] || ''}
+                                onChange={(e) => handleAllocationChange(selectedProductManagerId, parseInt(e.target.value) || 0)}
+                                className="w-20 px-2 py-1 rounded-lg border-2 border-gray-200 text-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50"
+                                placeholder="0"
+                              />
+                              <span className="text-sm font-medium text-gray-600">hours</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Team Consultants Allocation */}
+                      {selectedConsultantIds.map(consultantId => {
+                        const consultant = consultants.find(c => c.id === consultantId);
+                        if (!consultant) return null;
+
+                        return (
+                          <div key={consultantId} className="flex items-center justify-between p-4 bg-white rounded-lg border border-orange-200 shadow-sm">
+                            <div className="flex items-center">
+                              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium mr-4">
+                                {consultant.name?.charAt(0) || consultant.email?.charAt(0) || 'U'}
+                              </div>
+                              <div>
+                                <p className="font-semibold text-gray-900">{consultant.name}</p>
+                                <p className="text-sm text-gray-500">{consultant.email}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                min="0"
+                                value={consultantAllocations[consultantId] || ''}
+                                onChange={(e) => handleAllocationChange(consultantId, parseInt(e.target.value) || 0)}
+                                className="w-20 px-2 py-1 rounded-lg border-2 border-gray-200 text-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50"
+                                placeholder="0"
+                              />
+                              <span className="text-sm font-medium text-gray-600">hours</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Allocation Summary */}
+                    {Object.keys(consultantAllocations).length > 0 && (
+                      <div className="mt-4 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
+                        <div className="text-center">
+                          <div className="text-sm text-gray-600">
+                            All allocations are tracked in the progress indicator above
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Scroll up to see budget progress and remaining hours
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Team Summary */}
                 {(selectedProductManagerId || selectedConsultantIds.length > 0) && (
                   <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
@@ -530,11 +727,18 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                           <span className="text-gray-800">{selectedConsultantIds.length} consultant(s)</span>
                         </div>
                       )}
-                      {budgetedHours && selectedConsultantIds.length > 0 && (
-                        <div className="flex items-center gap-2 md:col-span-2">
+                      {budgetedHours && (
+                        <div className="flex items-center gap-2">
                           <FaClock className="w-3 h-3 text-green-600" />
-                          <span className="font-medium text-gray-700">Avg Hours/Consultant:</span>
-                          <span className="text-gray-800">{Math.round(parseInt(budgetedHours) / selectedConsultantIds.length)} hours</span>
+                          <span className="font-medium text-gray-700">Project Budget:</span>
+                          <span className="text-gray-800">{budgetedHours} hours</span>
+                        </div>
+                      )}
+                      {Object.keys(consultantAllocations).length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <FaClock className="w-3 h-3 text-orange-600" />
+                          <span className="font-medium text-gray-700">Total Allocated:</span>
+                          <span className="text-gray-800">{[selectedProductManagerId, ...selectedConsultantIds].reduce((sum, id) => sum + (consultantAllocations[id] || 0), 0)} hours</span>
                         </div>
                       )}
                     </div>

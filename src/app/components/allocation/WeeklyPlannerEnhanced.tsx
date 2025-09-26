@@ -11,6 +11,7 @@ import { FaSave, FaChevronDown, FaChevronRight, FaCheckCircle, FaTimes } from 'r
 interface PhaseAllocation {
   id: string;
   totalHours: number;
+  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
   consultantDescription?: string; // Added for phase description
   phase: {
     id: string;
@@ -32,7 +33,10 @@ interface PhaseAllocation {
     id: string;
     weekNumber: number;
     year: number;
-    plannedHours: number;
+    proposedHours?: number | null;
+    approvedHours?: number | null;
+    planningStatus: 'PENDING' | 'APPROVED' | 'MODIFIED' | 'REJECTED';
+    rejectionReason?: string | null;
     weekStartDate: Date;
     weekEndDate: Date;
   }>;
@@ -62,30 +66,33 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
   }>({ show: false, type: 'success', message: '' });
 
   useEffect(() => {
-    // Initialize allocations from existing data
+    // Initialize allocations from existing data (only for approved phase allocations)
     const initialAllocations = new Map<string, number>();
     const initialDescriptions = new Map<string, string>();
-    
+
     phaseAllocations.forEach((phaseAlloc) => {
-      phaseAlloc.weeklyAllocations.forEach((allocation) => {
-        const key = `${phaseAlloc.id}-${allocation.weekNumber}-${allocation.year}`;
-        initialAllocations.set(key, allocation.plannedHours);
-      });
-      
-      // Initialize phase descriptions
-      if (phaseAlloc.consultantDescription) {
-        initialDescriptions.set(phaseAlloc.id, phaseAlloc.consultantDescription);
+      // Only process weekly allocations for approved phase allocations
+      if (phaseAlloc.approvalStatus === 'APPROVED') {
+        phaseAlloc.weeklyAllocations.forEach((allocation) => {
+          const key = `${phaseAlloc.id}-${allocation.weekNumber}-${allocation.year}`;
+          initialAllocations.set(key, allocation.approvedHours || allocation.proposedHours || 0);
+        });
+
+        // Initialize phase descriptions for approved allocations
+        if (phaseAlloc.consultantDescription) {
+          initialDescriptions.set(phaseAlloc.id, phaseAlloc.consultantDescription);
+        }
       }
     });
-    
+
     setAllocations(initialAllocations);
     setPhaseDescriptions(initialDescriptions);
 
-    // Initialize all projects as collapsed
+    // Initialize all projects as collapsed (include both approved and pending for visibility)
     const uniqueProjectIds = Array.from(new Set(phaseAllocations.map(alloc => alloc.phase.project.id)));
     setCollapsedProjects(new Set(uniqueProjectIds));
-    
-    // Initialize all phases as collapsed
+
+    // Initialize all phases as collapsed (include both approved and pending for visibility)
     const uniquePhaseIds = Array.from(new Set(phaseAllocations.map(alloc => alloc.id)));
     setCollapsedPhases(new Set(uniquePhaseIds));
     
@@ -141,7 +148,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
     if (!phaseAllocation) return false;
     
     // Check if this phase has any existing weekly allocations with hours > 0
-    const hasExistingHours = phaseAllocation.weeklyAllocations.some(w => w.plannedHours > 0);
+    const hasExistingHours = phaseAllocation.weeklyAllocations.some(w => (w.approvedHours || w.proposedHours || 0) > 0);
     return !hasExistingHours;
   };
 
@@ -204,10 +211,17 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
           throw new Error('Week not found');
         }
         
+        // Find the corresponding weekly allocation to check if it was rejected
+        const weeklyAllocation = phaseAlloc.weeklyAllocations.find(
+          wa => wa.weekNumber === parseInt(weekNumber) && wa.year === parseInt(year)
+        );
+        const wasRejected = weeklyAllocation?.planningStatus === 'REJECTED';
+
         return axios.post('/api/allocations/weekly', {
           phaseAllocationId,
           weekStartDate: week.weekStart.toISOString(),
-          plannedHours: hours
+          plannedHours: hours,
+          clearRejection: wasRejected // Flag to indicate this was a resubmission after rejection
         });
       });
 
@@ -623,11 +637,27 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                   return (
                     <div key={phaseAlloc.id} className="border border-gray-200 rounded-lg overflow-hidden">
                       {/* Phase Header */}
-                      <div 
-                        className="bg-gray-50 px-4 py-3 border-b cursor-pointer hover:bg-gray-100 transition-colors"
+                      <div
+                        className={`relative bg-gray-50 px-4 py-3 border-b cursor-pointer hover:bg-gray-100 transition-colors ${
+                          phaseAlloc.approvalStatus === 'PENDING' ? 'border-orange-200' : ''
+                        }`}
                         onClick={() => togglePhaseCollapse(phaseAlloc.id)}
                       >
-                        <div className="flex justify-between items-center">
+                        {/* Pending approval diagonal stripes - only on header */}
+                        {phaseAlloc.approvalStatus === 'PENDING' && (
+                          <div className="absolute inset-0 pointer-events-none opacity-20"
+                               style={{
+                                 backgroundImage: `repeating-linear-gradient(
+                                   45deg,
+                                   transparent,
+                                   transparent 8px,
+                                   rgba(249, 115, 22, 0.3) 8px,
+                                   rgba(249, 115, 22, 0.3) 16px
+                                 )`
+                               }}>
+                          </div>
+                        )}
+                        <div className="relative z-10 flex justify-between items-center">
                           <div className="flex items-center gap-3">
                             <div className="flex items-center">
                               {collapsedPhases.has(phaseAlloc.id) ? (
@@ -637,13 +667,65 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                               )}
                             </div>
                             <div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <h3 className="text-lg font-semibold text-gray-800">
                                   {phaseAlloc.phase.name}
                                 </h3>
                                 <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
                                   {phaseAlloc.phase.sprints.length} sprint{phaseAlloc.phase.sprints.length !== 1 ? 's' : ''}
                                 </span>
+
+                                {/* Phase Allocation Approval Status */}
+                                {phaseAlloc.approvalStatus === 'PENDING' && (
+                                  <span className="flex items-center gap-1 px-2 py-1 bg-orange-100 border border-orange-200 text-orange-700 rounded-full text-xs font-medium">
+                                    <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+                                    Allocation Pending
+                                  </span>
+                                )}
+                                {phaseAlloc.approvalStatus === 'REJECTED' && (
+                                  <span className="flex items-center gap-1 px-2 py-1 bg-red-100 border border-red-200 text-red-700 rounded-full text-xs font-medium">
+                                    <FaTimes className="w-2 h-2" />
+                                    Allocation Rejected
+                                  </span>
+                                )}
+                                {phaseAlloc.approvalStatus === 'APPROVED' && (
+                                  <span className="flex items-center gap-1 px-2 py-1 bg-green-100 border border-green-200 text-green-700 rounded-full text-xs font-medium">
+                                    <FaCheckCircle className="w-2 h-2" />
+                                    Allocation Approved
+                                  </span>
+                                )}
+
+                                {/* Weekly Planning Approval Status */}
+                                {(() => {
+                                  const pendingWeeklyCount = phaseAlloc.weeklyAllocations.filter(w => w.planningStatus === 'PENDING').length;
+                                  const rejectedWeeklyCount = phaseAlloc.weeklyAllocations.filter(w => w.planningStatus === 'REJECTED').length;
+                                  const approvedWeeklyCount = phaseAlloc.weeklyAllocations.filter(w => w.planningStatus === 'APPROVED').length;
+                                  const totalWeeklyCount = phaseAlloc.weeklyAllocations.length;
+
+                                  if (pendingWeeklyCount > 0) {
+                                    return (
+                                      <span className="flex items-center gap-1 px-2 py-1 bg-blue-100 border border-blue-200 text-blue-700 rounded-full text-xs font-medium">
+                                        <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                                        {pendingWeeklyCount} Week{pendingWeeklyCount !== 1 ? 's' : ''} Pending Review
+                                      </span>
+                                    );
+                                  } else if (rejectedWeeklyCount > 0) {
+                                    return (
+                                      <span className="flex items-center gap-1 px-2 py-1 bg-red-100 border border-red-200 text-red-700 rounded-full text-xs font-medium">
+                                        <FaTimes className="w-2 h-2" />
+                                        {rejectedWeeklyCount} Week{rejectedWeeklyCount !== 1 ? 's' : ''} Rejected
+                                      </span>
+                                    );
+                                  } else if (approvedWeeklyCount > 0) {
+                                    return (
+                                      <span className="flex items-center gap-1 px-2 py-1 bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-full text-xs font-medium">
+                                        <FaCheckCircle className="w-2 h-2" />
+                                        {approvedWeeklyCount} Week{approvedWeeklyCount !== 1 ? 's' : ''} Approved
+                                      </span>
+                                    );
+                                  }
+                                  return null;
+                                })()}
                               </div>
                               <p className="text-sm text-gray-600">
                                 {phaseAlloc.phase.project.title} • {formatHours(phaseAlloc.totalHours)} total
@@ -695,6 +777,9 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                       {/* Sprint-based Weekly Allocation */}
                       {!collapsedPhases.has(phaseAlloc.id) && (
                         <div className="p-4">
+                          {/* Show planning interface only for approved allocations */}
+                          {phaseAlloc.approvalStatus === 'APPROVED' ? (
+                            <div>
                         {/* Phase Description */}
                         <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
                           <div className="flex items-start gap-3">
@@ -783,18 +868,40 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                                           const currentHours = allocations.get(key) || 0;
                                           const hasUnsavedChanges = unsavedChanges.has(key);
                                           const error = errors.get(key);
-                                          
+
+                                          // Find the corresponding weekly allocation to check for rejection
+                                          const weeklyAllocation = phaseAlloc.weeklyAllocations.find(
+                                            wa => wa.weekNumber === weekNumber && wa.year === year
+                                          );
+                                          const isRejected = weeklyAllocation?.planningStatus === 'REJECTED';
+                                          const rejectionReason = weeklyAllocation?.rejectionReason;
+
                                           // Get other phases planned for this same week
                                           const otherPhases = getOtherPhasesForWeek(weekNumber, year, phaseAlloc.id);
                                           
                                           return (
-                                            <div key={key} className="border border-gray-200 rounded p-2 bg-white shadow-sm hover:shadow transition-shadow duration-150">
+                                            <div key={key} className={`border rounded p-2 shadow-sm hover:shadow transition-shadow duration-150 ${
+                                              isRejected ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'
+                                            }`}>
                                               <div className="mb-2">
-                                                <div className="text-xs font-medium text-gray-700">
-                                                  {week.label}
+                                                <div className="flex items-center justify-between">
+                                                  <div className="text-xs font-medium text-gray-700">
+                                                    {week.label}
+                                                  </div>
+                                                  {isRejected && (
+                                                    <div className="flex items-center gap-1">
+                                                      <FaTimes className="w-3 h-3 text-red-500" />
+                                                      <span className="text-xs font-medium text-red-700">Rejected</span>
+                                                    </div>
+                                                  )}
                                                 </div>
+                                                {isRejected && rejectionReason && (
+                                                  <div className="mt-1 p-2 bg-red-100 rounded text-xs text-red-700 border border-red-200">
+                                                    <strong>Reason:</strong> {rejectionReason}
+                                                  </div>
+                                                )}
                                               </div>
-                                              
+
                                               <input
                                                 type="number"
                                                 min="0"
@@ -802,11 +909,12 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                                                 value={currentHours || ''}
                                                 onChange={(e) => handleHourChange(phaseAlloc.id, weekNumber, year, e.target.value)}
                                                 className={`block w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 ${
-                                                  error ? 'border-red-300 focus:ring-red-500' : 
+                                                  error ? 'border-red-300 focus:ring-red-500' :
                                                   hasUnsavedChanges ? 'border-yellow-300 focus:ring-yellow-500' :
+                                                  isRejected ? 'border-red-300 focus:ring-red-500 bg-white' :
                                                   'border-gray-300 focus:ring-blue-500'
                                                 }`}
-                                                placeholder="Enter hours"
+                                                placeholder={isRejected ? "Enter new hours" : "Enter hours"}
                                               />
                                               
                                               {/* Show other phases planned for this week */}
@@ -867,6 +975,23 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                           );
                         })()}
                         
+                        {/* Informational Message */}
+                        {(Array.from(unsavedChanges).some(key => key.startsWith(`${phaseAlloc.id}-`)) || unsavedDescriptions.has(phaseAlloc.id)) && (
+                          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-start gap-2">
+                              <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center mt-0.5">
+                                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                              </div>
+                              <div className="text-sm">
+                                <p className="text-blue-900 font-medium">Ready to submit for approval</p>
+                                <p className="text-blue-700 mt-1">
+                                  Your weekly planning will be submitted to the Growth Team for review. You can make changes until it's approved.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Phase Save Button */}
                         <div className="mt-4 flex justify-end">
                           <button
@@ -879,9 +1004,51 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                             }`}
                           >
                             <FaSave />
-                            {saving ? 'Saving...' : 'Save Phase Allocations'}
+                            {saving ? 'Submitting...' : 'Request Approval'}
                           </button>
                         </div>
+                            </div>
+                          ) : (
+                            /* Pending/Rejected Allocation Message */
+                            <div className="text-center py-8">
+                              {phaseAlloc.approvalStatus === 'PENDING' && (
+                                <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
+                                  <div className="flex items-center justify-center mb-4">
+                                    <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                                      <span className="w-4 h-4 bg-orange-500 rounded-full animate-pulse"></span>
+                                    </div>
+                                  </div>
+                                  <h3 className="text-lg font-medium text-orange-900 mb-2">
+                                    Allocation Pending Approval
+                                  </h3>
+                                  <p className="text-orange-700 text-sm mb-4">
+                                    This phase allocation is waiting for Growth Team approval. You'll be able to plan your weekly hours once it's approved.
+                                  </p>
+                                  <div className="text-orange-600 text-sm">
+                                    <strong>{formatHours(phaseAlloc.totalHours)}</strong> allocated • Waiting for approval
+                                  </div>
+                                </div>
+                              )}
+                              {phaseAlloc.approvalStatus === 'REJECTED' && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                                  <div className="flex items-center justify-center mb-4">
+                                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                                      <FaTimes className="w-4 h-4 text-red-500" />
+                                    </div>
+                                  </div>
+                                  <h3 className="text-lg font-medium text-red-900 mb-2">
+                                    Allocation Rejected
+                                  </h3>
+                                  <p className="text-red-700 text-sm mb-4">
+                                    This phase allocation was rejected by the Growth Team. Please contact your Product Manager for more information.
+                                  </p>
+                                  <div className="text-red-600 text-sm">
+                                    <strong>{formatHours(phaseAlloc.totalHours)}</strong> was requested • Rejected
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -898,10 +1065,11 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
       <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h4 className="text-sm font-medium text-blue-800 mb-2">How to Use</h4>
         <ul className="text-sm text-blue-700 space-y-1">
+          <li>• <strong>Approval Required:</strong> You can only plan hours for allocations approved by the Growth Team</li>
           <li>• Click on project headers to collapse/expand phases for better organization</li>
-          <li>• Enter the number of hours you plan to work each week for each phase</li>
+          <li>• Enter the number of hours you plan to work each week for each approved phase</li>
           <li>• Edit phase descriptions to explain what you plan to accomplish</li>
-          <li>• Click the "Save Phase Allocations" button to save all changes for that phase</li>
+          <li>• Click the "Request Approval" button to submit your weekly plan for Growth Team approval</li>
           <li>• The progress bar shows how much of your total phase allocation you've distributed</li>
           <li>• Aim to distribute all your allocated hours across the phase duration</li>
           <li>• <strong>Need more hours?</strong> You cannot exceed your allocated total - create an Hour Change Request instead</li>

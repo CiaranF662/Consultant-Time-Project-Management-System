@@ -22,23 +22,38 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { 
-      title, 
-      description, 
-      startDate, 
-      durationInWeeks, 
-      consultantIds, 
+    const {
+      title,
+      description,
+      startDate,
+      durationInWeeks,
+      consultantIds,
       productManagerId,
-      budgetedHours 
+      budgetedHours,
+      consultantAllocations
     } = body;
 
     // Validation
     if (!title || !startDate || !durationInWeeks || !consultantIds || consultantIds.length === 0) {
       return new NextResponse(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
     }
-    
+
     if (!budgetedHours || budgetedHours <= 0) {
       return new NextResponse(JSON.stringify({ error: 'Valid budget hours required' }), { status: 400 });
+    }
+
+    // Validate consultant allocations if provided
+    if (consultantAllocations) {
+      const totalAllocatedHours = Object.values(consultantAllocations).reduce((sum: number, hours: any) => sum + (hours || 0), 0);
+      if (totalAllocatedHours === 0) {
+        return new NextResponse(JSON.stringify({ error: 'At least one consultant must have allocated hours' }), { status: 400 });
+      }
+
+      // Check that all selected consultants have allocations > 0
+      const consultantsWithoutAllocations = consultantIds.filter((id: string) => !consultantAllocations[id] || consultantAllocations[id] <= 0);
+      if (consultantsWithoutAllocations.length > 0) {
+        return new NextResponse(JSON.stringify({ error: 'All selected consultants must have allocated hours greater than 0' }), { status: 400 });
+      }
     }
 
     if (isNaN(parseInt(durationInWeeks, 10)) || parseInt(durationInWeeks, 10) <= 0) {
@@ -85,7 +100,8 @@ export async function POST(request: Request) {
     const allConsultantIds = [...new Set([productManagerId, ...consultantIds])];
     const consultantsData = allConsultantIds.map((id: string) => ({
       userId: id,
-      role: id === productManagerId ? ProjectRole.PRODUCT_MANAGER : ProjectRole.TEAM_MEMBER
+      role: id === productManagerId ? ProjectRole.PRODUCT_MANAGER : ProjectRole.TEAM_MEMBER,
+      allocatedHours: consultantAllocations ? (consultantAllocations[id] || 0) : 0
     }));
 
     // Create project with sprints first
@@ -138,16 +154,20 @@ export async function POST(request: Request) {
       }
     });
 
+    // Consultant allocations are now stored in the ConsultantsOnProjects table
+    // These hours represent the total allocated to each consultant for the entire project
+    // The Product Manager will later create phases and distribute these hours across phases
+
     // Send project assignment notifications to all consultants
     try {
       // Send emails in parallel to all consultants
       await Promise.allSettled(
-        newProject.consultants.map(async (consultant) => {
+        newProject.consultants.map(async (consultant: any) => {
           try {
-            const productManager = newProject.consultants.find(c => c.role === ProjectRole.PRODUCT_MANAGER);
+            const productManager = newProject.consultants.find((c: any) => c.role === ProjectRole.PRODUCT_MANAGER);
             const otherConsultants = newProject.consultants
-              .filter(c => c.userId !== consultant.userId)
-              .map(c => ({
+              .filter((c: any) => c.userId !== consultant.userId)
+              .map((c: any) => ({
                 name: c.user.name || c.user.email || 'Unknown',
                 email: c.user.email || ''
               }));

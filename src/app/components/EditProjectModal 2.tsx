@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import { FaTimes, FaTrash, FaBriefcase, FaUsers, FaUser, FaPlus, FaCheck, FaCalendar, FaClock } from 'react-icons/fa';
+import { FaTimes, FaTrash, FaBriefcase, FaUsers, FaUser, FaPlus, FaCheck, FaCalendar } from 'react-icons/fa';
 
 interface User {
   id: string;
@@ -22,7 +22,6 @@ interface EditProjectModalProps {
     consultants: Array<{
       userId: string;
       role?: string;
-      allocatedHours?: number;
       user: {
         id?: string;
         name: string | null;
@@ -42,24 +41,13 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
   const [title, setTitle] = useState(project.title);
   const [description, setDescription] = useState(project.description || '');
   const [budgetedHours, setBudgetedHours] = useState(project.budgetedHours.toString());
-
+  
   // Consultant management
   const [allConsultants, setAllConsultants] = useState<User[]>([]);
   const [selectedProductManagerId, setSelectedProductManagerId] = useState(project.productManagerId || '');
   const [selectedConsultantIds, setSelectedConsultantIds] = useState<string[]>(
     project.consultants.filter(c => c.role !== 'PRODUCT_MANAGER' && c.userId !== project.productManagerId).map(c => c.userId)
   );
-
-  // Hour allocation management
-  const [consultantAllocations, setConsultantAllocations] = useState<Record<string, number>>(() => {
-    const allocations: Record<string, number> = {};
-    project.consultants.forEach(c => {
-      if (c.allocatedHours) {
-        allocations[c.userId] = c.allocatedHours;
-      }
-    });
-    return allocations;
-  });
   
   // Search and dropdown states
   const [pmSearchQuery, setPmSearchQuery] = useState('');
@@ -136,15 +124,6 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
         throw new Error('Valid budget hours required');
       }
 
-      // Validation for consultant allocations
-      if (consultantAllocations) {
-        const allTeamMemberIds = [selectedProductManagerId, ...selectedConsultantIds].filter(Boolean);
-        const consultantsWithoutAllocations = allTeamMemberIds.filter((id: string) => !consultantAllocations[id] || consultantAllocations[id] <= 0);
-        if (consultantsWithoutAllocations.length > 0) {
-          throw new Error('All selected team members must have allocated hours greater than 0');
-        }
-      }
-
       // Update basic project info
       await axios.patch(`/api/projects/${project.id}`, {
         title: title.trim(),
@@ -152,12 +131,11 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
         budgetedHours: parseInt(budgetedHours)
       });
 
-      // Update consultants with their allocated hours
+      // Update consultants (this might need a separate API endpoint)
       const allProjectConsultantIds = [...new Set([selectedProductManagerId, ...selectedConsultantIds])];
       const consultantsData = allProjectConsultantIds.map(id => ({
         userId: id,
-        role: id === selectedProductManagerId ? 'PRODUCT_MANAGER' : 'TEAM_MEMBER',
-        allocatedHours: consultantAllocations[id] || 0
+        role: id === selectedProductManagerId ? 'PRODUCT_MANAGER' : 'TEAM_MEMBER'
       }));
 
       await axios.patch(`/api/projects/${project.id}/consultants`, {
@@ -199,33 +177,6 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
 
   const removeConsultant = (consultantId: string) => {
     setSelectedConsultantIds(prev => prev.filter(id => id !== consultantId));
-    // Remove their allocation when removing consultant
-    setConsultantAllocations(prev => {
-      const newAllocations = { ...prev };
-      delete newAllocations[consultantId];
-      return newAllocations;
-    });
-  };
-
-  // Calculate total allocated hours
-  const getTotalAllocatedHours = () => {
-    const allTeamMemberIds = [selectedProductManagerId, ...selectedConsultantIds].filter(Boolean);
-    return allTeamMemberIds.reduce((sum, id) => {
-      return sum + (consultantAllocations[id] || 0);
-    }, 0);
-  };
-
-  const getBudgetProgress = () => {
-    const budget = parseInt(budgetedHours) || 0;
-    const allocated = getTotalAllocatedHours();
-    return budget > 0 ? (allocated / budget) * 100 : 0;
-  };
-
-  const updateConsultantAllocation = (consultantId: string, hours: number) => {
-    setConsultantAllocations(prev => ({
-      ...prev,
-      [consultantId]: hours
-    }));
   };
 
   return (
@@ -236,14 +187,9 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
       >
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 flex items-center justify-between text-white">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-              <FaBriefcase className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Edit Project</h1>
-              <p className="text-blue-100">Update project details with professional resource allocation</p>
-            </div>
+          <div>
+            <h1 className="text-xl font-bold">Edit Project</h1>
+            <p className="text-blue-100">Update project details and team assignments</p>
           </div>
           <button
             onClick={onClose}
@@ -252,49 +198,6 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
             <FaTimes className="w-4 h-4" />
           </button>
         </div>
-
-        {/* Budget Progress Indicator - Fixed at top */}
-        {budgetedHours && parseInt(budgetedHours) > 0 && Object.keys(consultantAllocations).length > 0 && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200 p-4">
-            <div className="space-y-3">
-              <div className="flex justify-between items-center text-sm">
-                <span className="font-semibold text-blue-800">Budget Allocation Progress</span>
-                <span className="font-bold text-blue-900">
-                  {getTotalAllocatedHours()} / {budgetedHours} hours
-                  <span className="ml-2 text-xs">
-                    ({Math.round((getTotalAllocatedHours() / parseInt(budgetedHours)) * 100)}%)
-                  </span>
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                <div
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    (getTotalAllocatedHours() / parseInt(budgetedHours)) > 1
-                      ? 'bg-gradient-to-r from-red-500 to-red-600' // Over budget
-                      : (getTotalAllocatedHours() / parseInt(budgetedHours)) >= 0.8
-                      ? 'bg-gradient-to-r from-yellow-500 to-orange-500' // Almost full
-                      : 'bg-gradient-to-r from-green-500 to-blue-500' // Good
-                  }`}
-                  style={{
-                    width: `${Math.min((getTotalAllocatedHours() / parseInt(budgetedHours)) * 100, 100)}%`
-                  }}
-                />
-              </div>
-              <div className="flex justify-between items-center text-xs">
-                <span className={`font-medium ${
-                  parseInt(budgetedHours) >= getTotalAllocatedHours()
-                    ? 'text-green-700'
-                    : 'text-red-700'
-                }`}>
-                  Remaining: {parseInt(budgetedHours) - getTotalAllocatedHours()} hours
-                </span>
-                <span className="text-gray-600">
-                  Team Members: {[selectedProductManagerId, ...selectedConsultantIds].filter(id => id).length}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
@@ -537,91 +440,6 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                 </div>
               </div>
             </div>
-
-            {/* Hour Allocation Section */}
-            {(selectedProductManagerId || selectedConsultantIds.length > 0) && (
-              <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-6 rounded-lg border border-orange-100">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-8 h-8 bg-orange-600 text-white rounded-lg flex items-center justify-center">
-                    <FaClock className="w-4 h-4" />
-                  </div>
-                  <h2 className="text-lg font-bold text-gray-800">Hour Allocation</h2>
-                </div>
-                <div className="space-y-3">
-                  {/* Product Manager Allocation */}
-                  {selectedProductManagerId && (
-                    <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200 shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium mr-4">
-                            <FaUser className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-900 flex items-center gap-2">
-                              {getSelectedProductManager()?.name || getSelectedProductManager()?.email}
-                              <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-medium">
-                                Product Manager
-                              </span>
-                            </p>
-                            <p className="text-sm text-gray-500">{getSelectedProductManager()?.email}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              value={consultantAllocations[selectedProductManagerId] || ''}
-                              onChange={(e) => updateConsultantAllocation(selectedProductManagerId, parseFloat(e.target.value) || 0)}
-                              className="w-20 px-3 py-2 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 text-center"
-                              min="0"
-                              step="0.5"
-                              placeholder="0"
-                            />
-                            <span className="text-sm text-purple-700 font-medium">hours</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Team Members Allocation */}
-                  {getSelectedConsultants().map((consultant) => (
-                    <div key={consultant.id} className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200 shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium mr-4">
-                            <FaUser className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-900 flex items-center gap-2">
-                              {consultant.name || consultant.email}
-                              <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">
-                                Team Member
-                              </span>
-                            </p>
-                            <p className="text-sm text-gray-500">{consultant.email}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              value={consultantAllocations[consultant.id] || ''}
-                              onChange={(e) => updateConsultantAllocation(consultant.id, parseFloat(e.target.value) || 0)}
-                              className="w-20 px-3 py-2 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 text-center"
-                              min="0"
-                              step="0.5"
-                              placeholder="0"
-                            />
-                            <span className="text-sm text-blue-700 font-medium">hours</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Error Display */}
             {error && (

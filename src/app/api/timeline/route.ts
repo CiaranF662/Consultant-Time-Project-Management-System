@@ -86,13 +86,14 @@ export async function GET(request: Request) {
       });
     }
 
-    // Get allocations for all consultants in the date range
+    // Get allocations for all consultants in the date range - only approved hours
     const allocations = await prisma.weeklyAllocation.findMany({
       where: {
         weekStartDate: {
           gte: startDate,
           lte: addWeeks(startDate, weeksToShow)
-        }
+        },
+        planningStatus: 'APPROVED' // Only show approved weekly allocations
       },
       include: {
         phaseAllocation: {
@@ -136,7 +137,7 @@ export async function GET(request: Request) {
           return allocTime >= weekStartTime && allocTime <= weekEndTime;
         });
 
-        const totalHours = weekAllocations.reduce((sum, a) => sum + a.plannedHours, 0);
+        const totalHours = weekAllocations.reduce((sum, a) => sum + (a.approvedHours || 0), 0);
         
         return {
           week: week.label,
@@ -148,7 +149,7 @@ export async function GET(request: Request) {
             
             return {
               id: a.id,
-              hours: a.plannedHours,
+              hours: a.approvedHours || 0,
               project: a.phaseAllocation.phase.project.title,
               projectId: a.phaseAllocation.phase.project.id,
               phase: a.phaseAllocation.phase.name,

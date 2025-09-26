@@ -33,7 +33,8 @@ interface WeeklyAllocation {
   phaseAllocationId: string;
   weekNumber: number;
   year: number;
-  plannedHours: number;
+  proposedHours?: number | null;
+  approvedHours?: number | null;
   weekStartDate: Date;
 }
 
@@ -47,7 +48,9 @@ interface PhaseAllocation {
 }
 
 interface ConsultantAllocation {
-  plannedHours: number;
+  proposedHours?: number | null;
+  approvedHours?: number | null;
+  planningStatus: 'PENDING' | 'APPROVED' | 'MODIFIED' | 'REJECTED';
   phaseAllocation: {
     phase: {
       name: string;
@@ -92,19 +95,27 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
 
   // Calculate current week's total hours
   const currentWeekHours = (data.currentWeekAllocations || []).reduce((sum: number, allocation: any) => {
-    return sum + allocation.plannedHours;
+    return sum + (allocation.approvedHours || allocation.proposedHours || 0);
   }, 0);
 
-  // Calculate total allocated hours across all phases
+  // Calculate total allocated hours across all phases (only approved allocations)
   const totalAllocatedHours = data.phaseAllocations.reduce((sum, allocation) => {
-    return sum + allocation.totalHours;
+    // Only count approved allocations
+    if (allocation.approvalStatus === 'APPROVED') {
+      return sum + allocation.totalHours;
+    }
+    return sum;
   }, 0);
 
-  // Calculate distributed hours
+  // Calculate distributed hours (only from approved allocations)
   const totalDistributedHours = data.phaseAllocations.reduce((sum, allocation) => {
-    return sum + allocation.weeklyAllocations.reduce((weekSum: number, week: any) => {
-      return weekSum + week.plannedHours;
-    }, 0);
+    // Only include weekly allocations from approved phase allocations
+    if (allocation.approvalStatus === 'APPROVED') {
+      return sum + allocation.weeklyAllocations.reduce((weekSum: number, week: any) => {
+        return weekSum + (week.approvedHours || week.proposedHours || 0);
+      }, 0);
+    }
+    return sum;
   }, 0);
 
   return (
@@ -219,7 +230,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {data.phaseAllocations.map((allocation) => {
             const distributed = allocation.weeklyAllocations.reduce((sum: number, week: any) => {
-              return sum + week.plannedHours;
+              return sum + (week.approvedHours || week.proposedHours || 0);
             }, 0);
             const remaining = allocation.totalHours - distributed;
             const progress = allocation.totalHours > 0 ? (distributed / allocation.totalHours) * 100 : 0;

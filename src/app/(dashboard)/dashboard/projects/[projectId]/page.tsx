@@ -24,7 +24,8 @@ interface PhaseAllocation {
   consultantId: string;
   consultantName: string;
   hours: number; // Changed from allocatedHours to hours
-  usedHours: number;
+  plannedHours: number;
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
 }
 
 interface PhaseWithAllocations extends Phase {
@@ -34,6 +35,7 @@ interface PhaseWithAllocations extends Phase {
     id: string;
     consultantId: string;
     totalHours: number;
+    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
     weeklyAllocations: Array<{
       id: string;
       plannedHours: number;
@@ -48,6 +50,8 @@ interface PhaseWithAllocations extends Phase {
 
 interface ConsultantsOnProject {
   userId: string;
+  role?: string;
+  allocatedHours?: number | null;
   user: { name: string | null };
 }
 
@@ -221,7 +225,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
             </div>
             
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 
                 <div className="flex items-center gap-2">
                   <FaClock className="text-gray-400" />
@@ -249,31 +253,58 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
 
                 <div className="flex items-center gap-2">
                   <div>
-                    <div className="text-sm text-gray-600">Allocation</div>
+                    <div className="text-sm text-gray-600">Phase Allocation</div>
                     <div className="font-medium">{totalAllocatedHours}h / {project.budgetedHours}h</div>
                     <div className="text-xs text-gray-500">({Math.round((totalAllocatedHours / project.budgetedHours) * 100)}%)</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div>
+                    <div className="text-sm text-gray-600">Team Allocation</div>
+                    <div className="font-medium">
+                      {project.consultants.reduce((sum, c) => sum + (c.allocatedHours || 0), 0)}h / {project.budgetedHours}h
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      ({Math.round((project.consultants.reduce((sum, c) => sum + (c.allocatedHours || 0), 0) / project.budgetedHours) * 100)}%)
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Team Members */}
               <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex flex-wrap items-center gap-4 text-sm">
+                <div className="space-y-3">
                   {project.productManager && (
-                    <div>
-                      <span className="text-gray-600">Product Manager:</span>
-                      <span className={`ml-2 rounded-md px-2 py-1 text-xs font-semibold ${generateColorFromString(project.productManagerId || '')}`}>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-gray-600 font-medium">Product Manager:</span>
+                      <span className={`rounded-md px-3 py-1 text-sm font-semibold ${generateColorFromString(project.productManagerId || '')}`}>
                         {project.productManager.name}
+                        {(() => {
+                          const pmConsultant = project.consultants.find(c => c.userId === project.productManagerId);
+                          return pmConsultant?.allocatedHours ? (
+                            <span className="ml-2 text-xs bg-white bg-opacity-30 px-1 py-0.5 rounded">
+                              {pmConsultant.allocatedHours}h
+                            </span>
+                          ) : (
+                            <span className="ml-2 text-xs bg-white bg-opacity-30 px-1 py-0.5 rounded">
+                              0h
+                            </span>
+                          );
+                        })()}
                       </span>
                     </div>
                   )}
-                  
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-600">Team:</span>
-                    <div className="flex flex-wrap gap-1">
-                      {project.consultants.map(c => (
-                        <span key={c.userId} className={`rounded-md px-2 py-1 text-xs font-semibold ${generateColorFromString(c.userId)}`}>
+
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-600 font-medium">Team Members:</span>
+                    <div className="flex flex-wrap gap-2">
+                      {project.consultants.filter(c => c.role !== 'PRODUCT_MANAGER').map(c => (
+                        <span key={c.userId} className={`rounded-md px-3 py-1 text-sm font-semibold ${generateColorFromString(c.userId)}`}>
                           {c.user.name}
+                          <span className="ml-2 text-xs bg-white bg-opacity-30 px-1 py-0.5 rounded">
+                            {c.allocatedHours || 0}h
+                          </span>
                         </span>
                       ))}
                     </div>

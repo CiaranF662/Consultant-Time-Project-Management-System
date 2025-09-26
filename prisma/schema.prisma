@@ -27,6 +27,11 @@ model User {
   managedProjects    Project[]               @relation("ProductManager")
   sessions           Session[]
   weeklyAllocations  WeeklyAllocation[]
+
+  // Two-stage approval relations
+  approvedPhaseAllocations    PhaseAllocation[]  @relation("PhaseAllocationApprover")
+  plannedWeeklyAllocations    WeeklyAllocation[] @relation("WeeklyAllocationPlanner")
+  approvedWeeklyAllocations   WeeklyAllocation[] @relation("WeeklyAllocationApprover")
 }
 
 model Project {
@@ -46,12 +51,13 @@ model Project {
 }
 
 model ConsultantsOnProjects {
-  userId     String
-  projectId  String
-  assignedAt DateTime    @default(now())
-  role       ProjectRole @default(TEAM_MEMBER)
-  project    Project     @relation(fields: [projectId], references: [id])
-  user       User        @relation(fields: [userId], references: [id])
+  userId         String
+  projectId      String
+  assignedAt     DateTime    @default(now())
+  role           ProjectRole @default(TEAM_MEMBER)
+  allocatedHours Float?      // Total hours allocated to this consultant for the entire project
+  project        Project     @relation(fields: [projectId], references: [id])
+  user           User        @relation(fields: [userId], references: [id])
 
   @@id([userId, projectId])
 }
@@ -93,9 +99,17 @@ model PhaseAllocation {
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
   consultantDescription String?
+
+  // Stage 1 approval fields
+  approvalStatus        ApprovalStatus     @default(PENDING)
+  approvedBy            String?
+  approvedAt            DateTime?
+  rejectionReason       String?
+
   consultant            User               @relation(fields: [consultantId], references: [id])
   phase                 Phase              @relation(fields: [phaseId], references: [id], onDelete: Cascade)
   weeklyAllocations     WeeklyAllocation[]
+  approver              User?              @relation("PhaseAllocationApprover", fields: [approvedBy], references: [id])
 
   @@unique([phaseId, consultantId])
 }
@@ -108,11 +122,24 @@ model WeeklyAllocation {
   weekEndDate       DateTime
   weekNumber        Int
   year              Int
-  plannedHours      Float
+
+  // Two-stage approval fields (legacy data migration support)
+  proposedHours     Float?
+  approvedHours     Float?
+  planningStatus    PlanningStatus  @default(PENDING)
+
+  plannedBy         String?
+  approvedBy        String?
+  approvedAt        DateTime?
+  rejectionReason   String?
+
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+
   consultant        User            @relation(fields: [consultantId], references: [id])
   phaseAllocation   PhaseAllocation @relation(fields: [phaseAllocationId], references: [id], onDelete: Cascade)
+  planner           User?           @relation("WeeklyAllocationPlanner", fields: [plannedBy], references: [id])
+  approver          User?           @relation("WeeklyAllocationApprover", fields: [approvedBy], references: [id])
 
   @@unique([phaseAllocationId, weekNumber, year])
   @@index([consultantId, weekStartDate])
@@ -200,6 +227,13 @@ enum NotificationType {
   PHASE_DEADLINE_WARNING
   USER_APPROVAL_NEEDED
   OVERDUE_APPROVAL_ALERT
+  PHASE_ALLOCATION_PENDING
+  PHASE_ALLOCATION_APPROVED
+  PHASE_ALLOCATION_REJECTED
+  WEEKLY_ALLOCATION_PENDING
+  WEEKLY_ALLOCATION_APPROVED
+  WEEKLY_ALLOCATION_MODIFIED
+  WEEKLY_ALLOCATION_REJECTED
 }
 
 enum UserRole {
@@ -226,4 +260,17 @@ enum ChangeType {
 enum ProjectRole {
   PRODUCT_MANAGER
   TEAM_MEMBER
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PlanningStatus {
+  PENDING
+  APPROVED
+  MODIFIED
+  REJECTED
 }

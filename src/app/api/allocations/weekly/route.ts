@@ -62,14 +62,15 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { phaseAllocationId, weekStartDate, plannedHours, consultantDescription } = body;
+    const { phaseAllocationId, weekStartDate, plannedHours, consultantDescription, clearRejection } = body;
     
     console.log('Weekly allocation request:', {
       phaseAllocationId,
       weekStartDate,
       plannedHours: typeof plannedHours,
       plannedHoursValue: plannedHours,
-      consultantId: session.user.id
+      consultantId: session.user.id,
+      clearRejection
     });
 
     // Validate required fields
@@ -89,13 +90,17 @@ export async function POST(request: Request) {
       return new NextResponse(JSON.stringify({ error: 'plannedHours must be a non-negative number' }), { status: 400 });
     }
 
-    // Verify the consultant owns this allocation
+    // Verify the consultant owns this allocation and it's approved
     const phaseAllocation = await prisma.phaseAllocation.findUnique({
       where: { id: phaseAllocationId }
     });
 
     if (!phaseAllocation || phaseAllocation.consultantId !== session.user.id) {
       return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
+    }
+
+    if (phaseAllocation.approvalStatus !== 'APPROVED') {
+      return new NextResponse(JSON.stringify({ error: 'Phase allocation must be approved before weekly planning' }), { status: 400 });
     }
 
     const weekStart = startOfWeek(new Date(weekStartDate), { weekStartsOn: 1 }); // Monday
@@ -124,11 +129,35 @@ export async function POST(request: Request) {
 
     let allocation;
     if (existing) {
+      console.log('Updating existing allocation:', {
+        id: existing.id,
+        currentStatus: existing.planningStatus,
+        currentRejectionReason: existing.rejectionReason,
+        newHours: plannedHours
+      });
+
+      // Update existing allocation (reset to PENDING if modifying)
       allocation = await prisma.weeklyAllocation.update({
         where: { id: existing.id },
-        data: { plannedHours }
+        data: {
+          proposedHours: plannedHours,
+          planningStatus: 'PENDING',
+          plannedBy: session.user.id,
+          approvedHours: null,
+          approvedBy: null,
+          approvedAt: null,
+          rejectionReason: null
+        }
+      });
+
+      console.log('Updated allocation:', {
+        id: allocation.id,
+        newStatus: allocation.planningStatus,
+        newRejectionReason: allocation.rejectionReason,
+        proposedHours: allocation.proposedHours
       });
     } else {
+      // Create new allocation (requires Growth Team approval)
       allocation = await prisma.weeklyAllocation.create({
         data: {
           phaseAllocationId,
@@ -137,7 +166,9 @@ export async function POST(request: Request) {
           weekEndDate: weekEnd,
           weekNumber,
           year,
-          plannedHours
+          proposedHours: plannedHours,
+          planningStatus: 'PENDING',
+          plannedBy: session.user.id
         }
       });
     }

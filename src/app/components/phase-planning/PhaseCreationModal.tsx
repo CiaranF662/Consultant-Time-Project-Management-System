@@ -15,6 +15,8 @@ interface User {
   id: string;
   name: string | null;
   email: string | null;
+  allocatedHours?: number;
+  role?: string;
 }
 
 interface Project {
@@ -45,6 +47,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
   const [selectedConsultantIds, setSelectedConsultantIds] = useState<string[]>([]);
   const [consultantHours, setConsultantHours] = useState<Record<string, number>>({});
   const [consultants, setConsultants] = useState<User[]>([]);
+  const [allocatedToPhases, setAllocatedToPhases] = useState<Record<string, number>>({});
   
   // UI state
   const [error, setError] = useState<string | null>(null);
@@ -52,18 +55,45 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
   const [consultantSearchQuery, setConsultantSearchQuery] = useState('');
   const [showConsultantDropdown, setShowConsultantDropdown] = useState(false);
 
-  // Fetch consultants when modal opens
+  // Fetch project team members and their used hours when modal opens
   useEffect(() => {
-    const fetchConsultants = async () => {
+    const fetchProjectTeamData = async () => {
       try {
-        const { data } = await axios.get('/api/users?role=CONSULTANT');
-        setConsultants(data);
+        // Fetch team members with their project allocations
+        const { data: teamData } = await axios.get(`/api/projects/${project.id}/consultants`);
+        const teamMembers = teamData.map((member: any) => ({
+          id: member.user.id,
+          name: member.user.name,
+          email: member.user.email,
+          allocatedHours: member.allocatedHours || 0,
+          role: member.role
+        }));
+        setConsultants(teamMembers);
+
+        // Fetch used hours for each consultant from existing phase allocations
+        const { data: projectData } = await axios.get(`/api/projects/${project.id}`);
+        const allocatedToPhasesMap: Record<string, number> = {};
+
+        if (projectData.phases) {
+          projectData.phases.forEach((phase: any) => {
+            if (phase.allocations) {
+              phase.allocations.forEach((allocation: any) => {
+                if (!allocatedToPhasesMap[allocation.consultantId]) {
+                  allocatedToPhasesMap[allocation.consultantId] = 0;
+                }
+                allocatedToPhasesMap[allocation.consultantId] += allocation.totalHours || 0;
+              });
+            }
+          });
+        }
+
+        setAllocatedToPhases(allocatedToPhasesMap);
       } catch (err) {
-        setError('Failed to load consultants.');
+        setError('Failed to load project team data.');
       }
     };
-    fetchConsultants();
-  }, []);
+    fetchProjectTeamData();
+  }, [project.id]);
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -487,39 +517,113 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                   Select consultants who will work on this phase and optionally set their initial hour allocation.
                 </p>
                 
-                {/* Selected Consultants Display with Hour Allocation */}
+                {/* Selected Team Members with Professional Hour Allocation */}
                 {selectedConsultantIds.length > 0 && (
                   <div className="mb-4">
-                    <div className="bg-white rounded-lg border-2 border-green-200 p-4">
-                      <div className="text-sm font-semibold text-green-800 mb-3">Selected Team Members</div>
+                    <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg border border-orange-100 p-4">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-6 h-6 bg-orange-600 text-white rounded-lg flex items-center justify-center">
+                          <FaClock className="w-3 h-3" />
+                        </div>
+                        <div className="text-sm font-semibold text-gray-800">Phase Hour Allocation</div>
+                      </div>
+
                       <div className="space-y-3">
                         {selectedConsultantIds.map((consultantId) => {
                           const consultant = consultants.find(c => c.id === consultantId);
+                          const allocatedHours = consultant?.allocatedHours || 0;
+                          const currentAllocatedToPhases = allocatedToPhases[consultantId] || 0;
+                          const availableHours = allocatedHours - currentAllocatedToPhases;
+                          const phaseHours = consultantHours[consultantId] || 0;
+                          const isOverAllocated = phaseHours > availableHours;
+
                           return (
-                            <div key={consultantId} className="flex items-center gap-3 p-2 bg-green-50 rounded-lg border border-green-100">
-                              <div className="flex-1">
-                                <div className="font-medium text-gray-800 text-sm">{consultant?.name}</div>
-                                <div className="text-xs text-gray-600">{consultant?.email}</div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="0.5"
-                                  value={consultantHours[consultantId] || 0}
-                                  onChange={(e) => updateConsultantHours(consultantId, parseFloat(e.target.value) || 0)}
-                                  className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:border-green-500 focus:ring-1 focus:ring-green-500"
-                                  placeholder="0"
-                                />
-                                <span className="text-xs text-gray-600">hrs</span>
-                                <button
-                                  type="button"
-                                  onClick={() => removeConsultant(consultantId)}
-                                  className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                                  title="Remove consultant"
-                                >
-                                  <FaTimes className="w-3 h-3" />
-                                </button>
+                            <div key={consultantId} className={`p-4 rounded-lg border shadow-sm transition-all duration-200 ${
+                              consultant?.role === 'PRODUCT_MANAGER'
+                                ? 'bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200'
+                                : 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200'
+                            } ${isOverAllocated ? 'ring-2 ring-red-200' : ''}`}>
+
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium mr-4 ${
+                                    consultant?.role === 'PRODUCT_MANAGER' ? 'bg-purple-600' : 'bg-blue-600'
+                                  }`}>
+                                    <FaUser className="w-4 h-4" />
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <p className="font-semibold text-gray-900">{consultant?.name}</p>
+                                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                        consultant?.role === 'PRODUCT_MANAGER'
+                                          ? 'bg-purple-100 text-purple-800'
+                                          : 'bg-blue-100 text-blue-800'
+                                      }`}>
+                                        {consultant?.role === 'PRODUCT_MANAGER' ? 'Product Manager' : 'Team Member'}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-gray-500 mb-2">{consultant?.email}</p>
+
+                                    {/* Project allocation summary */}
+                                    <div className="flex items-center gap-4">
+                                      <div className="text-xs">
+                                        <span className="text-gray-500">Project:</span>
+                                        <span className="font-semibold text-blue-600 ml-1">{allocatedHours}h</span>
+                                      </div>
+                                      <div className="text-xs">
+                                        <span className="text-gray-500">Allocated:</span>
+                                        <span className="font-semibold text-gray-700 ml-1">{currentAllocatedToPhases}h</span>
+                                      </div>
+                                      <div className="text-xs">
+                                        <span className="text-gray-500">Available:</span>
+                                        <span className={`font-semibold ml-1 ${availableHours > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                          {availableHours}h
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                  <div className="text-right">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        step="0.5"
+                                        max={availableHours}
+                                        value={consultantHours[consultantId] ? consultantHours[consultantId] : ''}
+                                        onChange={(e) => updateConsultantHours(consultantId, parseFloat(e.target.value) || 0)}
+                                        className={`w-20 px-3 py-2 text-sm border-2 rounded-lg focus:ring-2 focus:ring-opacity-50 text-center transition-all duration-200 ${
+                                          isOverAllocated
+                                            ? 'border-red-300 focus:border-red-500 focus:ring-red-500 bg-red-50'
+                                            : consultant?.role === 'PRODUCT_MANAGER'
+                                            ? 'border-purple-200 focus:border-purple-500 focus:ring-purple-500'
+                                            : 'border-blue-200 focus:border-blue-500 focus:ring-blue-500'
+                                        }`}
+                                        placeholder="0"
+                                      />
+                                      <span className={`text-sm font-medium ${
+                                        consultant?.role === 'PRODUCT_MANAGER' ? 'text-purple-700' : 'text-blue-700'
+                                      }`}>hours</span>
+                                    </div>
+
+                                    {isOverAllocated && (
+                                      <div className="text-xs text-red-600">
+                                        ⚠️ Over by {phaseHours - availableHours}h
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => removeConsultant(consultantId)}
+                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200"
+                                    title="Remove from phase"
+                                  >
+                                    <FaTimes className="w-4 h-4" />
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           );
@@ -550,21 +654,44 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                       {getFilteredConsultants().filter(c => !selectedConsultantIds.includes(c.id)).length === 0 ? (
                         <div className="px-3 py-2 text-gray-500 text-sm">No available consultants found</div>
                       ) : (
-                        getFilteredConsultants().filter(c => !selectedConsultantIds.includes(c.id)).map((consultant) => (
-                          <button
-                            key={consultant.id}
-                            type="button"
-                            onClick={() => {
-                              handleConsultantToggle(consultant.id);
-                              setConsultantSearchQuery('');
-                              setShowConsultantDropdown(false);
-                            }}
-                            className="w-full text-left px-3 py-2 hover:bg-green-50 focus:bg-green-50 focus:outline-none border-b border-gray-100 last:border-b-0"
-                          >
-                            <div className="font-medium text-gray-800 text-sm">{consultant.name}</div>
-                            <div className="text-xs text-gray-600">{consultant.email}</div>
-                          </button>
-                        ))
+                        getFilteredConsultants().filter(c => !selectedConsultantIds.includes(c.id)).map((consultant) => {
+                          const allocatedHours = consultant.allocatedHours || 0;
+                          const currentAllocatedToPhases = allocatedToPhases[consultant.id] || 0;
+                          const availableHours = allocatedHours - currentAllocatedToPhases;
+
+                          return (
+                            <button
+                              key={consultant.id}
+                              type="button"
+                              onClick={() => {
+                                handleConsultantToggle(consultant.id);
+                                setConsultantSearchQuery('');
+                                setShowConsultantDropdown(false);
+                              }}
+                              className="w-full text-left px-3 py-3 hover:bg-green-50 focus:bg-green-50 focus:outline-none border-b border-gray-100 last:border-b-0"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <div className="font-medium text-gray-800 text-sm">{consultant.name}</div>
+                                    {consultant.role === 'PRODUCT_MANAGER' && (
+                                      <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full font-medium">
+                                        PM
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-gray-600">{consultant.email}</div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-xs text-gray-500">Available</div>
+                                  <div className={`text-sm font-semibold ${availableHours > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                                    {availableHours}h
+                                  </div>
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })
                       )}
                     </div>
                   )}

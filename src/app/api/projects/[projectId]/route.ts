@@ -49,11 +49,16 @@ export async function GET(
           },
         },
         consultants: {
-          include: { 
-            user: { 
-              select: { id: true, name: true, email: true } 
-            } 
+          select: {
+            userId: true,
+            role: true,
+            allocatedHours: true,
+            assignedAt: true,
+            user: {
+              select: { id: true, name: true, email: true }
+            }
           },
+          orderBy: { assignedAt: 'asc' }
         },
         productManager: {
           select: { id: true, name: true, email: true }
@@ -65,6 +70,9 @@ export async function GET(
       return new NextResponse(JSON.stringify({ error: 'Project not found or not authorized' }), { status: 404 });
     }
 
+    // Debug: Log consultant data to see what's being retrieved
+    console.log('Consultant data from database:', JSON.stringify(project.consultants, null, 2));
+
     // Transform the data to match frontend expectations
     const transformedProject = {
       ...project,
@@ -75,13 +83,15 @@ export async function GET(
           consultantId: allocation.consultantId,
           consultantName: allocation.consultant.name || allocation.consultant.email || 'Unknown',
           hours: allocation.totalHours,
-          usedHours: allocation.weeklyAllocations.reduce((sum, wa) => sum + wa.plannedHours, 0)
+          plannedHours: allocation.weeklyAllocations.reduce((sum, wa) => sum + wa.plannedHours, 0),
+          approvalStatus: allocation.approvalStatus
         })),
         // Keep allocations for phase status calculation
         allocations: phase.allocations.map(allocation => ({
           id: allocation.id,
           consultantId: allocation.consultantId,
           totalHours: allocation.totalHours,
+          approvalStatus: allocation.approvalStatus,
           weeklyAllocations: allocation.weeklyAllocations
         }))
       }))

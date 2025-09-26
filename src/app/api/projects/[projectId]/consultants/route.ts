@@ -39,23 +39,29 @@ export async function GET(
       return new NextResponse(JSON.stringify({ error: 'Project not found or not authorized' }), { status: 404 });
     }
 
-    // Get consultants assigned to this project
-    const consultants = await prisma.user.findMany({
+    // Get consultants assigned to this project with their allocated hours
+    const consultantAssignments = await prisma.consultantsOnProjects.findMany({
       where: {
-        projectAssignments: {
-          some: { projectId: projectId }
+        projectId: projectId
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
         }
       },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true
-      },
-      orderBy: { name: 'asc' }
+      orderBy: {
+        user: {
+          name: 'asc'
+        }
+      }
     });
 
-    return NextResponse.json(consultants);
+    return NextResponse.json(consultantAssignments);
   } catch (error) {
     console.error('Failed to fetch project consultants:', error);
     return new NextResponse(JSON.stringify({ error: 'Internal server error' }), { status: 500 });
@@ -94,6 +100,9 @@ export async function PATCH(
       }
       if (!['PRODUCT_MANAGER', 'TEAM_MEMBER'].includes(consultant.role)) {
         return new NextResponse(JSON.stringify({ error: 'Invalid consultant role' }), { status: 400 });
+      }
+      if (consultant.allocatedHours !== undefined && (isNaN(consultant.allocatedHours) || consultant.allocatedHours < 0)) {
+        return new NextResponse(JSON.stringify({ error: 'Allocated hours must be a non-negative number' }), { status: 400 });
       }
     }
 
@@ -146,7 +155,8 @@ export async function PATCH(
         data: consultants.map(c => ({
           userId: c.userId,
           projectId,
-          role: c.role === 'PRODUCT_MANAGER' ? ProjectRole.PRODUCT_MANAGER : ProjectRole.TEAM_MEMBER
+          role: c.role === 'PRODUCT_MANAGER' ? ProjectRole.PRODUCT_MANAGER : ProjectRole.TEAM_MEMBER,
+          allocatedHours: c.allocatedHours || 0
         }))
       });
 

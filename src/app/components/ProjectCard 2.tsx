@@ -86,7 +86,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             </div>
             <div className="flex justify-between mt-1">
               <span className="text-xs text-gray-500">
-                {totalAllocated}h approved
+                {totalAllocated}h allocated
               </span>
               <span className="text-xs text-gray-500">
                 {project.budgetedHours}h budget

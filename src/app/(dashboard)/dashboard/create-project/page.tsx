@@ -26,7 +26,8 @@ export default function CreateProjectPage() {
   const [consultants, setConsultants] = useState<User[]>([]);
   const [selectedProductManagerId, setSelectedProductManagerId] = useState<string>('');
   const [selectedConsultantIds, setSelectedConsultantIds] = useState<string[]>([]);
-  
+  const [consultantAllocations, setConsultantAllocations] = useState<Record<string, number>>({});
+
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -46,6 +47,32 @@ export default function CreateProjectPage() {
   const handleConsultantChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
     setSelectedConsultantIds(selectedOptions);
+
+    // Initialize allocations for new consultants, remove for unselected ones
+    const newAllocations = { ...consultantAllocations };
+
+    // Remove allocations for unselected consultants
+    Object.keys(newAllocations).forEach(consultantId => {
+      if (!selectedOptions.includes(consultantId)) {
+        delete newAllocations[consultantId];
+      }
+    });
+
+    // Initialize allocations for newly selected consultants
+    selectedOptions.forEach(consultantId => {
+      if (!(consultantId in newAllocations)) {
+        newAllocations[consultantId] = 0;
+      }
+    });
+
+    setConsultantAllocations(newAllocations);
+  };
+
+  const handleAllocationChange = (consultantId: string, hours: number) => {
+    setConsultantAllocations(prev => ({
+      ...prev,
+      [consultantId]: hours
+    }));
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,6 +93,25 @@ export default function CreateProjectPage() {
       return;
     }
 
+    // Validate consultant allocations
+    const totalAllocatedHours = selectedConsultantIds.reduce((sum, id) => {
+      return sum + (consultantAllocations[id] || 0);
+    }, 0);
+
+    if (totalAllocatedHours === 0) {
+      setError('You must allocate hours to at least one consultant.');
+      setIsLoading(false);
+      return;
+    }
+
+    // Check for consultants with zero hours
+    const consultantsWithoutHours = selectedConsultantIds.filter(id => !consultantAllocations[id] || consultantAllocations[id] <= 0);
+    if (consultantsWithoutHours.length > 0) {
+      setError('All selected consultants must have allocated hours greater than 0.');
+      setIsLoading(false);
+      return;
+    }
+
     if (!budgetedHours || parseInt(budgetedHours, 10) <= 0) {
       setError('You must specify a valid budget in hours.');
       setIsLoading(false);
@@ -78,6 +124,15 @@ export default function CreateProjectPage() {
       return;
     }
 
+    // Warn if total allocated hours exceed budget
+    const budget = parseInt(budgetedHours, 10);
+    if (totalAllocatedHours > budget) {
+      if (!confirm(`Total allocated hours (${totalAllocatedHours}) exceed project budget (${budget}). Do you want to continue?`)) {
+        setIsLoading(false);
+        return;
+      }
+    }
+
     try {
       const response = await axios.post('/api/projects', {
         title,
@@ -87,6 +142,7 @@ export default function CreateProjectPage() {
         budgetedHours: parseInt(budgetedHours, 10),
         productManagerId: selectedProductManagerId,
         consultantIds: selectedConsultantIds,
+        consultantAllocations: consultantAllocations,
       });
 
       if (response.status === 201) {
@@ -285,28 +341,93 @@ export default function CreateProjectPage() {
                         ))}
                       </select>
                       <p className="mt-1 text-xs text-gray-500">
-                        Hold Command (Mac) or Ctrl (Windows) to select multiple consultants. These consultants will be available for phase allocation.
+                        Hold Command (Mac) or Ctrl (Windows) to select multiple consultants.
                       </p>
                     </div>
 
-                    {/* Team Summary */}
-                    {(selectedProductManagerId || selectedConsultantIds.length > 0) && (
-                      <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                        <h3 className="font-medium text-blue-800 mb-2">Team Summary</h3>
-                        <div className="space-y-1 text-sm">
-                          {selectedProductManagerId && (
-                            <div>
-                              <strong>Product Manager:</strong> {consultants.find(c => c.id === selectedProductManagerId)?.name}
+                    {/* Hour Allocation Section */}
+                    {selectedConsultantIds.length > 0 && (
+                      <div className="mt-6">
+                        <h3 className="text-md font-medium text-gray-800 mb-3">Initial Hour Allocation</h3>
+                        <div className="space-y-3">
+                          {selectedConsultantIds.map(consultantId => {
+                            const consultant = consultants.find(c => c.id === consultantId);
+                            if (!consultant) return null;
+
+                            return (
+                              <div key={consultantId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div className="flex items-center">
+                                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium mr-3">
+                                    {consultant.name?.charAt(0) || consultant.email?.charAt(0) || 'U'}
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-gray-900">{consultant.name}</p>
+                                    <p className="text-xs text-gray-500">{consultant.email}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={consultantAllocations[consultantId] || ''}
+                                    onChange={(e) => handleAllocationChange(consultantId, parseInt(e.target.value) || 0)}
+                                    className="w-24 rounded-md border-gray-300 text-sm"
+                                    placeholder="0"
+                                  />
+                                  <span className="ml-2 text-sm text-gray-500">hours</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Allocation Summary */}
+                        {Object.keys(consultantAllocations).length > 0 && (
+                          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="font-medium text-blue-800">Total Allocated Hours:</span>
+                              <span className="font-bold text-blue-900">
+                                {selectedConsultantIds.reduce((sum, id) => sum + (consultantAllocations[id] || 0), 0)} hours
+                              </span>
                             </div>
-                          )}
+                            {budgetedHours && (
+                              <div className="flex justify-between items-center text-sm mt-1">
+                                <span className="text-blue-700">Remaining Budget:</span>
+                                <span className={`font-medium ${
+                                  parseInt(budgetedHours) >= selectedConsultantIds.reduce((sum, id) => sum + (consultantAllocations[id] || 0), 0)
+                                    ? 'text-green-700'
+                                    : 'text-red-700'
+                                }`}>
+                                  {parseInt(budgetedHours) - selectedConsultantIds.reduce((sum, id) => sum + (consultantAllocations[id] || 0), 0)} hours
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Team Summary */}
+                    {selectedProductManagerId && (
+                      <div className="mt-4 p-4 bg-green-50 rounded-lg">
+                        <h3 className="font-medium text-green-800 mb-2">Project Summary</h3>
+                        <div className="space-y-1 text-sm">
+                          <div>
+                            <strong>Product Manager:</strong> {consultants.find(c => c.id === selectedProductManagerId)?.name}
+                          </div>
                           {selectedConsultantIds.length > 0 && (
                             <div>
                               <strong>Team Size:</strong> {selectedConsultantIds.length} consultant(s)
                             </div>
                           )}
-                          {budgetedHours && selectedConsultantIds.length > 0 && (
+                          {budgetedHours && (
                             <div>
-                              <strong>Average Hours per Consultant:</strong> {Math.round(parseInt(budgetedHours) / selectedConsultantIds.length)} hours
+                              <strong>Project Budget:</strong> {budgetedHours} hours
+                            </div>
+                          )}
+                          {Object.keys(consultantAllocations).length > 0 && (
+                            <div>
+                              <strong>Initial Allocation:</strong> {selectedConsultantIds.reduce((sum, id) => sum + (consultantAllocations[id] || 0), 0)} hours
                             </div>
                           )}
                         </div>

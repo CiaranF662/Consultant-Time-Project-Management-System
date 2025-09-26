@@ -17,6 +17,8 @@ interface Sprint {
 interface PhaseAllocation {
   id: string;
   totalHours: number;
+  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejectionReason?: string | null;
   phase: {
     id: string;
     name: string;
@@ -33,7 +35,9 @@ interface PhaseAllocation {
     id: string;
     weekNumber: number;
     year: number;
-    plannedHours: number;
+    proposedHours?: number | null;
+    approvedHours?: number | null;
+    planningStatus: 'PENDING' | 'APPROVED' | 'MODIFIED' | 'REJECTED';
     weekStartDate: Date;
     weekEndDate: Date;
   }>;
@@ -43,7 +47,8 @@ interface UpcomingAllocation {
   id: string;
   weekNumber: number;
   year: number;
-  plannedHours: number;
+  proposedHours?: number | null;
+  approvedHours?: number | null;
   weekStartDate: Date;
   weekEndDate: Date;
   phaseAllocation: {
@@ -95,7 +100,7 @@ export default function AllocationsDashboard({ data, userId, userName }: Allocat
         totalHours: allocation.totalHours,
         weeklyAllocations: allocation.weeklyAllocations.map(week => ({
           id: week.id,
-          plannedHours: week.plannedHours,
+          plannedHours: week.approvedHours || week.proposedHours || 0, // For backward compatibility with getPhaseStatus
           weekStartDate: new Date(week.weekStartDate),
           weekEndDate: new Date(week.weekEndDate),
           weekNumber: week.weekNumber,
@@ -107,17 +112,42 @@ export default function AllocationsDashboard({ data, userId, userName }: Allocat
     return getPhaseStatus(phaseData);
   };
 
-  // Keep the old function for backward compatibility where needed
-  const getLegacyPlanningStatus = (allocation: PhaseAllocation) => {
-    const distributed = allocation.weeklyAllocations.reduce((sum, week) => sum + week.plannedHours, 0);
-    const remaining = allocation.totalHours - distributed;
-    
-    if (remaining === 0) {
-      return { status: 'complete', label: 'Fully Distributed', color: 'green' };
+  // Get approval status for phase allocation
+  const getPhaseApprovalStatus = (allocation: PhaseAllocation) => {
+    switch (allocation.approvalStatus) {
+      case 'APPROVED':
+        return { status: 'approved', label: 'Phase Approved', color: 'green', icon: 'check' };
+      case 'REJECTED':
+        return { status: 'rejected', label: 'Phase Rejected', color: 'red', icon: 'warning' };
+      default:
+        return { status: 'pending', label: 'Pending Approval', color: 'yellow', icon: 'clock' };
+    }
+  };
+
+  // Get planning status considering approval system
+  const getPlanningStatus = (allocation: PhaseAllocation) => {
+    if (allocation.approvalStatus !== 'APPROVED') {
+      return getPhaseApprovalStatus(allocation);
+    }
+
+    const approvedHours = allocation.weeklyAllocations.reduce((sum, week) =>
+      sum + (week.approvedHours || 0), 0);
+    const proposedHours = allocation.weeklyAllocations.reduce((sum, week) =>
+      sum + (week.proposedHours || 0), 0);
+    const pendingHours = allocation.weeklyAllocations
+      .filter(week => week.planningStatus === 'PENDING')
+      .reduce((sum, week) => sum + (week.proposedHours || 0), 0);
+
+    const remaining = allocation.totalHours - approvedHours;
+
+    if (pendingHours > 0) {
+      return { status: 'pending_weekly', label: `${formatHours(pendingHours)} pending approval`, color: 'blue', icon: 'clock' };
+    } else if (remaining === 0) {
+      return { status: 'complete', label: 'Fully Approved', color: 'green', icon: 'check' };
     } else if (remaining < 0) {
-      return { status: 'over', label: 'Over-allocated', color: 'red' };
+      return { status: 'over', label: 'Over-allocated', color: 'red', icon: 'warning' };
     } else {
-      return { status: 'pending', label: `${formatHours(remaining)} remaining`, color: 'yellow' };
+      return { status: 'planning', label: `${formatHours(remaining)} to plan`, color: 'yellow', icon: 'clock' };
     }
   };
 
@@ -239,18 +269,33 @@ export default function AllocationsDashboard({ data, userId, userName }: Allocat
                 ) : (
                   data.phaseAllocations.map((allocation) => {
                     const enhancedPhaseStatus = getEnhancedPhaseStatus(allocation);
-                    const legacyPlanningStatus = getLegacyPlanningStatus(allocation);
-                    
+                    const planningStatus = getPlanningStatus(allocation);
+
                     return (
-                      <div key={allocation.id} className="border border-gray-200 rounded-lg p-4">
+                      <div key={allocation.id} className={`border rounded-lg p-4 ${
+                        allocation.approvalStatus === 'APPROVED' ? 'border-green-200 bg-green-50' :
+                        allocation.approvalStatus === 'REJECTED' ? 'border-red-200 bg-red-50' :
+                        'border-yellow-200 bg-yellow-50'
+                      }`}>
                         <div className="flex justify-between items-start mb-3">
                           <div>
                             <h3 className="font-semibold text-gray-800">{allocation.phase.name}</h3>
                             <p className="text-sm text-gray-600">{allocation.phase.project.title}</p>
+                            {allocation.approvalStatus === 'REJECTED' && allocation.rejectionReason && (
+                              <p className="text-xs text-red-600 mt-1">Rejected: {allocation.rejectionReason}</p>
+                            )}
                           </div>
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(enhancedPhaseStatus.status)}
-                            <span className="text-sm font-medium">{enhancedPhaseStatus.label}</span>
+                          <div className="flex flex-col items-end gap-1">
+                            {/* Approval Status */}
+                            <div className="flex items-center gap-2">
+                              {getStatusIcon(planningStatus.status)}
+                              <span className="text-sm font-medium">{planningStatus.label}</span>
+                            </div>
+                            {/* Work Progress Status */}
+                            <div className="flex items-center gap-2">
+                              {getStatusIcon(enhancedPhaseStatus.status)}
+                              <span className="text-xs text-gray-600">{enhancedPhaseStatus.label}</span>
+                            </div>
                           </div>
                         </div>
 
@@ -270,65 +315,93 @@ export default function AllocationsDashboard({ data, userId, userName }: Allocat
                           </div>
                         </div>
 
-                        {/* Enhanced Status Display */}
+                        {/* Combined Status Display */}
                         <div className="mt-3 space-y-3">
-                          {/* Planning Progress */}
-                          <div>
-                            <div className="flex justify-between text-xs mb-1">
-                              <span>Planning Progress</span>
-                              <span>{enhancedPhaseStatus.details.planning.completionPercentage}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div 
-                                className={`h-2 rounded-full ${
-                                  legacyPlanningStatus.status === 'complete' ? 'bg-green-500' :
-                                  legacyPlanningStatus.status === 'over' ? 'bg-red-500' : 'bg-yellow-500'
-                                }`}
-                                style={{ 
-                                  width: `${Math.min(enhancedPhaseStatus.details.planning.completionPercentage, 100)}%` 
-                                }}
-                              />
-                            </div>
-                          </div>
-                          
-                          {/* Work Completion Progress */}
-                          <div>
-                            <div className="flex justify-between text-xs mb-1">
-                              <span>Work Progress</span>
-                              <span>{enhancedPhaseStatus.details.work.workCompletionPercentage}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div 
-                                className={`h-2 rounded-full ${getProgressBarColor(enhancedPhaseStatus.status, enhancedPhaseStatus.details.overall.isOnTrack)}`}
-                                style={{ 
-                                  width: `${Math.min(enhancedPhaseStatus.details.work.workCompletionPercentage, 100)}%` 
-                                }}
-                              />
-                            </div>
-                            {enhancedPhaseStatus.details.work.currentWeekProgress && (
-                              <div className="text-xs text-gray-500 mt-1">
-                                {enhancedPhaseStatus.details.work.currentWeekProgress.sprintNumber && enhancedPhaseStatus.details.work.currentWeekProgress.sprintWeek ? (
-                                  <>Current: {Math.round(enhancedPhaseStatus.details.work.currentWeekProgress.weekProgress * 100)}% through Sprint {enhancedPhaseStatus.details.work.currentWeekProgress.sprintNumber}, Week {enhancedPhaseStatus.details.work.currentWeekProgress.sprintWeek}</>
-                                ) : (
-                                  <>Current week: {Math.round(enhancedPhaseStatus.details.work.currentWeekProgress.weekProgress * 100)}% through week {enhancedPhaseStatus.details.work.currentWeekProgress.weekNumber}</>
-                                )}
+                          {/* Approval Progress (for approved phases) */}
+                          {allocation.approvalStatus === 'APPROVED' && (
+                            <div>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span>Weekly Approval Progress</span>
+                                <span>
+                                  {allocation.weeklyAllocations.reduce((sum, week) => sum + (week.approvedHours || 0), 0)} / {allocation.totalHours}h approved
+                                </span>
                               </div>
-                            )}
-                          </div>
-                          
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                  className={`h-2 rounded-full ${
+                                    planningStatus.status === 'complete' ? 'bg-green-500' :
+                                    planningStatus.status === 'over' ? 'bg-red-500' :
+                                    planningStatus.status === 'pending_weekly' ? 'bg-blue-500' : 'bg-yellow-500'
+                                  }`}
+                                  style={{
+                                    width: `${Math.min((allocation.weeklyAllocations.reduce((sum, week) => sum + (week.approvedHours || 0), 0) / allocation.totalHours) * 100, 100)}%`
+                                  }}
+                                />
+                              </div>
+                              {allocation.weeklyAllocations.some(week => week.planningStatus === 'PENDING') && (
+                                <div className="text-xs text-blue-600 mt-1">
+                                  {allocation.weeklyAllocations.filter(week => week.planningStatus === 'PENDING').length} week(s) pending Growth Team approval
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Work Progress (always show for approved phases) */}
+                          {allocation.approvalStatus === 'APPROVED' && (
+                            <div>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span>Work Progress</span>
+                                <span>{enhancedPhaseStatus.details.work.workCompletionPercentage}%</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                  className={`h-2 rounded-full ${getProgressBarColor(enhancedPhaseStatus.status, enhancedPhaseStatus.details.overall.isOnTrack)}`}
+                                  style={{
+                                    width: `${Math.min(enhancedPhaseStatus.details.work.workCompletionPercentage, 100)}%`
+                                  }}
+                                />
+                              </div>
+                              {enhancedPhaseStatus.details.work.currentWeekProgress && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {enhancedPhaseStatus.details.work.currentWeekProgress.sprintNumber && enhancedPhaseStatus.details.work.currentWeekProgress.sprintWeek ? (
+                                    <>Current: {Math.round(enhancedPhaseStatus.details.work.currentWeekProgress.weekProgress * 100)}% through Sprint {enhancedPhaseStatus.details.work.currentWeekProgress.sprintNumber}, Week {enhancedPhaseStatus.details.work.currentWeekProgress.sprintWeek}</>
+                                  ) : (
+                                    <>Current week: {Math.round(enhancedPhaseStatus.details.work.currentWeekProgress.weekProgress * 100)}% through week {enhancedPhaseStatus.details.work.currentWeekProgress.weekNumber}</>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                           {/* Phase Timeline Info */}
                           <div className="text-xs text-gray-500 flex justify-between">
                             <span>
                               {new Date(allocation.phase.startDate).toLocaleDateString()} - {new Date(allocation.phase.endDate).toLocaleDateString()}
                             </span>
                             <span className={`font-medium ${
-                              enhancedPhaseStatus.details.overall.riskLevel === 'high' ? 'text-red-600' :
-                              enhancedPhaseStatus.details.overall.riskLevel === 'medium' ? 'text-yellow-600' : 'text-green-600'
+                              allocation.approvalStatus === 'APPROVED' && enhancedPhaseStatus.details.overall.riskLevel === 'high' ? 'text-red-600' :
+                              allocation.approvalStatus === 'APPROVED' && enhancedPhaseStatus.details.overall.riskLevel === 'medium' ? 'text-yellow-600' :
+                              allocation.approvalStatus === 'APPROVED' ? 'text-green-600' : 'text-gray-600'
                             }`}>
-                              Risk: {enhancedPhaseStatus.details.overall.riskLevel}
+                              {allocation.approvalStatus === 'APPROVED'
+                                ? `Risk: ${enhancedPhaseStatus.details.overall.riskLevel}`
+                                : `Status: ${allocation.approvalStatus.toLowerCase()}`
+                              }
                             </span>
                           </div>
                         </div>
+
+                        {/* Show message for non-approved phases */}
+                        {allocation.approvalStatus !== 'APPROVED' && (
+                          <div className="mt-3 p-3 rounded-lg bg-gray-100">
+                            <div className="text-sm text-gray-600">
+                              {allocation.approvalStatus === 'PENDING'
+                                ? 'This phase allocation is pending Growth Team approval. Weekly planning will be available once approved.'
+                                : 'This phase allocation was rejected and cannot be used for weekly planning.'
+                              }
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -352,7 +425,7 @@ export default function AllocationsDashboard({ data, userId, userName }: Allocat
                           Week {allocation.weekNumber}, {allocation.year}
                         </div>
                         <div className="text-lg font-bold text-blue-600">
-                          {formatHours(allocation.plannedHours)}
+                          {formatHours(allocation.approvedHours || allocation.proposedHours || 0)}
                         </div>
                       </div>
                       <div className="text-sm text-gray-600">

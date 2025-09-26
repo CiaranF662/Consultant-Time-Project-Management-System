@@ -93,8 +93,8 @@ export default function Sidebar({ children }: SidebarProps) {
           roles: [UserRole.GROWTH_TEAM]
         },
         {
-          label: 'Hour Approvals',
-          href: '/dashboard/hour-approvals',
+          label: 'Approvals',
+          href: '/dashboard/admin/approvals',
           icon: FaCheckCircle,
           roles: [UserRole.GROWTH_TEAM]
         },

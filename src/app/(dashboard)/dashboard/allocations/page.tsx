@@ -65,7 +65,7 @@ async function getUserAllocationData(userId: string) {
   // Calculate allocation statistics
   const totalAllocatedHours = phaseAllocations.reduce((sum, alloc) => sum + alloc.totalHours, 0);
   const totalDistributedHours = phaseAllocations.reduce((sum, alloc) => {
-    return sum + alloc.weeklyAllocations.reduce((weekSum, week) => weekSum + week.plannedHours, 0);
+    return sum + alloc.weeklyAllocations.reduce((weekSum, week) => weekSum + (week.approvedHours || week.proposedHours || 0), 0);
   }, 0);
 
   return {

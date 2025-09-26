@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { FaPlus, FaUsers, FaChartBar, FaExclamationCircle, FaClock, FaProjectDiagram, FaTh } from 'react-icons/fa';
+import { FaPlus, FaUsers, FaChartBar, FaExclamationCircle, FaClock, FaProjectDiagram, FaTh, FaCheckCircle } from 'react-icons/fa';
 import ResourceTimeline from '@/app/components/timeline/ResourceTimeline';
 import CreateProjectModal from '@/app/components/CreateProjectModal';
 import NotificationSummaryCard from '@/app/components/notifications/NotificationSummaryCard';
 import ProjectCard from '@/app/components/ProjectCard';
 import GrowthTeamGanttChart from '@/app/components/gantt/GrowthTeamGanttChart';
+import ApprovalsSummaryCard from '../approvals/ApprovalsSummaryCard';
 
 import type { Project, Phase, Sprint, ConsultantsOnProjects, PhaseAllocation } from '@prisma/client';
 
@@ -35,9 +36,10 @@ interface GrowthTeamDashboardProps {
     }>;
     projects: ProjectWithDetails[];
   };
+  userRole: string;
 }
 
-export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) {
+export default function GrowthTeamDashboard({ data, userRole }: GrowthTeamDashboardProps) {
   const [timelineWeeks, setTimelineWeeks] = useState(12);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [activeView, setActiveView] = useState<'timeline' | 'gantt' | 'projects'>('timeline');
@@ -109,7 +111,7 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <div className="flex items-center justify-between">
             <div>
@@ -130,10 +132,12 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
           </div>
         </div>
 
+        <ApprovalsSummaryCard />
+
         <Link href="/dashboard/admin/user-approvals" className="bg-white p-6 rounded-lg shadow-md border hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Pending Approvals</p>
+              <p className="text-sm font-medium text-gray-600">User Approvals</p>
               <p className="text-2xl font-bold text-gray-900">{data.pendingUserCount}</p>
             </div>
             {data.pendingUserCount > 0 && (
@@ -331,6 +335,7 @@ export default function GrowthTeamDashboard({ data }: GrowthTeamDashboardProps) 
           )}
         </div>
       )}
+
 
       {/* Create Project Modal */}
       <CreateProjectModal 

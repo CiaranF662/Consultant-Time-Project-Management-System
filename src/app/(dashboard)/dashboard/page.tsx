@@ -198,7 +198,7 @@ export default async function DashboardPage() {
     const data = await getGrowthTeamData();
     return (
       <DashboardLayout>
-        <GrowthTeamDashboard data={data} />
+        <GrowthTeamDashboard data={data} userRole={session.user.role} />
       </DashboardLayout>
     );
   } else {

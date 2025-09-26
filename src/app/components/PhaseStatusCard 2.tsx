@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { FaCheckCircle, FaExclamationTriangle, FaClock, FaChartPie, FaPlay, FaEdit, FaHourglassHalf } from 'react-icons/fa';
+import { FaCheckCircle, FaExclamationTriangle, FaClock, FaChartPie, FaPlay, FaEdit } from 'react-icons/fa';
 import { getPhaseStatus, getStatusColorClasses, getProgressBarColor, formatHours } from '@/lib/phase-status';
 import { generateColorFromString } from '@/lib/colors';
 
@@ -9,7 +9,6 @@ interface PhaseAllocation {
   id: string;
   consultantId: string;
   totalHours: number;
-  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
   weeklyAllocations?: Array<{
     id: string;
     plannedHours: number;
@@ -25,8 +24,7 @@ interface IndividualAllocation {
   consultantId: string;
   consultantName: string;
   hours: number;
-  plannedHours: number;
-  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  usedHours: number;
 }
 
 interface Sprint {
@@ -95,10 +93,6 @@ export default function PhaseStatusCard({
 
   const phaseStatus = getPhaseStatus(transformedPhase);
 
-  // Check pending allocations
-  const pendingAllocations = phase.allocations?.filter(allocation => allocation.approvalStatus === 'PENDING') || [];
-  const hasPendingApprovals = pendingAllocations.length > 0;
-
   const getStatusIcon = (status: string, size = 'w-5 h-5') => {
     switch (status) {
       case 'complete':
@@ -120,8 +114,8 @@ export default function PhaseStatusCard({
   const totalDistributedHours = phaseStatus.details.planning.totalDistributedHours;
 
   return (
-    <div className={`bg-white rounded-lg border-l-4 shadow-sm ${className}`}
-         style={{ borderLeftColor: phaseStatus.color === 'green' ? '#10B981' :
+    <div className={`bg-white rounded-lg border-l-4 shadow-sm ${className}`} 
+         style={{ borderLeftColor: phaseStatus.color === 'green' ? '#10B981' : 
                                    phaseStatus.color === 'red' ? '#EF4444' :
                                    phaseStatus.color === 'blue' ? '#3B82F6' :
                                    phaseStatus.color === 'purple' ? '#8B5CF6' :
@@ -172,14 +166,6 @@ export default function PhaseStatusCard({
             
             {/* Status Badge */}
             <div className="flex items-center gap-2">
-              {hasPendingApprovals && (
-                <div className="flex items-center gap-1 px-2 py-1 bg-orange-100 border border-orange-200 rounded-full">
-                  <FaHourglassHalf className="w-3 h-3 text-orange-600" />
-                  <span className="text-xs font-medium text-orange-700">
-                    {pendingAllocations.length} allocation{pendingAllocations.length > 1 ? 's' : ''} pending
-                  </span>
-                </div>
-              )}
               {getStatusIcon(phaseStatus.status)}
               <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColorClasses(phaseStatus.color)}`}>
                 {phaseStatus.label}
@@ -282,34 +268,11 @@ export default function PhaseStatusCard({
           <h4 className="font-medium text-gray-800 mb-3">Individual Allocations</h4>
           <div className="space-y-2">
             {individualAllocations.map((allocation) => (
-              <div key={allocation.id} className={`relative overflow-hidden flex items-center justify-between p-3 rounded-lg ${
-                allocation.approvalStatus === 'PENDING' ? 'bg-orange-50 border border-orange-200' : 'bg-gray-50'
-              }`}>
-                {/* Pending approval diagonal stripes for individual allocations */}
-                {allocation.approvalStatus === 'PENDING' && (
-                  <div className="absolute inset-0 pointer-events-none opacity-20"
-                       style={{
-                         backgroundImage: `repeating-linear-gradient(
-                           45deg,
-                           transparent,
-                           transparent 8px,
-                           rgba(249, 115, 22, 0.3) 8px,
-                           rgba(249, 115, 22, 0.3) 16px
-                         )`
-                       }}>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-3 relative z-10">
+              <div key={allocation.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
                   <span className={`px-2 py-1 rounded text-sm font-medium ${generateColorFromString(allocation.consultantId)}`}>
                     {allocation.consultantName}
                   </span>
-                  {allocation.approvalStatus === 'PENDING' && (
-                    <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-200 text-orange-800 rounded-full text-xs font-medium">
-                      <FaHourglassHalf className="w-2 h-2" />
-                      Pending
-                    </span>
-                  )}
                   <div className="text-sm text-gray-600">
                     {formatHours(allocation.hours)} allocated
                   </div>
@@ -317,9 +280,9 @@ export default function PhaseStatusCard({
                 
                 <div className="flex items-center gap-4">
                   <div className="text-sm">
-                    <span className="text-gray-600">{formatHours(allocation.plannedHours)} planned</span>
+                    <span className="text-gray-600">{formatHours(allocation.usedHours)} used</span>
                     <span className="text-gray-400 mx-2">•</span>
-                    <span className="text-gray-600">{formatHours(allocation.hours - allocation.plannedHours)} remaining</span>
+                    <span className="text-gray-600">{formatHours(allocation.hours - allocation.usedHours)} remaining</span>
                   </div>
                   
                   {/* Progress bar */}
@@ -327,7 +290,7 @@ export default function PhaseStatusCard({
                     <div
                       className="bg-blue-500 h-2 rounded-full transition-all"
                       style={{
-                        width: `${Math.min(100, (allocation.plannedHours / Math.max(allocation.hours, 1)) * 100)}%`
+                        width: `${Math.min(100, (allocation.usedHours / Math.max(allocation.hours, 1)) * 100)}%`
                       }}
                     />
                   </div>

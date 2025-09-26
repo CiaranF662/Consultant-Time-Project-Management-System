@@ -21,7 +21,9 @@ interface PhaseAllocation {
     id: string;
     weekNumber: number;
     year: number;
-    plannedHours: number;
+    proposedHours?: number | null;
+    approvedHours?: number | null;
+    planningStatus: 'PENDING' | 'APPROVED' | 'MODIFIED' | 'REJECTED';
     weekStartDate: Date;
     weekEndDate: Date;
   }>;
@@ -31,7 +33,8 @@ interface UpcomingAllocation {
   id: string;
   weekNumber: number;
   year: number;
-  plannedHours: number;
+  proposedHours?: number | null;
+  approvedHours?: number | null;
   weekStartDate: Date;
   weekEndDate: Date;
   phaseAllocation: {
@@ -117,7 +120,7 @@ export default function AllocationCalendar({ phaseAllocations, upcomingAllocatio
           // Check if this day falls within the week
           if (date >= weekStart && date <= weekEnd) {
             // Calculate daily hours (assuming 5 working days per week)
-            const dailyHours = weekAlloc.plannedHours / 5;
+            const dailyHours = (weekAlloc.approvedHours || weekAlloc.proposedHours || 0) / 5;
             
             if (dailyHours > 0) {
               dayAllocations.push({

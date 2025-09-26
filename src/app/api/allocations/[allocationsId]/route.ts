@@ -63,7 +63,7 @@ export async function PUT(
 
   try {
     const body = await request.json();
-    const { plannedHours } = body;
+    const { proposedHours } = body;
 
     // First check if allocation exists and user has access
     const existing = await prisma.weeklyAllocation.findUnique({
@@ -80,7 +80,10 @@ export async function PUT(
 
     const allocation = await prisma.weeklyAllocation.update({
       where: { id: allocationsId },
-      data: { plannedHours },
+      data: {
+        proposedHours,
+        planningStatus: 'PENDING' // Reset to pending when consultant updates
+      },
       include: {
         phaseAllocation: {
           include: {
