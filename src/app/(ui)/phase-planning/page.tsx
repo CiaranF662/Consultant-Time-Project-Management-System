@@ -2,8 +2,8 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, ProjectRole } from '@prisma/client';
-import DashboardLayout from '@/app/(features)/dashboard/components/DashboardLayout';
-import PhasePlanningDashboard from '@/app/(features)/phase-planning/components/PhasePlanningDashboard';
+import DashboardLayout from '@/app/components/dashboard/DashboardLayout';
+import PhasePlanningDashboard from '@/app/components/phase-planning/PhasePlanningDashboard';
 
 const prisma = new PrismaClient();
 

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { FaPlus, FaUsers, FaChartBar, FaExclamationCircle } from 'react-icons/fa';
 import ResourceTimeline from '@/app/(features)/resource-timeline/components/ResourceTimeline';
 import CreateProjectModal from '@/app/(features)/projects/components/CreateProjectModal';
-import NotificationSummaryCard from '@/app/components/components/NotificationSummaryCard';
+import NotificationSummaryCard from '@/app/components/notifications/NotificationSummaryCard';
 import DashboardLayout from '@/app/(features)/dashboard/components/DashboardLayout';
 
 interface ProjectConsultant {

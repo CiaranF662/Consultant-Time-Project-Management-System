@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import DashboardLayout from '@/app/(features)/dashboard/components/DashboardLayout';
+import DashboardLayout from '@/app/components/dashboard/DashboardLayout';
 import Loading from '@/app/loading';
 
 export default function ProfilePage() {
@@ -63,9 +63,7 @@ export default function ProfilePage() {
   };
 
   if (status === 'loading') {
-    return (
-      <Loading className="min-h-screen flex items-center justify-center"  />
-    );
+    return <Loading fullScreen size="md" />;
   }
 
   return (

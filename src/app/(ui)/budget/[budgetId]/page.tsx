@@ -1,32 +1,27 @@
-import { getServerSession } from 'next-auth/next';
-import { redirect } from 'next/navigation';
-
-import { authOptions } from '@/lib/auth';
-import { UserRole } from '@prisma/client';
-
-import DashboardLayout from '@/app/(features)/dashboard/components/DashboardLayout';
-import ProjectBudgetDetails from '@/app/(features)/budget/components/ProjectBudgetDetails';
-
-
-// #region Types
-/**
- * Props passed to the ProjectBudgetPage.
- * In Next.js 13+ (App Router), params is always a plain object, not a Promise.
- */
-interface PageProps {
-  params: { projectId: string };
-}
-// #endregion Types
-
-// #region Page Component
 /**
  * Server component page to display budget details for a project.
  * - Verifies authentication
  * - Restricts access to Growth Team role
  * - Renders project budget details
  */
+
+import { getServerSession } from 'next-auth/next';
+import { redirect } from 'next/navigation';
+import { authOptions } from '@/lib/auth';
+import { UserRole } from '@prisma/client';
+import DashboardLayout from '@/app/components/dashboard/DashboardLayout';
+import ProjectBudgetDetails from '@/app/components/dashboard/ProjectBudgetDetails';
+
+
+// #region Types
+interface PageProps {
+  params: { projectId: string };
+}
+// #endregion Types
+
+// #region Page Component
 export default async function ProjectBudgetPage({ params }: PageProps) {
-  // #region Authentication
+  // Authentication
   const session = await getServerSession(authOptions);
 
   // Redirect unauthenticated users
@@ -38,11 +33,9 @@ export default async function ProjectBudgetPage({ params }: PageProps) {
   if (session.user.role !== UserRole.GROWTH_TEAM) {
     redirect('/dashboard');
   }
-  // #endregion Authentication
 
-  // #region Params
-  const { projectId } = params; // ✅ changed: removed unnecessary await
-  // #endregion Params
+  // Params
+  const { projectId } = params; 
 
   // #region Render
   return (

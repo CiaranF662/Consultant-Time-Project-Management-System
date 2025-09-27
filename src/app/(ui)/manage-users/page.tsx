@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import type { User, UserRole, UserStatus } from '@prisma/client';
 import { FaCheck, FaTimes } from 'react-icons/fa';
-import DashboardLayout from '@/app/(features)/dashboard/components/DashboardLayout';
+import DashboardLayout from '@/app/components/dashboard/DashboardLayout';
 
 enum Tab {
   APPROVALS = 'approvals',
@@ -49,9 +49,7 @@ function ConfirmationModal({ isOpen, onClose, onConfirm, message }: Confirmation
 // --- Main Component ---
 // ---------------------------
 export default function UsersDashboardPage() {
-  // ---------------------------
   // --- State ---
-  // ---------------------------
   const [activeTab, setActiveTab] = useState<Tab>(Tab.APPROVALS);
   const [pendingUsers, setPendingUsers] = useState<User[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -65,9 +63,7 @@ export default function UsersDashboardPage() {
   const [modalMessage, setModalMessage] = useState('');
   const [modalAction, setModalAction] = useState<() => void>(() => {});
 
-  // ---------------------------
   // --- Fetch Data ---
-  // ---------------------------
   const fetchPendingUsers = async () => {
     setIsLoading(true);
     try {
@@ -97,9 +93,7 @@ export default function UsersDashboardPage() {
     fetchAllUsers();
   }, []);
 
-  // ---------------------------
   // --- Actions ---
-  // ---------------------------
   const handleApproval = async (userId: string, newStatus: UserStatus) => {
     try {
       await axios.patch(`/api/admin/user-approvals/${userId}`, { status: newStatus });
@@ -124,9 +118,7 @@ export default function UsersDashboardPage() {
     setModalOpen(true);
   };
 
-  // ---------------------------
   // --- Filtered Users ---
-  // ---------------------------
   const filteredUsers = useMemo(() => {
     return allUsers.filter(user => {
       const matchesSearch =
@@ -137,9 +129,7 @@ export default function UsersDashboardPage() {
     });
   }, [allUsers, searchQuery, roleFilter]);
 
-  // ---------------------------
   // --- Loading/Error States ---
-  // ---------------------------
   if (isLoading) return (
     <DashboardLayout>
       <div className="flex items-center justify-center p-12">
@@ -153,9 +143,7 @@ export default function UsersDashboardPage() {
     </DashboardLayout>
   );
 
-  // ---------------------------
-  // --- Render ---
-  // ---------------------------
+  // #region Render 
   return (
     <DashboardLayout>
       <div className="bg-gray-50 min-h-screen p-4 md:p-8 space-y-6">
@@ -179,9 +167,7 @@ export default function UsersDashboardPage() {
           </div>
         </div>
 
-        {/* ---------------------------
-             Pending User Approvals
-        --------------------------- */}
+        {/*  Pending User Approvals */}
         {activeTab === Tab.APPROVALS && (
           <div className="bg-white rounded-lg shadow-md border p-4">
             {pendingUsers.length > 0 ? (
@@ -215,9 +201,7 @@ export default function UsersDashboardPage() {
           </div>
         )}
 
-        {/* ---------------------------
-             Manage Users Section
-        --------------------------- */}
+        {/* Manage Users Section */}
         {activeTab === Tab.MANAGE && (
           <div className="bg-white rounded-lg shadow-md border p-4 space-y-4">
             {/* Search & Role Filter */}
@@ -295,3 +279,4 @@ export default function UsersDashboardPage() {
     </DashboardLayout>
   );
 }
+// #endregion Render

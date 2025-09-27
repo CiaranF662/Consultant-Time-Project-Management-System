@@ -14,8 +14,8 @@ type NotificationType =
   | 'PHASE_DEADLINE_WARNING'
   | 'USER_APPROVAL_NEEDED'
   | 'OVERDUE_APPROVAL_ALERT';
-import DashboardLayout from '@/app/(features)/dashboard/components/DashboardLayout';
-import NotificationCard from '@/app/components/components/NotificationCard';
+import DashboardLayout from '@/app/components/dashboard/DashboardLayout';
+import NotificationCard from '@/app/components/notifications/NotificationCard';
 
 interface Notification {
   id: string;

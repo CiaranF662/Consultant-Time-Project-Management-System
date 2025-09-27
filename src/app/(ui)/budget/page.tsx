@@ -3,8 +3,8 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { UserRole } from '@prisma/client';
-import DashboardLayout from '@/app/(features)/dashboard/components/DashboardLayout';
-import BudgetOverview from '@/app/(features)/budget/components/BudgetOverview';
+import DashboardLayout from '@/app/components/DashboardLayout';
+import BudgetOverview from '@/app/components/BudgetOverview';
 
 export default async function BudgetPage() {
   const session = await getServerSession(authOptions); // Authentication check
@@ -17,7 +17,7 @@ export default async function BudgetPage() {
   // Role-based access control- Only Growth Team can access budget overview
   if (session.user.role !== UserRole.GROWTH_TEAM) {
     redirect('/dashboard');
-  }
+  }x
 
   return (
     <DashboardLayout>

@@ -2,9 +2,9 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, UserStatus, ChangeStatus, ProjectRole } from '@prisma/client';
-import DashboardLayout from '@/app/(features)/dashboard/components/DashboardLayout';
-import GrowthTeamDashboard from '@/app/(features)/dashboard/components/GrowthTeamDashboard';
-import ConsultantDashboard from '@/app/(features)/dashboard/components/ConsultantDashboard';
+import DashboardLayout from '@/app/components/dashboard/DashboardLayout';
+import GrowthTeamDashboard from '@/app/components/dashboard/GrowthTeamDashboard';
+import ConsultantDashboard from '@/app/components/dashboard/ConsultantDashboard';
 
 const prisma = new PrismaClient();
 
@@ -177,8 +177,8 @@ async function getConsultantData(userId: string) {
     isPM,
     pmProjects,
     pendingHourChangesCount,
-    weeklyAllocations: allWeeklyAllocations, // Pass ALL weekly allocations for planner
-    currentWeekAllocations, // Pass current week for stats
+    weeklyAllocations: allWeeklyAllocations, 
+    currentWeekAllocations, 
     phaseAllocations,
     pendingRequests,
     projects

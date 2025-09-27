@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
 import { FaArrowLeft, FaSpinner, FaTrash, FaCheck } from 'react-icons/fa';
-import DashboardLayout from '@/app/(features)/dashboard/components/DashboardLayout';
+import DashboardLayout from '@/app/components/dashboard/DashboardLayout';
 
 type NotificationType =
   | 'PROJECT_ASSIGNMENT'

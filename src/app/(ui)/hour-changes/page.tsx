@@ -2,8 +2,8 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, ChangeStatus } from '@prisma/client';
-import DashboardLayout from '@/app/(features)/dashboard/components/DashboardLayout';
-import HourChangeApprovalsManager from '@/app/(features)/hour-changes/components/HourChangeApprovalsManager';
+import DashboardLayout from '@/app/components/dashboard/DashboardLayout';
+import HourChangeApprovalsManager from '@/app/components/dashboard/HourChangeApprovalsManager';
 
 const prisma = new PrismaClient();
 
