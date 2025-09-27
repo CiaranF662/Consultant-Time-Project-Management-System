@@ -1,0 +1,84 @@
+import { getServerSession } from 'next-auth/next';
+import { redirect } from 'next/navigation';
+import { authOptions } from '@/lib/auth';
+import { PrismaClient, UserRole } from '@prisma/client';
+import DashboardLayout from '@/app/components/DashboardLayout';
+import ProjectsPageClient from '@/app/components/ProjectsPageClient';
+
+const prisma = new PrismaClient();
+
+async function getProjectsForDashboard(userId: string, userRole: UserRole) {
+  if (userRole === UserRole.GROWTH_TEAM) {
+    // Growth Team sees all projects
+    return prisma.project.findMany({
+      include: {
+        sprints: true,
+        phases: {
+          include: {
+            allocations: true
+          }
+        },
+        consultants: { 
+          include: { 
+            user: { 
+              select: { 
+                id: true,
+                name: true,
+                email: true
+              } 
+            } 
+          } 
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  } else {
+    // Consultants see only their projects
+    return prisma.project.findMany({
+      where: {
+        consultants: {
+          some: { userId }
+        }
+      },
+      include: {
+        sprints: true,
+        phases: {
+          include: {
+            allocations: true
+          }
+        },
+        consultants: { 
+          include: { 
+            user: { 
+              select: { 
+                id: true,
+                name: true,
+                email: true
+              } 
+            } 
+          } 
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+}
+
+export default async function ProjectsPage() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    redirect('/login');
+  }
+
+  const projects = await getProjectsForDashboard(session.user.id, session.user.role as UserRole);
+  const isGrowthTeam = session.user.role === UserRole.GROWTH_TEAM;
+
+  return (
+    <DashboardLayout>
+      <ProjectsPageClient 
+        projects={projects} 
+        isGrowthTeam={isGrowthTeam} 
+      />
+    </DashboardLayout>
+  );
+}
