@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'AgilePM',
-  description: 'Project Management System',
+  description: 'Project Resource System',
 };
 
 export default function RootLayout({
