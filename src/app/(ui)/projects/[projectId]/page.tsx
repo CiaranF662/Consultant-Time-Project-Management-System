@@ -10,13 +10,13 @@ import { UserRole, Sprint, User, Phase, Project } from '@prisma/client';
 
 import PhaseCreationModal from '@/app/components/phase-planning/PhaseCreationModal';
 import PhaseAllocationForm from '@/app/components/allocation/PhaseAllocationForm';
-import EditPhaseModal from '@/app/components/EditPhaseModal';
-import EditProjectModal from '@/app/components/EditProjectModal';
+import EditPhaseModal from '@/app/components/phases/EditPhaseModal';
+import EditProjectModal from '@/app/components/projects/EditProjectModal';
 import BudgetTracker from '@/app/components/allocation/BudgetTracker';
-import PhaseStatusCard from '@/app/components/PhaseStatusCard';
+import PhaseStatusCard from '@/app/components/phases/PhaseStatusCard';
 import ProjectGanttChart from '@/app/components/gantt/ProjectGanttChart';
 import { generateColorFromString } from '@/lib/colors';
-import DashboardLayout from '@/app/components/DashboardLayout';
+import DashboardLayout from '@/app/components/layout/DashboardLayout';
 
 // Define comprehensive types
 interface PhaseAllocation {

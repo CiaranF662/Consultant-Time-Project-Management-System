@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, UserStatus, ChangeStatus, ProjectRole } from '@prisma/client';
-import DashboardLayout from '@/app/components/dashboard/DashboardLayout';
+import DashboardLayout from '@/app/components/layout/DashboardLayout';
 import GrowthTeamDashboard from '@/app/components/dashboard/GrowthTeamDashboard';
 import ConsultantDashboard from '@/app/components/dashboard/ConsultantDashboard';
 

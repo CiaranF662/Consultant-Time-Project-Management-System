@@ -9,6 +9,7 @@ interface AuthState {
   logout: () => void;
   switchRole: (role: UserRole) => void;
   setUser: (user: User) => void;
+  createProfile: (profileData: any) => Promise<void>;
 }
 
 // Mock user data for demo
@@ -17,7 +18,7 @@ const mockUsers: Record<string, User> = {
     id: '1',
     name: 'Alex Johnson',
     email: 'admin@example.com',
-    role: 'admin',
+    role: 'GROWTH_TEAM',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
     isActive: true,
     createdAt: new Date('2024-01-01'),
@@ -26,7 +27,7 @@ const mockUsers: Record<string, User> = {
     id: '2',
     name: 'Sarah Chen',
     email: 'sarah@example.com',
-    role: 'user',
+    role: 'CONSULTANT',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
     isActive: true,
     createdAt: new Date('2024-01-15'),
@@ -62,5 +63,18 @@ export const useAuth = create<AuthState>((set, get) => ({
 
   setUser: (user: User) => {
     set({ user, isAuthenticated: true });
+  },
+
+  createProfile: async (profileData: any) => {
+    set({ isLoading: true });
+    
+    // Mock profile creation logic
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const currentUser = get().user;
+    if (currentUser) {
+      const updatedUser = { ...currentUser, ...profileData };
+      set({ user: updatedUser, isLoading: false });
+    }
   },
 }));

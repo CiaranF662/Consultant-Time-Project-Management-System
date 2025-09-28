@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import axios from 'axios';
 import { User } from '@prisma/client';
-import DashboardLayout from '@/app/components/DashboardLayout';
+import DashboardLayout from '@/app/components/layout/DashboardLayout';
 import { FaInfoCircle } from 'react-icons/fa';
 
 // Helper function to get today's date in YYYY-MM-DD format

@@ -19,7 +19,11 @@ import {
   FaClipboardList,
   FaMoneyBillWave,
   FaCalendarWeek,
-  FaBell
+  FaBell,
+  FaFileAlt,
+  FaJira,
+  FaGanttChart,
+  FaCogs
 } from 'react-icons/fa';
 import NotificationBadge from './notifications/NotificationBadge';
 import { UserRole } from '@prisma/client';
@@ -74,9 +78,9 @@ export default function Sidebar({ children }: SidebarProps) {
       // Growth Team Menu
       items.push(
         {
-          label: 'Resource Timeline',
+          label: 'Dashboard',
           href: '/dashboard',
-          icon: FaChartBar,
+          icon: FaHome,
           roles: [UserRole.GROWTH_TEAM]
         },
         {
@@ -101,6 +105,30 @@ export default function Sidebar({ children }: SidebarProps) {
           label: 'User Approvals',
           href: '/dashboard/admin/user-approvals',
           icon: FaUserPlus,
+          roles: [UserRole.GROWTH_TEAM]
+        },
+        {
+          label: 'Reports',
+          href: '/dashboard/reports',
+          icon: FaFileAlt,
+          roles: [UserRole.GROWTH_TEAM]
+        },
+        {
+          label: 'Jira Integration',
+          href: '/dashboard/jira',
+          icon: FaCogs,
+          roles: [UserRole.GROWTH_TEAM]
+        },
+        {
+          label: 'Gantt Chart',
+          href: '/dashboard/gantt',
+          icon: FaGanttChart,
+          roles: [UserRole.GROWTH_TEAM]
+        },
+        {
+          label: 'Resource Timeline',
+          href: '/dashboard/resource-timeline',
+          icon: FaChartBar,
           roles: [UserRole.GROWTH_TEAM]
         },
         {

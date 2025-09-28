@@ -3,9 +3,19 @@ import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { Calendar, Users, TrendingUp, Clock, CheckCircle, BarChart3 } from 'lucide-react';
-import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
 
+/* 
+  NOTE: The optional CSS imports for react-grid-layout and react-resizable were removed
+  to avoid a build error when those packages are not installed.
+  If you need the grid/resizable functionality later, install the packages and re-enable:
+
+    npm install react-grid-layout react-resizable
+
+  then re-add these lines:
+
+    import 'react-grid-layout/css/styles.css';
+    import 'react-resizable/css/styles.css';
+*/
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions);

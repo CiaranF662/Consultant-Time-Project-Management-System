@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { UserRole } from '@prisma/client';
-import DashboardLayout from '@/app/components/DashboardLayout';
+import DashboardLayout from '@/app/components/layout/DashboardLayout';
 import ProjectBudgetDetails from '@/app/components/budget/ProjectBudgetDetails';
 
 interface PageProps {

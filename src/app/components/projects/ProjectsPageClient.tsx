@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { FaPlus } from 'react-icons/fa';
-import ProjectCard from '@/app/components/ProjectCard';
-import CreateProjectModal from '@/app/components/CreateProjectModal';
+import ProjectCard from '@/app/components/projects/ProjectCard';
+import CreateProjectModal from '@/app/components/projects/CreateProjectModal';
 
 interface ProjectsPageClientProps {
   projects: any[];

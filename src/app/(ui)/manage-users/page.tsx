@@ -5,7 +5,7 @@ import axios from 'axios';
 import type { User, UserRole } from '@prisma/client';
 import Link from 'next/link';
 import { FaArrowLeft } from 'react-icons/fa';
-import DashboardLayout from '@/app/components/DashboardLayout';
+import DashboardLayout from '@/app/components/layout/DashboardLayout';
 
 export default function ManageUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
