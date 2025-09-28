@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, UserStatus, ChangeStatus, ProjectRole } from '@prisma/client';
-import Sidebar from '@/app/components/layout/add-sidebar';
+
 import GrowthTeamDashboard from '@/app/components/dashboard/GrowthTeamDashboard';
 import ConsultantDashboard from '@/app/components/dashboard/ConsultantDashboard';
 
@@ -196,21 +196,15 @@ export default async function DashboardPage() {
 
   if (isGrowthTeam) {
     const data = await getGrowthTeamData();
-    return (
-      <Sidebar>
-        <GrowthTeamDashboard data={data} />
-      </Sidebar>
-    );
+    return <GrowthTeamDashboard data={data} />;
   } else {
     const data = await getConsultantData(session.user.id);
     return (
-      <Sidebar>
-        <ConsultantDashboard 
-          data={data} 
-          userId={session.user.id}
-          userName={session.user.name || session.user.email || 'User'}
-        />
-      </Sidebar>
+      <ConsultantDashboard 
+        data={data} 
+        userId={session.user.id}
+        userName={session.user.name || session.user.email || 'User'}
+      />
     );
   }
 }

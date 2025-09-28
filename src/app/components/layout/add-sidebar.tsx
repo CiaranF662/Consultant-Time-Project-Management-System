@@ -18,7 +18,6 @@ import {
   FaSignOutAlt,
   FaClipboardList,
   FaMoneyBillWave,
-  FaCalendarWeek,
   FaBell
 } from 'react-icons/fa';
 import NotificationBadge from '@/app/components/notifications/NotificationBadge';
@@ -115,15 +114,27 @@ const toggleCollapse = () => {
           roles: [UserRole.GROWTH_TEAM]
         },
         {
+          label: 'Gantt Chart',
+          href: '/gantt',
+          icon: FaClipboardList,
+          roles: [UserRole.GROWTH_TEAM]
+        },
+        {
           label: 'Manage Users',
           href: '/manage-users',
           icon: FaUsers,
           roles: [UserRole.GROWTH_TEAM]
         },
         {
+          label: 'User Approvals',
+          href: '/user-approvals',
+          icon: FaUserPlus,
+          roles: [UserRole.GROWTH_TEAM]
+        },
+        {
           label: 'Reports',
           href: '/reports',
-          icon: FaUsers,
+          icon: FaChartBar,
           roles: [UserRole.GROWTH_TEAM]
         },
         {
@@ -143,12 +154,6 @@ const toggleCollapse = () => {
           roles: [UserRole.CONSULTANT]
         },
         {
-          label: 'Weekly Planner',
-          href: '/weekly-planner',
-          icon: FaCalendarWeek,
-          roles: [UserRole.CONSULTANT]
-        },
-        {
           label: 'My Allocations',
           href: '/allocations',
           icon: FaClipboardList,
@@ -162,7 +167,7 @@ const toggleCollapse = () => {
         },
         {
           label: 'Hour Requests',
-          href: '/admin/hour-requests',
+          href: '/hour-requests',
           icon: FaClock,
           roles: [UserRole.CONSULTANT]
         },
@@ -199,6 +204,12 @@ const toggleCollapse = () => {
             label: 'Budget Overview',
             href: '/budget',
             icon: FaMoneyBillWave,
+            requiresPM: true
+          },
+          {
+            label: 'Gantt Chart',
+            href: '/gantt',
+            icon: FaClipboardList,
             requiresPM: true
           }
         );
