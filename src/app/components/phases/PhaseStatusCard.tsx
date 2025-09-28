@@ -4,6 +4,7 @@ import React from 'react';
 import { FaCheckCircle, FaExclamationTriangle, FaClock, FaChartPie, FaPlay, FaEdit } from 'react-icons/fa';
 import { getPhaseStatus, getStatusColorClasses, getProgressBarColor, formatHours } from '@/lib/phase-status';
 import { generateColorFromString } from '@/lib/colors';
+import CalendarSyncButton from '@/app/components/calendar/CalendarSyncButton';
 
 interface PhaseAllocation {
   id: string;
@@ -161,6 +162,11 @@ export default function PhaseStatusCard({
                     Manage Hours
                   </button>
                 )}
+                <CalendarSyncButton 
+                  phaseId={phase.id} 
+                  phaseName={phase.name}
+                  className="text-xs"
+                />
               </div>
             )}
             

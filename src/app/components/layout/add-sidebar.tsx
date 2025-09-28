@@ -19,15 +19,12 @@ import {
   FaClipboardList,
   FaMoneyBillWave,
   FaCalendarWeek,
-  FaBell,
-  FaFileAlt,
-  FaJira,
-  FaGanttChart,
-  FaCogs
+  FaBell
 } from 'react-icons/fa';
-import NotificationBadge from './notifications/NotificationBadge';
+import NotificationBadge from '@/app/components/notifications/NotificationBadge';
 import { UserRole } from '@prisma/client';
 import { signOut } from 'next-auth/react';
+import Tooltip from '@/app/components/ui/tooltip';
 
 interface SidebarProps {
   children: React.ReactNode;
@@ -41,11 +38,27 @@ interface NavItem {
   requiresPM?: boolean; // For items that require PM role
 }
 
+//#region Default Sidebar Function
 export default function Sidebar({ children }: SidebarProps) {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+// #region Load collapse state from localStorage
+useEffect(() => {
+  const collapsed = localStorage.getItem('sidebar-collapsed');
+  if (collapsed) setIsCollapsed(collapsed === 'true');
+}, []);
+//endregion
+
+// Toggle function
+const toggleCollapse = () => {
+  setIsCollapsed(prev => {
+    localStorage.setItem('sidebar-collapsed', (!prev).toString());
+    return !prev;
+  });
+};
   const [isDynamicPM, setIsDynamicPM] = useState(false);
 
   // Dynamically check if user is a Product Manager
@@ -85,55 +98,37 @@ export default function Sidebar({ children }: SidebarProps) {
         },
         {
           label: 'All Projects',
-          href: '/dashboard/projects',
+          href: '/projects',
           icon: FaProjectDiagram,
           roles: [UserRole.GROWTH_TEAM]
         },
         {
           label: 'Budget Overview',
-          href: '/dashboard/budget',
+          href: '/budget',
           icon: FaMoneyBillWave,
           roles: [UserRole.GROWTH_TEAM]
         },
         {
-          label: 'Manage Users',
-          href: '/dashboard/admin/manage-users',
-          icon: FaUsers,
-          roles: [UserRole.GROWTH_TEAM]
-        },
-        {
-          label: 'User Approvals',
-          href: '/dashboard/admin/user-approvals',
-          icon: FaUserPlus,
-          roles: [UserRole.GROWTH_TEAM]
-        },
-        {
-          label: 'Reports',
-          href: '/dashboard/reports',
-          icon: FaFileAlt,
-          roles: [UserRole.GROWTH_TEAM]
-        },
-        {
-          label: 'Jira Integration',
-          href: '/dashboard/jira',
-          icon: FaCogs,
-          roles: [UserRole.GROWTH_TEAM]
-        },
-        {
-          label: 'Gantt Chart',
-          href: '/dashboard/gantt',
-          icon: FaGanttChart,
-          roles: [UserRole.GROWTH_TEAM]
-        },
-        {
           label: 'Resource Timeline',
-          href: '/dashboard/resource-timeline',
+          href: '/resource-timeline',
           icon: FaChartBar,
           roles: [UserRole.GROWTH_TEAM]
         },
         {
+          label: 'Manage Users',
+          href: '/manage-users',
+          icon: FaUsers,
+          roles: [UserRole.GROWTH_TEAM]
+        },
+        {
+          label: 'Reports',
+          href: '/reports',
+          icon: FaUsers,
+          roles: [UserRole.GROWTH_TEAM]
+        },
+        {
           label: 'Notifications',
-          href: '/dashboard/notifications',
+          href: '/notifications',
           icon: FaBell,
           roles: [UserRole.GROWTH_TEAM]
         }
@@ -142,61 +137,67 @@ export default function Sidebar({ children }: SidebarProps) {
       // Consultant Menu
       items.push(
         {
-          label: 'Weekly Planner',
+          label: 'Dashboard',
           href: '/dashboard',
+          icon: FaHome,
+          roles: [UserRole.CONSULTANT]
+        },
+        {
+          label: 'Weekly Planner',
+          href: '/weekly-planner',
           icon: FaCalendarWeek,
           roles: [UserRole.CONSULTANT]
         },
         {
           label: 'My Allocations',
-          href: '/dashboard/allocations',
+          href: '/allocations',
           icon: FaClipboardList,
           roles: [UserRole.CONSULTANT]
         },
         {
           label: 'My Projects',
-          href: '/dashboard/projects',
+          href: '/projects',
           icon: FaProjectDiagram,
           roles: [UserRole.CONSULTANT]
         },
         {
           label: 'Hour Requests',
-          href: '/dashboard/hour-requests',
+          href: '/admin/hour-requests',
           icon: FaClock,
           roles: [UserRole.CONSULTANT]
         },
         {
           label: 'Notifications',
-          href: '/dashboard/notifications',
+          href: '/notifications',
           icon: FaBell,
           roles: [UserRole.CONSULTANT]
         }
       );
 
-      // Add PM-specific items if user is a Product Manager
+      //PM-specific items if user is a Product Manager
       if (isProductManager) {
         items.push(
           {
             label: 'Phase Planning',
-            href: '/dashboard/phase-planning',
+            href: '/phase-planning',
             icon: FaClipboardList,
             requiresPM: true
           },
           {
             label: 'Team Allocations',
-            href: '/dashboard/team-allocations',
+            href: '/team-allocations',
             icon: FaUsers,
             requiresPM: true
           },
           {
             label: 'Hour Change Approvals',
-            href: '/dashboard/admin/hour-changes',
+            href: '/hour-changes',
             icon: FaClock,
             requiresPM: true
           },
           {
             label: 'Budget Overview',
-            href: '/dashboard/pm-budget',
+            href: '/budget',
             icon: FaMoneyBillWave,
             requiresPM: true
           }
@@ -225,7 +226,7 @@ export default function Sidebar({ children }: SidebarProps) {
       {/* Mobile menu button */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200">
         <div className="flex items-center justify-between p-4">
-          <h1 className="text-xl font-bold text-gray-800">Resource System</h1>
+          <h1 className="text-xl font-bold text-gray-800">AgileRS</h1>
           <div className="flex items-center gap-2">
             <NotificationBadge />
             <button
@@ -249,7 +250,7 @@ export default function Sidebar({ children }: SidebarProps) {
       }`}>
         <div className="flex flex-col h-full">
           <div className="p-4 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-gray-800">Resource System</h1>
+            <h1 className="text-xl font-bold text-gray-800">AgileRS</h1>
           </div>
           <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
@@ -294,20 +295,46 @@ export default function Sidebar({ children }: SidebarProps) {
           {/* Header */}
           <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
             {!isCollapsed && (
-              <h1 className="text-xl font-bold text-gray-800">Resource System</h1>
+              <h1 className="text-xl font-bold text-gray-800">AgileRS</h1>
             )}
+            {/* Collapse/Expand Notifications */}
             <div className="flex items-center gap-2">
-              <NotificationBadge />
-              <button
-                onClick={() => setIsCollapsed(!isCollapsed)}
-                className={`p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors ${
-                  isCollapsed ? 'w-full flex justify-center' : ''
-                }`}
-              >
-                {isCollapsed ? <FaChevronRight size={16} /> : <FaChevronLeft size={16} />}
-              </button>
+              {!isCollapsed && <NotificationBadge />}
+              <div className="relative group">
+                <button
+                  onClick={toggleCollapse}
+                  className={`p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors ${
+                    isCollapsed ? 'w-full flex justify-center' : ''
+                  }`}
+                >
+                  {isCollapsed ? <FaChevronRight size={16} /> : <FaChevronLeft size={16} />}
+                </button>
+
+                {/* Tooltip */}
+                {isCollapsed && (
+                  <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 px-3 py-2 
+                  bg-gray-900 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 
+                    group-hover:visible translate-x-[-10px] group-hover:translate-x-0 
+                    transition-all duration-300 ease-out whitespace-nowrap pointer-events-none z-[999999]">
+                    Open Sidebar
+                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 
+                      border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                )}
+
+                {!isCollapsed && (
+                  <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 px-3 py-2 
+                    bg-gray-900 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 
+                    group-hover:visible translate-x-[-10px] group-hover:translate-x-0 
+                    transition-all duration-300 ease-out whitespace-nowrap pointer-events-none z-[999999]">
+                    Close Sidebar
+                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 
+                      border-4 border-transparent border-r-gray-900"></div>
+                  </div>
+                )}
+                </div>
+              </div>
             </div>
-          </div>
 
           {/* User info */}
           {!isCollapsed && (
@@ -319,6 +346,7 @@ export default function Sidebar({ children }: SidebarProps) {
                       {session.user.name?.charAt(0) || session.user.email?.charAt(0)}
                     </span>
                   </div>
+
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {session.user.name || 'User'}
@@ -335,16 +363,29 @@ export default function Sidebar({ children }: SidebarProps) {
           {/* Collapsed user avatar */}
           {isCollapsed && (
             <div className="p-2 border-b border-gray-200 flex justify-center">
+              <Link href="/profile" className="relative group">
               <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-medium text-xs">
                   {session.user.name?.charAt(0) || session.user.email?.charAt(0)}
                 </span>
               </div>
-            </div>
+
+              {/* Tooltip */}
+              <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 px-3 py-2 
+             bg-gray-900 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 
+              group-hover:visible translate-x-[-10px] group-hover:translate-x-0 
+              transition-all duration-300 ease-out whitespace-nowrap pointer-events-none z-[999999]">
+              Profile Page
+              <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 
+                border-4 border-transparent border-r-gray-900"></div>
+              </div>
+            </Link>
+          </div>
           )}
 
+
           {/* Navigation */}
-          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+          <nav className="flex-1 px-2 py-4 space-y-1 relative overflow-visible">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -368,11 +409,17 @@ export default function Sidebar({ children }: SidebarProps) {
                       <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-blue-700 rounded-l-full"></div>
                     )}
                   </Link>
-                  
+
                   {/* Tooltip for collapsed mode */}
                   {isCollapsed && (
-                    <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 top-1/2 transform -translate-y-1/2">
+                    <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 px-3 py-2 bg-gray-900 text-white text-sm 
+                    rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible
+                    translate-x-[-10px] group-hover:translate-x-0
+                    transition-all duration-300 ease-out whitespace-nowrap
+                    pointer-events-none z-999999999999"
+                    >
                       {item.label}
+                      {/* Tooltip arrow */}
                       <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 border-4 border-transparent border-r-gray-900"></div>
                     </div>
                   )}
@@ -421,3 +468,4 @@ export default function Sidebar({ children }: SidebarProps) {
     </div>
   );
 }
+// #endregion
