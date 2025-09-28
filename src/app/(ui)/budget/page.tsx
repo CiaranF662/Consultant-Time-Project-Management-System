@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { UserRole } from '@prisma/client';
-import DashboardLayout from '@/app/components/DashboardLayout';
+import DashboardLayout from '@/app/components/dashboard/DashboardLayout';
 import BudgetOverview from '@/app/components/budget/BudgetOverview';
 
 export default async function BudgetPage() {
