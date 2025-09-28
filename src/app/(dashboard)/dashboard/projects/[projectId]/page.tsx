@@ -170,10 +170,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   const canManagePhases = isProductManager; // Only Product Managers can manage phases
   const canManageAllocations = isProductManager; // Only Product Managers can manage allocations
 
-  // Calculate project-level statistics
-  const totalAllocatedHours = project.phases.reduce((total, phase) => {
+  // Calculate project-level statistics from phase allocations (for phase allocation display)
+  const totalPhaseAllocatedHours = project.phases.reduce((total, phase) => {
     return total + (phase.phaseAllocations?.reduce((phaseTotal, allocation) =>
-      phaseTotal + allocation.hours, 0) || 0); // Changed from allocatedHours to hours
+      phaseTotal + allocation.hours, 0) || 0);
+  }, 0);
+
+  // Calculate total from Growth Team's original allocations (for team allocation display)
+  const totalGrowthTeamAllocatedHours = project.consultants.reduce((total, consultant) => {
+    return total + (consultant.allocatedHours || 0);
   }, 0);
 
   return (
@@ -254,8 +259,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                 <div className="flex items-center gap-2">
                   <div>
                     <div className="text-sm text-gray-600">Phase Allocation</div>
-                    <div className="font-medium">{totalAllocatedHours}h / {project.budgetedHours}h</div>
-                    <div className="text-xs text-gray-500">({Math.round((totalAllocatedHours / project.budgetedHours) * 100)}%)</div>
+                    <div className="font-medium">{totalPhaseAllocatedHours}h / {totalGrowthTeamAllocatedHours}h</div>
+                    <div className="text-xs text-gray-500">
+                      {totalGrowthTeamAllocatedHours > 0 ? `(${Math.round((totalPhaseAllocatedHours / totalGrowthTeamAllocatedHours) * 100)}%)` : '(0%)'}
+                    </div>
                   </div>
                 </div>
 
@@ -263,10 +270,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                   <div>
                     <div className="text-sm text-gray-600">Team Allocation</div>
                     <div className="font-medium">
-                      {project.consultants.reduce((sum, c) => sum + (c.allocatedHours || 0), 0)}h / {project.budgetedHours}h
+                      {totalGrowthTeamAllocatedHours}h / {project.budgetedHours}h
                     </div>
                     <div className="text-xs text-gray-500">
-                      ({Math.round((project.consultants.reduce((sum, c) => sum + (c.allocatedHours || 0), 0) / project.budgetedHours) * 100)}%)
+                      ({Math.round((totalGrowthTeamAllocatedHours / project.budgetedHours) * 100)}%)
                     </div>
                   </div>
                 </div>
@@ -282,13 +289,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                         {project.productManager.name}
                         {(() => {
                           const pmConsultant = project.consultants.find(c => c.userId === project.productManagerId);
-                          return pmConsultant?.allocatedHours ? (
+                          const pmAllocatedHours = pmConsultant?.allocatedHours || 0;
+                          return (
                             <span className="ml-2 text-xs bg-white bg-opacity-30 px-1 py-0.5 rounded">
-                              {pmConsultant.allocatedHours}h
-                            </span>
-                          ) : (
-                            <span className="ml-2 text-xs bg-white bg-opacity-30 px-1 py-0.5 rounded">
-                              0h
+                              {pmAllocatedHours}h
                             </span>
                           );
                         })()}

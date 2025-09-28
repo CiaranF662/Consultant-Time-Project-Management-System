@@ -322,14 +322,40 @@ export default function PhaseStatusCard({
                     <span className="text-gray-600">{formatHours(allocation.hours - allocation.plannedHours)} remaining</span>
                   </div>
                   
-                  {/* Progress bar */}
-                  <div className="w-20 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-500 h-2 rounded-full transition-all"
-                      style={{
-                        width: `${Math.min(100, (allocation.plannedHours / Math.max(allocation.hours, 1)) * 100)}%`
-                      }}
-                    />
+                  {/* Circular Progress Indicator */}
+                  <div className="relative w-10 h-10">
+                    <svg className="w-10 h-10 transform -rotate-90" viewBox="0 0 40 40">
+                      {/* Background circle */}
+                      <circle
+                        cx="20"
+                        cy="20"
+                        r="16"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        fill="none"
+                        className="text-gray-200"
+                      />
+                      {/* Progress circle */}
+                      <circle
+                        cx="20"
+                        cy="20"
+                        r="16"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        fill="none"
+                        strokeLinecap="round"
+                        className={allocation.plannedHours >= allocation.hours ? "text-green-500" : "text-blue-500"}
+                        strokeDasharray={`${Math.PI * 32}`}
+                        strokeDashoffset={`${Math.PI * 32 * (1 - Math.min(1, allocation.plannedHours / Math.max(allocation.hours, 1)))}`}
+                        style={{ transition: 'stroke-dashoffset 0.3s ease' }}
+                      />
+                    </svg>
+                    {/* Percentage text */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[8px] font-medium text-gray-700">
+                        {Math.round((allocation.plannedHours / Math.max(allocation.hours, 1)) * 100)}%
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

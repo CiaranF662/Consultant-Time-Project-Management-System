@@ -125,6 +125,11 @@ export async function POST(request: Request) {
         where: { id: phaseAllocationId },
         data: { consultantDescription }
       });
+
+      // If this is a description-only update (plannedHours is 0), don't create/update weekly allocation
+      if (plannedHours === 0) {
+        return NextResponse.json({ message: 'Description updated successfully' });
+      }
     }
 
     let allocation;
@@ -136,27 +141,53 @@ export async function POST(request: Request) {
         newHours: plannedHours
       });
 
-      // Update existing allocation (reset to PENDING if modifying)
-      allocation = await prisma.weeklyAllocation.update({
-        where: { id: existing.id },
-        data: {
-          proposedHours: plannedHours,
-          planningStatus: 'PENDING',
-          plannedBy: session.user.id,
-          approvedHours: null,
-          approvedBy: null,
-          approvedAt: null,
-          rejectionReason: null
-        }
-      });
+      // If plannedHours is 0, mark for deletion but let Growth Team approve it
+      if (plannedHours === 0) {
+        allocation = await prisma.weeklyAllocation.update({
+          where: { id: existing.id },
+          data: {
+            proposedHours: 0,
+            planningStatus: 'PENDING',
+            plannedBy: session.user.id,
+            approvedHours: null,
+            approvedBy: null,
+            approvedAt: null,
+            rejectionReason: null
+          }
+        });
 
-      console.log('Updated allocation:', {
-        id: allocation.id,
-        newStatus: allocation.planningStatus,
-        newRejectionReason: allocation.rejectionReason,
-        proposedHours: allocation.proposedHours
-      });
+        console.log('Marked allocation for deletion (0 hours, pending approval):', {
+          id: allocation.id,
+          proposedHours: allocation.proposedHours
+        });
+      } else {
+        // Update existing allocation (reset to PENDING if modifying)
+        allocation = await prisma.weeklyAllocation.update({
+          where: { id: existing.id },
+          data: {
+            proposedHours: plannedHours,
+            planningStatus: 'PENDING',
+            plannedBy: session.user.id,
+            approvedHours: null,
+            approvedBy: null,
+            approvedAt: null,
+            rejectionReason: null
+          }
+        });
+
+        console.log('Updated allocation:', {
+          id: allocation.id,
+          newStatus: allocation.planningStatus,
+          newRejectionReason: allocation.rejectionReason,
+          proposedHours: allocation.proposedHours
+        });
+      }
     } else {
+      // Don't create new allocations with 0 hours
+      if (plannedHours === 0) {
+        return NextResponse.json({ message: 'No allocation created for 0 hours' });
+      }
+
       // Create new allocation (requires Growth Team approval)
       allocation = await prisma.weeklyAllocation.create({
         data: {

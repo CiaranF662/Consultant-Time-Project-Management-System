@@ -187,6 +187,14 @@ import {
     if (hours % 1 === 0) return `${hours}h`;
     return `${hours.toFixed(1)}h`;
   }
+
+  /**
+   * Format hours for approval display (shows 0h instead of -)
+   */
+  export function formatHoursForApproval(hours: number): string {
+    if (hours % 1 === 0) return `${hours}h`;
+    return `${hours.toFixed(1)}h`;
+  }
   
   /**
    * Calculate budget utilization percentage

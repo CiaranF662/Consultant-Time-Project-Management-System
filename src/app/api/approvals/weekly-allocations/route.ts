@@ -58,7 +58,58 @@ export async function GET(request: Request) {
       ]
     });
 
-    // Group by week and consultant for easier approval UI
+    // Get all weekly allocations for the same weeks to show consultant workload context
+    const weekStartDates = [...new Set(pendingAllocations.map(a => a.weekStartDate))];
+    const consultantIds = [...new Set(pendingAllocations.map(a => a.consultantId))];
+
+    const allWeeklyAllocations = await prisma.weeklyAllocation.findMany({
+      where: {
+        weekStartDate: { in: weekStartDates },
+        consultantId: { in: consultantIds },
+        planningStatus: { in: ['APPROVED', 'MODIFIED'] } // Only show approved work
+      },
+      include: {
+        phaseAllocation: {
+          include: {
+            phase: {
+              include: {
+                project: {
+                  select: { id: true, title: true }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Group approved allocations by consultant and week for context
+    const workloadContext = allWeeklyAllocations.reduce((acc, allocation) => {
+      const weekKey = allocation.weekStartDate.toISOString().split('T')[0];
+      const consultantId = allocation.consultantId;
+
+      if (!acc[consultantId]) {
+        acc[consultantId] = {};
+      }
+
+      if (!acc[consultantId][weekKey]) {
+        acc[consultantId][weekKey] = {
+          totalApprovedHours: 0,
+          projects: []
+        };
+      }
+
+      acc[consultantId][weekKey].totalApprovedHours += allocation.approvedHours || 0;
+      acc[consultantId][weekKey].projects.push({
+        projectTitle: allocation.phaseAllocation.phase.project.title,
+        phaseName: allocation.phaseAllocation.phase.name,
+        hours: allocation.approvedHours || 0
+      });
+
+      return acc;
+    }, {} as any);
+
+    // Group by week and consultant for easier approval UI, including workload context
     const groupedAllocations = pendingAllocations.reduce((acc, allocation) => {
       const weekKey = allocation.weekStartDate.toISOString().split('T')[0];
       const consultantId = allocation.consultantId;
@@ -71,7 +122,8 @@ export async function GET(request: Request) {
         acc[weekKey][consultantId] = {
           consultant: allocation.consultant,
           totalProposed: 0,
-          allocations: []
+          allocations: [],
+          weeklyWorkload: workloadContext[consultantId]?.[weekKey] || { totalApprovedHours: 0, projects: [] }
         };
       }
 

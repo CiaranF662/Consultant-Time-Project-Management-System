@@ -67,6 +67,39 @@ export async function POST(
       return new NextResponse(JSON.stringify({ error: 'Allocation is not pending approval' }), { status: 400 });
     }
 
+    // Special handling for 0 hours approval - delete the allocation entirely
+    if ((action === 'approve' || action === 'modify') && approvedHours === 0) {
+      // Delete the allocation as it represents removing the consultant from this week
+      await prisma.weeklyAllocation.delete({
+        where: { id: allocationId }
+      });
+
+      // Create notification for the consultant about deletion
+      await prisma.notification.create({
+        data: {
+          userId: allocation.consultantId,
+          type: NotificationType.WEEKLY_ALLOCATION_APPROVED,
+          title: 'Weekly Allocation Removed',
+          message: `Your weekly allocation for ${allocation.phaseAllocation.phase.name} (Week ${allocation.weekNumber}, ${allocation.year}) has been approved for removal (0 hours).`,
+          actionUrl: `/dashboard/allocations`,
+          metadata: {
+            projectId: allocation.phaseAllocation.phase.project.id,
+            phaseId: allocation.phaseAllocation.phase.id,
+            allocationId: allocation.id,
+            weekNumber: allocation.weekNumber,
+            year: allocation.year,
+            deleted: true
+          }
+        }
+      });
+
+      return NextResponse.json({
+        message: 'Weekly allocation deleted (approved for 0 hours)',
+        deleted: true,
+        allocation: allocation
+      });
+    }
+
     // Update the allocation
     const planningStatus = action === 'reject' ? 'REJECTED' :
                          (action === 'modify' && approvedHours !== allocation.proposedHours) ? 'MODIFIED' : 'APPROVED';

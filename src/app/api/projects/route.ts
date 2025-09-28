@@ -60,7 +60,17 @@ export async function POST(request: Request) {
       return new NextResponse(JSON.stringify({ error: 'Duration must be a positive number.' }), { status: 400 });
     }
 
-    const projectStartDate = new Date(startDate);
+    // Ensure project starts on a Monday
+    const requestedStartDate = new Date(startDate);
+    const projectStartDate = new Date(requestedStartDate);
+
+    // Adjust to next Monday if not already Monday (0 = Sunday, 1 = Monday, etc.)
+    const dayOfWeek = projectStartDate.getDay();
+    if (dayOfWeek !== 1) {
+      const daysUntilMonday = (1 + 7 - dayOfWeek) % 7;
+      projectStartDate.setDate(projectStartDate.getDate() + daysUntilMonday);
+    }
+
     const projectEndDate = new Date(projectStartDate);
     projectEndDate.setDate(projectEndDate.getDate() + durationInWeeks * 7);
 

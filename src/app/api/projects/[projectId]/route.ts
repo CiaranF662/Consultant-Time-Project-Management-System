@@ -66,6 +66,18 @@ export async function GET(
       },
     });
 
+    // Get all approved weekly allocations for this project
+    const approvedWeeklyAllocations = await prisma.weeklyAllocation.findMany({
+      where: {
+        phaseAllocation: {
+          phase: {
+            projectId: projectId
+          }
+        },
+        planningStatus: { in: ['APPROVED', 'MODIFIED'] }
+      }
+    });
+
     if (!project) {
       return new NextResponse(JSON.stringify({ error: 'Project not found or not authorized' }), { status: 404 });
     }
@@ -78,22 +90,49 @@ export async function GET(
       ...project,
       phases: project.phases.map(phase => ({
         ...phase,
-        phaseAllocations: phase.allocations.map(allocation => ({
-          id: allocation.id,
-          consultantId: allocation.consultantId,
-          consultantName: allocation.consultant.name || allocation.consultant.email || 'Unknown',
-          hours: allocation.totalHours,
-          plannedHours: allocation.weeklyAllocations.reduce((sum, wa) => sum + wa.plannedHours, 0),
-          approvalStatus: allocation.approvalStatus
-        })),
+        phaseAllocations: phase.allocations.map(allocation => {
+          // Get approved weekly allocations for this specific allocation
+          const approvedWeeklyForThisAllocation = approvedWeeklyAllocations.filter(
+            wa => wa.phaseAllocationId === allocation.id
+          );
+
+          // Calculate planned hours from approved weekly allocations only
+          const totalPlannedHours = approvedWeeklyForThisAllocation.reduce((sum, wa) => sum + (wa.approvedHours || 0), 0);
+
+          return {
+            id: allocation.id,
+            consultantId: allocation.consultantId,
+            consultantName: allocation.consultant.name || allocation.consultant.email || 'Unknown',
+            hours: allocation.totalHours,
+            plannedHours: totalPlannedHours,
+            approvalStatus: allocation.approvalStatus
+          };
+        }),
         // Keep allocations for phase status calculation
-        allocations: phase.allocations.map(allocation => ({
-          id: allocation.id,
-          consultantId: allocation.consultantId,
-          totalHours: allocation.totalHours,
-          approvalStatus: allocation.approvalStatus,
-          weeklyAllocations: allocation.weeklyAllocations
-        }))
+        allocations: phase.allocations.map(allocation => {
+          // Get approved weekly allocations for this specific allocation
+          const approvedWeeklyForThisAllocation = approvedWeeklyAllocations.filter(
+            wa => wa.phaseAllocationId === allocation.id
+          );
+
+          // Use only approved weekly allocations for phase status calculation
+          const combinedWeeklyAllocations = approvedWeeklyForThisAllocation.map(wa => ({
+            id: wa.id,
+            plannedHours: wa.approvedHours || 0,
+            weekStartDate: wa.weekStartDate,
+            weekEndDate: wa.weekEndDate,
+            weekNumber: wa.weekNumber,
+            year: wa.year
+          }));
+
+          return {
+            id: allocation.id,
+            consultantId: allocation.consultantId,
+            totalHours: allocation.totalHours,
+            approvalStatus: allocation.approvalStatus,
+            weeklyAllocations: combinedWeeklyAllocations
+          };
+        })
       }))
     };
 

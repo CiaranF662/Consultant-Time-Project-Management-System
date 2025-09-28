@@ -88,15 +88,61 @@ export async function POST(
           phaseId,
           consultantId
         }
+      },
+      include: {
+        weeklyAllocations: {
+          where: {
+            planningStatus: 'APPROVED'
+          }
+        }
       }
     });
 
     let allocation;
     if (existing) {
-      // Update existing allocation
+      // Calculate total planned hours from approved weekly allocations
+      const totalPlannedHours = existing.weeklyAllocations.reduce((sum, weekly) => {
+        return sum + (weekly.approvedHours || weekly.proposedHours || 0);
+      }, 0);
+
+      // Business rule validation for hour changes
+      if (existing.totalHours !== totalHours) {
+        const unplannedHours = existing.totalHours - totalPlannedHours;
+
+        // If consultant has fully utilized their allocation, PM can only increase hours
+        if (totalPlannedHours >= existing.totalHours && totalHours < existing.totalHours) {
+          return new NextResponse(JSON.stringify({
+            error: 'Cannot reduce hours below planned amount. This consultant has already planned or used all their allocated hours. You can only increase their allocation.',
+            plannedHours: totalPlannedHours,
+            currentAllocation: existing.totalHours
+          }), { status: 400 });
+        }
+
+        // If consultant has not used all hours, PM can only reduce by the unplanned amount
+        if (totalHours < existing.totalHours && totalHours < totalPlannedHours) {
+          return new NextResponse(JSON.stringify({
+            error: `Cannot reduce hours below ${totalPlannedHours}. This consultant has already planned ${totalPlannedHours} hours. You can reduce the allocation to a minimum of ${totalPlannedHours} hours or increase it.`,
+            plannedHours: totalPlannedHours,
+            minimumAllowedHours: totalPlannedHours,
+            currentAllocation: existing.totalHours
+          }), { status: 400 });
+        }
+      }
+
+      // Update existing allocation - requires Growth Team approval if hours changed
+      const dataToUpdate: any = { totalHours };
+
+      // If hours changed, reset to PENDING approval status
+      if (existing.totalHours !== totalHours) {
+        dataToUpdate.approvalStatus = 'PENDING';
+        dataToUpdate.approvedBy = null;
+        dataToUpdate.approvedAt = null;
+        dataToUpdate.rejectionReason = null;
+      }
+
       allocation = await prisma.phaseAllocation.update({
         where: { id: existing.id },
-        data: { totalHours },
+        data: dataToUpdate,
         include: { consultant: true }
       });
     } else {
@@ -215,26 +261,60 @@ export async function PUT(
       return new NextResponse(JSON.stringify({ error: 'Some consultants are not part of the project' }), { status: 400 });
     }
 
-    // Get existing allocations to preserve their approval status
+    // Get existing allocations to preserve their approval status and validate hour changes
     const existingAllocations = await prisma.phaseAllocation.findMany({
       where: { phaseId },
-      select: {
-        consultantId: true,
-        approvalStatus: true,
-        approvedBy: true,
-        approvedAt: true,
-        rejectionReason: true
+      include: {
+        weeklyAllocations: {
+          where: {
+            planningStatus: 'APPROVED'
+          }
+        }
       }
     });
+
+    // Validate hour changes against existing weekly planning
+    for (const allocation of allocations) {
+      const existing = existingAllocations.find(ea => ea.consultantId === allocation.consultantId);
+      if (existing && existing.totalHours !== parseFloat(allocation.totalHours)) {
+        // Calculate total planned hours from approved weekly allocations
+        const totalPlannedHours = existing.weeklyAllocations.reduce((sum, weekly) => {
+          return sum + (weekly.approvedHours || weekly.proposedHours || 0);
+        }, 0);
+
+        const newHours = parseFloat(allocation.totalHours);
+
+        // Business rule validation for hour changes
+        if (totalPlannedHours >= existing.totalHours && newHours < existing.totalHours) {
+          return new NextResponse(JSON.stringify({
+            error: `Cannot reduce hours for consultant below planned amount. The consultant has already planned or used all ${existing.totalHours} allocated hours. You can only increase their allocation.`,
+            consultantId: allocation.consultantId,
+            plannedHours: totalPlannedHours,
+            currentAllocation: existing.totalHours
+          }), { status: 400 });
+        }
+
+        if (newHours < existing.totalHours && newHours < totalPlannedHours) {
+          return new NextResponse(JSON.stringify({
+            error: `Cannot reduce hours below ${totalPlannedHours} for this consultant. They have already planned ${totalPlannedHours} hours. You can reduce the allocation to a minimum of ${totalPlannedHours} hours or increase it.`,
+            consultantId: allocation.consultantId,
+            plannedHours: totalPlannedHours,
+            minimumAllowedHours: totalPlannedHours,
+            currentAllocation: existing.totalHours
+          }), { status: 400 });
+        }
+      }
+    }
 
     // Use transaction to update allocations
     await prisma.$transaction(async (tx) => {
 
-      // Create a map of existing approval statuses
+      // Create a map of existing approval statuses and hours
       const existingApprovalMap = new Map(
         existingAllocations.map(alloc => [
           alloc.consultantId,
           {
+            totalHours: alloc.totalHours,
             approvalStatus: alloc.approvalStatus,
             approvedBy: alloc.approvedBy,
             approvedAt: alloc.approvedAt,
@@ -252,16 +332,20 @@ export async function PUT(
       if (allocations.length > 0) {
         const allocationData = allocations.map((alloc: any) => {
           const existingApproval = existingApprovalMap.get(alloc.consultantId);
+          const newHours = parseFloat(alloc.totalHours);
+
+          // Check if hours have changed - if so, reset to PENDING approval
+          const hoursChanged = existingApproval && existingApproval.totalHours !== newHours;
 
           return {
             phaseId,
             consultantId: alloc.consultantId,
-            totalHours: parseFloat(alloc.totalHours),
-            // Preserve existing approval status, or set to PENDING for new consultants
-            approvalStatus: existingApproval?.approvalStatus || 'PENDING',
-            approvedBy: existingApproval?.approvedBy || null,
-            approvedAt: existingApproval?.approvedAt || null,
-            rejectionReason: existingApproval?.rejectionReason || null
+            totalHours: newHours,
+            // Reset to PENDING if hours changed, otherwise preserve existing status, or set to PENDING for new consultants
+            approvalStatus: hoursChanged ? 'PENDING' : (existingApproval?.approvalStatus || 'PENDING'),
+            approvedBy: hoursChanged ? null : (existingApproval?.approvedBy || null),
+            approvedAt: hoursChanged ? null : (existingApproval?.approvedAt || null),
+            rejectionReason: hoursChanged ? null : (existingApproval?.rejectionReason || null)
           };
         });
 

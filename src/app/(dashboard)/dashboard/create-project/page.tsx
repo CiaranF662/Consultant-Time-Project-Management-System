@@ -14,13 +14,35 @@ const getTodayString = () => {
   return new Date().toISOString().split('T')[0];
 };
 
+// Helper function to get the next Monday from a given date (or same date if already Monday)
+const getNextMonday = (date: Date) => {
+  const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  if (dayOfWeek === 1) return new Date(date); // Already Monday
+  const daysUntilMonday = (1 + 7 - dayOfWeek) % 7;
+  const nextMonday = new Date(date);
+  nextMonday.setDate(date.getDate() + daysUntilMonday);
+  return nextMonday;
+};
+
+// Helper function to format date for input
+const formatDateForInput = (date: Date) => {
+  return date.toISOString().split('T')[0];
+};
+
 export default function CreateProjectPage() {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [durationInWeeks, setDurationInWeeks] = useState('');
-  const [startDate, setStartDate] = useState(getTodayString());
+
+  // Calculate next Monday as default start date
+  const today = new Date();
+  const nextMonday = getNextMonday(today);
+  const [startDate, setStartDate] = useState(formatDateForInput(nextMonday));
   const [budgetedHours, setBudgetedHours] = useState('');
+
+  // Check if start date was adjusted from today
+  const isStartDateAdjusted = formatDateForInput(today) !== formatDateForInput(nextMonday);
   
   // Product Manager and Consultants
   const [consultants, setConsultants] = useState<User[]>([]);
@@ -227,10 +249,20 @@ export default function CreateProjectPage() {
                           type="date"
                           id="startDate"
                           value={startDate}
-                          onChange={(e) => setStartDate(e.target.value)}
+                          onChange={(e) => {
+                            const selectedDate = new Date(e.target.value);
+                            const adjustedDate = getNextMonday(selectedDate);
+                            setStartDate(formatDateForInput(adjustedDate));
+                          }}
                           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                           required
                         />
+                        {isStartDateAdjusted && (
+                          <div className="mt-2 flex items-center gap-2 text-sm text-blue-600">
+                            <FaInfoCircle className="w-4 h-4" />
+                            <span>Project start date adjusted to Monday ({new Date(startDate).toLocaleDateString()}) as projects must begin on a Monday.</span>
+                          </div>
+                        )}
                       </div>
                       
                       <div>

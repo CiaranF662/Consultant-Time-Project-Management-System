@@ -22,7 +22,12 @@ async function getHourApprovalsData() {
         }
       },
       phase: {
-        include: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          startDate: true,
+          endDate: true,
           project: {
             select: {
               id: true,
