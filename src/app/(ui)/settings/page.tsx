@@ -7,6 +7,8 @@ import { FaMoon, FaSun, FaBell, FaLock, FaCog, FaSave } from 'react-icons/fa';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useNotification } from '@/app/contexts/NotificationContext';
 import axios from 'axios';
+import Tooltip from '@/app/components/ui/Tooltip';
+import HelpText from '@/app/components/ui/HelpText';
 
 function SetPasswordForm() {
   const { data: session } = useSession();
@@ -231,17 +233,63 @@ export default function SettingsPage() {
                         Choose between light and dark mode for better comfort
                       </p>
                     </div>
-                    <button
-                      onClick={() => setTempTheme(tempTheme === 'light' ? 'dark' : 'light')}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-                        tempTheme === 'dark'
-                          ? 'bg-gray-700 border-gray-600 text-yellow-400 hover:bg-gray-600'
-                          : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {tempTheme === 'dark' ? <FaSun className="w-4 h-4" /> : <FaMoon className="w-4 h-4" />}
-                      {tempTheme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-                    </button>
+                    <Tooltip content={`Switch to ${tempTheme === 'dark' ? 'light' : 'dark'} mode for better visibility`}>
+                      <button
+                        onClick={() => setTempTheme(tempTheme === 'light' ? 'dark' : 'light')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                          tempTheme === 'dark'
+                            ? 'bg-gray-700 border-gray-600 text-yellow-400 hover:bg-gray-600'
+                            : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {tempTheme === 'dark' ? <FaSun className="w-4 h-4" /> : <FaMoon className="w-4 h-4" />}
+                        {tempTheme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                      </button>
+                    </Tooltip>
+                  </div>
+                </div>
+              </div>
+
+              {/* Accessibility */}
+              <div>
+                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4 flex items-center gap-2`}>
+                  <FaCog className="w-5 h-5" />
+                  Accessibility Settings
+                </h3>
+                <div className="space-y-4">
+                  <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
+                          Show Tooltips
+                        </label>
+                        <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Display helpful tooltips throughout the application
+                        </p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        defaultChecked={true}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
+                          High Contrast Mode
+                        </label>
+                        <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Increase contrast for better visibility
+                        </p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

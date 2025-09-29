@@ -2,53 +2,82 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
-  }
+/* Accessibility Enhancements */
+.high-contrast {
+  --tw-text-opacity: 1;
+  filter: contrast(1.5);
+}
 
-  .dark {
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.439 0 0);
-  }
+.reduced-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
 
-  body {
-    @apply transition-colors duration-300;
-  }
+/* Focus indicators */
+*:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
 
-  .dark body {
-    @apply bg-gray-900 text-white;
-  }
+/* Skip to content link */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: #000;
+  color: #fff;
+  padding: 8px;
+  text-decoration: none;
+  z-index: 1000;
+}
 
-  .light body {
-    @apply bg-white text-gray-900;
-  }
+.skip-link:focus {
+  top: 6px;
+}
 
-  .animate-fade-in {
-    animation: fadeIn 0.3s ease-in-out;
+/* Tooltip animations */
+@keyframes tooltip-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
+.tooltip-enter {
+  animation: tooltip-fade-in 0.2s ease-out;
+}
+
+/* High contrast mode overrides */
+.high-contrast .bg-gray-50 {
+  background-color: #ffffff !important;
+}
+
+.high-contrast .bg-gray-100 {
+  background-color: #f3f4f6 !important;
+}
+
+.high-contrast .text-gray-500 {
+  color: #374151 !important;
+}
+
+.high-contrast .text-gray-600 {
+  color: #111827 !important;
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

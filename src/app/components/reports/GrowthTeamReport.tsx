@@ -35,6 +35,8 @@ import {
 import { useAuth } from '@/app/hooks/useAuth';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from 'react-hot-toast';
+import CustomTooltip from '@/app/components/ui/Tooltip';
+import HelpText from '@/app/components/ui/HelpText';
 
 interface RevenueData {
   month: string;
@@ -285,12 +287,24 @@ export default function GrowthTeamReports() {
 
       <Tabs defaultValue="revenue" className="space-y-4">
         <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="revenue">Revenue Analysis</TabsTrigger>
-          <TabsTrigger value="profitability">Client Profitability</TabsTrigger>
-          <TabsTrigger value="resources">Resource Planning</TabsTrigger>
-          <TabsTrigger value="roi">Project ROI</TabsTrigger>
-          <TabsTrigger value="utilization">Resource Utilization</TabsTrigger>
-          <TabsTrigger value="performance">Project Performance</TabsTrigger>
+          <CustomTooltip content="View revenue trends, targets vs actual performance">
+            <TabsTrigger value="revenue">Revenue Analysis</TabsTrigger>
+          </CustomTooltip>
+          <CustomTooltip content="Analyze profit margins and client profitability metrics">
+            <TabsTrigger value="profitability">Client Profitability</TabsTrigger>
+          </CustomTooltip>
+          <CustomTooltip content="Resource allocation and team utilization planning">
+            <TabsTrigger value="resources">Resource Planning</TabsTrigger>
+          </CustomTooltip>
+          <CustomTooltip content="Return on investment analysis for completed projects">
+            <TabsTrigger value="roi">Project ROI</TabsTrigger>
+          </CustomTooltip>
+          <CustomTooltip content="Consultant allocation efficiency and capacity forecasting">
+            <TabsTrigger value="utilization">Resource Utilization</TabsTrigger>
+          </CustomTooltip>
+          <CustomTooltip content="Project progress tracking and sprint performance metrics">
+            <TabsTrigger value="performance">Project Performance</TabsTrigger>
+          </CustomTooltip>
         </TabsList>
 
         {/* Revenue Analysis */}

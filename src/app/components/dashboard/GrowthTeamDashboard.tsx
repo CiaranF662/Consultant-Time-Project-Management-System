@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { FaCalendarWeek, FaProjectDiagram, FaClock, FaExclamationCircle, FaClipboardList, FaUsers, FaUserCheck, FaChartBar } from 'react-icons/fa';
+import Tooltip from '@/app/components/ui/Tooltip';
+import HelpText from '@/app/components/ui/HelpText';
 import WeeklyPlannerEnhanced from '@/app/components/allocation/WeeklyPlannerEnhanced';
 import NotificationSummaryCard from '@/app/components/notifications/NotificationSummaryCard';
 import { formatHours } from '@/lib/dates';
@@ -111,15 +113,20 @@ export function GrowthTeamDashboard({ data, userName }: GrowthTeamDashboardProps
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Link href="/manage-users" className={`p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Pending Approvals</p>
-              <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{data.pendingUserCount}</p>
+        <Tooltip content="Click to review and approve pending user registrations. New users need Growth Team approval before accessing the system.">
+          <Link href="/manage-users" className={`p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Pending Approvals</p>
+                  <HelpText content="Users who have registered but are waiting for Growth Team approval to access the system" />
+                </div>
+                <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{data.pendingUserCount}</p>
+              </div>
+              <FaUserCheck className="h-8 w-8 text-orange-500" />
             </div>
-            <FaUserCheck className="h-8 w-8 text-orange-500" />
-          </div>
-        </Link>
+          </Link>
+        </Tooltip>
 
         <div className={`p-6 rounded-lg shadow-md border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between">
@@ -154,7 +161,10 @@ export function GrowthTeamDashboard({ data, userName }: GrowthTeamDashboardProps
 
       {/* Project Progress Section */}
       <div className="mb-8">
-        <h2 className={`text-xl font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Project Progress</h2>
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Project Progress</h2>
+          <HelpText content="Shows completion percentage and budget utilization for all active projects. Red indicates over-budget, yellow shows at-risk projects." />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {data.projects.slice(0, 6).map((project) => {
             const progress = Math.floor(Math.random() * 100); // Mock progress

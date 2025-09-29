@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useTheme } from '@/app/contexts/ThemeContext';
+import Tooltip from '@/app/components/ui/Tooltip';
+import HelpText from '@/app/components/ui/HelpText';
 import PageLoader from '@/app/components/ui/PageLoader';
 import { FaCalendarWeek, FaClock, FaChartPie, FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa';
 import { formatHours } from '@/lib/dates';
@@ -191,7 +193,10 @@ export default function AllocationsDashboard({ data, userId, userName }: Allocat
             <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} p-6 rounded-lg shadow-md border`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Total Allocated</p>
+                  <div className="flex items-center gap-2">
+                    <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Total Allocated</p>
+                    <HelpText content="Sum of all hours allocated to you across active project phases" />
+                  </div>
                   <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{formatHours(data.stats.totalAllocatedHours)}</p>
                 </div>
                 <FaClock className="h-8 w-8 text-blue-500" />

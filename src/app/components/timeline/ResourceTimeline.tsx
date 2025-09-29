@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { formatHours, getUtilizationColor } from '@/lib/dates';
 import { useTheme } from '@/app/contexts/ThemeContext';
+import Tooltip from '@/app/components/ui/Tooltip';
+import HelpText from '@/app/components/ui/HelpText';
 
 interface ResourceTimelineProps {
   consultants: Array<{
@@ -146,7 +148,12 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
       <div className={`${weeks >= 32 ? 'min-w-[3600px]' : weeks >= 24 ? 'min-w-[2400px]' : weeks >= 12 ? 'min-w-[1300px]' : 'min-w-[1000px]'} ${weeks >= 32 ? 'pr-4' : ''}`}>
         {/* Header */}
         <div className={`flex border-b sticky top-0 z-20 shadow-[0_2px_4px_-1px_rgba(0,0,0,0.1)] ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
-          <div className={`w-56 md:w-64 p-4 font-semibold border-r flex-shrink-0 sticky left-0 z-30 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.1)] ${theme === 'dark' ? 'text-gray-200 bg-gray-800 border-gray-700' : 'text-gray-700 bg-gray-50 border-gray-200'}`}>Consultant</div>
+          <div className={`w-56 md:w-64 p-4 font-semibold border-r flex-shrink-0 sticky left-0 z-30 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.1)] ${theme === 'dark' ? 'text-gray-200 bg-gray-800 border-gray-700' : 'text-gray-700 bg-gray-50 border-gray-200'}`}>
+            <div className="flex items-center gap-2">
+              Consultant
+              <HelpText content="Click on consultant names to view their detailed allocation information. PM badge indicates Product Managers." />
+            </div>
+          </div>
           <div className="flex-1 flex">
             {weekHeaders.map((week, index) => (
               <div
