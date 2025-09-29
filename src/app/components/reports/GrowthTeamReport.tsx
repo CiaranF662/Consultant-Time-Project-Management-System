@@ -33,6 +33,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useAuth } from '@/app/hooks/useAuth';
+import { useTheme } from '@/app/contexts/ThemeContext';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import CustomTooltip from '@/app/components/ui/Tooltip';
@@ -72,6 +73,7 @@ interface ProjectROI {
 
 export default function GrowthTeamReports() {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState({
     from: startOfMonth(new Date()),
@@ -264,7 +266,7 @@ export default function GrowthTeamReports() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
       {/* Header with Export Controls */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -310,47 +312,47 @@ export default function GrowthTeamReports() {
         {/* Revenue Analysis */}
         <TabsContent value="revenue" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
+            <Card className={theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                <CardTitle className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Total Revenue</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">$1,823,000</div>
-                <p className="text-xs text-muted-foreground">
+                <div className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>$1,823,000</div>
+                <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                   <span className="text-green-600">+12.5%</span> from last period
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className={theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Revenue Growth</CardTitle>
+                <CardTitle className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Revenue Growth</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">8.7%</div>
-                <p className="text-xs text-muted-foreground">
+                <div className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>8.7%</div>
+                <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                   Monthly growth rate
                 </p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className={theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Target Achievement</CardTitle>
+                <CardTitle className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Target Achievement</CardTitle>
                 <CheckCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">102%</div>
-                <p className="text-xs text-muted-foreground">
+                <div className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>102%</div>
+                <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                   <span className="text-green-600">+2%</span> above target
                 </p>
               </CardContent>
             </Card>
           </div>
 
-          <Card>
+          <Card className={theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}>
             <CardHeader className="flex items-center justify-between">
-              <CardTitle>Revenue Trend Analysis</CardTitle>
+              <CardTitle className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>Revenue Trend Analysis</CardTitle>
               <Button size="sm" variant="outline" onClick={() => exportReport('revenue')}>
                 <FileText className="w-4 h-4 mr-2" />
                 Export
@@ -433,14 +435,14 @@ export default function GrowthTeamReports() {
                   {clientProfitability.map((client, index) => (
                     <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex-1">
-                        <div className="font-medium">{client.client}</div>
-                        <div className="text-sm text-muted-foreground">
+                        <div className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{client.client}</div>
+                        <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                           Revenue: ${client.revenue.toLocaleString()} | 
                           Profit: ${client.profit.toLocaleString()}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-medium">{client.margin}%</div>
+                        <div className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{client.margin}%</div>
                         <Badge variant={client.margin >= 25 ? "default" : "secondary"}>
                           {client.margin >= 25 ? "High Margin" : "Standard"}
                         </Badge>
@@ -463,7 +465,7 @@ export default function GrowthTeamReports() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">82%</div>
-                <p className="text-xs text-muted-foreground">
+                <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                   Average team utilization
                 </p>
               </CardContent>
@@ -475,7 +477,7 @@ export default function GrowthTeamReports() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">$295K</div>
-                <p className="text-xs text-muted-foreground">
+                <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                   This month's billable revenue
                 </p>
               </CardContent>
@@ -496,7 +498,7 @@ export default function GrowthTeamReports() {
                   <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex-1">
                       <div className="font-medium">{resource.consultant}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                         {resource.utilized}h / {resource.available}h utilized | 
                         Rate: ${resource.billableRate}/hr
                       </div>
@@ -588,7 +590,7 @@ export default function GrowthTeamReports() {
                   <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex-1">
                       <div className="font-medium">{project.project}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                         Investment: ${project.investment.toLocaleString()} | 
                         Return: ${project.return.toLocaleString()}
                       </div>
@@ -618,7 +620,7 @@ export default function GrowthTeamReports() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">84%</div>
-                <p className="text-xs text-muted-foreground">Team average utilization</p>
+                <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Team average utilization</p>
               </CardContent>
             </Card>
             <Card>
@@ -628,7 +630,7 @@ export default function GrowthTeamReports() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-red-600">1</div>
-                <p className="text-xs text-muted-foreground">Consultant over 100%</p>
+                <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Consultant over 100%</p>
               </CardContent>
             </Card>
             <Card>
@@ -638,7 +640,7 @@ export default function GrowthTeamReports() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-yellow-600">2</div>
-                <p className="text-xs text-muted-foreground">Consultants under 75%</p>
+                <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Consultants under 75%</p>
               </CardContent>
             </Card>
           </div>
@@ -658,7 +660,7 @@ export default function GrowthTeamReports() {
                     <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex-1">
                         <div className="font-medium">{consultant.name}</div>
-                        <div className="text-sm text-muted-foreground">
+                        <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                           {consultant.allocated}h / {consultant.available}h allocated
                         </div>
                       </div>
@@ -713,7 +715,7 @@ export default function GrowthTeamReports() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">2</div>
-                <p className="text-xs text-muted-foreground">Projects on schedule</p>
+                <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Projects on schedule</p>
               </CardContent>
             </Card>
             <Card>
@@ -723,7 +725,7 @@ export default function GrowthTeamReports() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-yellow-600">1</div>
-                <p className="text-xs text-muted-foreground">Projects need attention</p>
+                <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Projects need attention</p>
               </CardContent>
             </Card>
             <Card>
@@ -733,7 +735,7 @@ export default function GrowthTeamReports() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-red-600">1</div>
-                <p className="text-xs text-muted-foreground">Projects behind schedule</p>
+                <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Projects behind schedule</p>
               </CardContent>
             </Card>
           </div>
@@ -760,7 +762,7 @@ export default function GrowthTeamReports() {
                           {project.status}
                         </Badge>
                       </div>
-                      <div className="flex justify-between text-sm text-muted-foreground mb-2">
+                      <div className={`flex justify-between text-sm mb-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                         <span>Progress: {project.progress}%</span>
                         <span>Milestones: {project.milestones.completed}/{project.milestones.total}</span>
                       </div>
@@ -789,7 +791,7 @@ export default function GrowthTeamReports() {
                     <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex-1">
                         <div className="font-medium">{phase.phase}</div>
-                        <div className="text-sm text-muted-foreground">{phase.project}</div>
+                        <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>{phase.project}</div>
                       </div>
                       <div className="text-right">
                         <div className={`text-sm font-medium ${

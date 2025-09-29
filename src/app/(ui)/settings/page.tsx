@@ -6,6 +6,9 @@ import { useRouter } from 'next/navigation';
 import { FaMoon, FaSun, FaBell, FaLock, FaCog, FaSave } from 'react-icons/fa';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { useNotification } from '@/app/contexts/NotificationContext';
+import { useAccessibility } from '@/app/contexts/AccessibilityContext';
+import { useFontSize } from '@/app/hooks/useFontSize';
+import { useSimplifiedMode } from '@/app/hooks/useSimplifiedMode';
 import axios from 'axios';
 import Tooltip from '@/app/components/ui/Tooltip';
 import HelpText from '@/app/components/ui/HelpText';
@@ -129,6 +132,9 @@ export default function SettingsPage() {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { showSuccess } = useNotification();
+  const { highContrast, toggleHighContrast, showTooltips, toggleTooltips } = useAccessibility();
+  const { fontSize, setFontSize } = useFontSize();
+  const { isSimplified, setIsSimplified } = useSimplifiedMode();
 
   const [tempTheme, setTempTheme] = useState<'light' | 'dark'>('light');
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -269,7 +275,8 @@ export default function SettingsPage() {
                       </div>
                       <input
                         type="checkbox"
-                        defaultChecked={true}
+                        checked={showTooltips}
+                        onChange={toggleTooltips}
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                       />
                     </div>
@@ -287,6 +294,50 @@ export default function SettingsPage() {
                       </div>
                       <input
                         type="checkbox"
+                        checked={highContrast}
+                        onChange={toggleHighContrast}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
+                          Text Size
+                        </label>
+                        <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Adjust text size for better readability
+                        </p>
+                      </div>
+                      <select
+                        value={fontSize}
+                        onChange={(e) => setFontSize(e.target.value as any)}
+                        className={`px-3 py-1 rounded border ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                      >
+                        <option value="small">Small</option>
+                        <option value="normal">Normal</option>
+                        <option value="large">Large</option>
+                        <option value="xlarge">Extra Large</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
+                          Simplified Mode
+                        </label>
+                        <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Reduce visual complexity and animations
+                        </p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={isSimplified}
+                        onChange={(e) => setIsSimplified(e.target.checked)}
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                       />
                     </div>

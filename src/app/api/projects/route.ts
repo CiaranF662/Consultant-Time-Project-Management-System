@@ -8,6 +8,46 @@ import ProjectAssignmentEmail from '@/emails/ProjectAssignmentEmail';
 
 const prisma = new PrismaClient();
 
+export async function GET() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
+  }
+
+  try {
+    const projects = await prisma.project.findMany({
+      include: {
+        consultants: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        },
+        phases: {
+          include: {
+            sprints: true
+          }
+        },
+        sprints: true
+      },
+      orderBy: {
+        startDate: 'asc'
+      }
+    });
+
+    return NextResponse.json(projects);
+  } catch (error) {
+    console.error('Error fetching projects:', error);
+    return new NextResponse(JSON.stringify({ error: 'Failed to fetch projects' }), { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
 
