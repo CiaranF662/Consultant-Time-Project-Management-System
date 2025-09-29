@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FaPlus, FaUsers, FaChartBar, FaExclamationCircle, FaClock, FaProjectDiagram, FaTh, FaCheckCircle, FaBell } from 'react-icons/fa';
-import ResourceTimeline from '@/app/components/timeline/ResourceTimeline';
-import CreateProjectModal from '@/app/components/CreateProjectModal';
-import ProjectCard from '@/app/components/ProjectCard';
-import GrowthTeamGanttChart from '@/app/components/gantt/GrowthTeamGanttChart';
+import ResourceTimeline from '../timeline/ResourceTimeline';
+import CreateProjectModal from '@/app/components/projects/growth-team/CreateProjectModal';
+import ProjectCard from '@/app/components/projects/details/ProjectCard';
+import GrowthTeamGanttChart from '../gantt/GrowthTeamGanttChart';
 
 import type { Project, Phase, Sprint, ConsultantsOnProjects, PhaseAllocation } from '@prisma/client';
 

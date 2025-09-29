@@ -218,6 +218,16 @@ import {
   }
 
   /**
+   * Format date as "Week Sep 29" for weekly planning displays
+   */
+  export function formatWeekDate(date: Date | string): string {
+    if (!date) return '';
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return '';
+    return `Week ${dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  }
+
+  /**
    * Calculate budget utilization percentage
    */
   export function calculateUtilization(used: number, total: number): number {

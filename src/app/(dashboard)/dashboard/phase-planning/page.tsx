@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, ProjectRole } from '@prisma/client';
 import DashboardLayout from '@/app/components/DashboardLayout';
-import PhasePlanningDashboard from '@/app/components/phase-planning/PhasePlanningDashboard';
+import PhasePlanningDashboard from '@/app/components/projects/product-manager/PhasePlanningDashboard';
 
 const prisma = new PrismaClient();
 

@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole } from '@prisma/client';
 import DashboardLayout from '@/app/components/DashboardLayout';
-import ProjectsPageClient from '@/app/components/ProjectsPageClient';
+import ProjectsPageClient from '@/app/components/projects/details/ProjectsPageClient';
 
 const prisma = new PrismaClient();
 

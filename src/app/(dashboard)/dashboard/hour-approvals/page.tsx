@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole } from '@prisma/client';
 import DashboardLayout from '@/app/components/DashboardLayout';
-import ApprovalsDashboard from '@/app/components/approvals/ApprovalsDashboard';
+import ApprovalsDashboard from '@/app/components/growth-team/approvals/ApprovalsDashboard';
 
 const prisma = new PrismaClient();
 

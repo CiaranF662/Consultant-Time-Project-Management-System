@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient } from '@prisma/client';
 import DashboardLayout from '@/app/components/DashboardLayout';
-import TeamAllocationsClient from '@/app/components/team-allocations/TeamAllocationsClient';
+import TeamAllocationsClient from '@/app/components/product-manager/TeamAllocationsClient';
 
 const prisma = new PrismaClient();
 

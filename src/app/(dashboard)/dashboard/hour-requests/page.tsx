@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, ChangeStatus } from '@prisma/client';
 import DashboardLayout from '@/app/components/DashboardLayout';
-import HourRequestsManager from '@/app/components/requests/HourRequestsManager';
+import HourRequestsManager from '@/app/components/consultant/requests/HourRequestsManager';
 
 const prisma = new PrismaClient();
 

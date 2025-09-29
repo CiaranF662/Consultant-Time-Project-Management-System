@@ -4,9 +4,9 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, UserStatus, ChangeStatus, ProjectRole } from '@prisma/client';
 import DashboardLayout from '@/app/components/DashboardLayout';
-import GrowthTeamDashboard from '@/app/components/dashboards/GrowthTeamDashboard';
-import ConsultantDashboard from '@/app/components/dashboards/ConsultantDashboard';
-import IntegratedPMDashboard from '@/app/components/dashboards/IntegratedPMDashboard';
+import GrowthTeamDashboard from '@/app/components/growth-team/dashboard/GrowthTeamDashboard';
+import ConsultantDashboard from '@/app/components/consultant/dashboard/ConsultantDashboard';
+import IntegratedPMDashboard from '@/app/components/product-manager/dashboard/IntegratedPMDashboard';
 const prisma = new PrismaClient();
 
 

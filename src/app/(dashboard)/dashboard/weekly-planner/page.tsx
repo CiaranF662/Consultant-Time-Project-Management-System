@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole } from '@prisma/client';
 import DashboardLayout from '@/app/components/DashboardLayout';
-import WeeklyPlannerEnhanced from '@/app/components/allocation/WeeklyPlannerEnhanced';
+import WeeklyPlannerEnhanced from '@/app/components/consultant/dashboard/WeeklyPlannerEnhanced';
 
 const prisma = new PrismaClient();
 
@@ -52,25 +52,10 @@ export default async function WeeklyPlannerPage() {
   return (
     <DashboardLayout>
       <div className="p-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Weekly Planner</h1>
-          <p className="text-lg text-gray-600">
-            Plan and distribute your weekly hours across project phases
-          </p>
-        </div>
-
-        {/* Weekly Planner Component */}
-        <div className="bg-white rounded-lg shadow-md border">
-          <div className="p-4 border-b">
-            <h2 className="text-xl font-semibold text-gray-800">Hour Distribution</h2>
-            <p className="text-sm text-gray-600">Distribute your allocated hours across weeks</p>
-          </div>
-          <WeeklyPlannerEnhanced
-            consultantId={session.user.id}
-            phaseAllocations={phaseAllocations}
-          />
-        </div>
+        <WeeklyPlannerEnhanced
+          consultantId={session.user.id}
+          phaseAllocations={phaseAllocations}
+        />
       </div>
     </DashboardLayout>
   );

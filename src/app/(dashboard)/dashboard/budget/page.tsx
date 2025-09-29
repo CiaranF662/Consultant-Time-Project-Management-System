@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { UserRole } from '@prisma/client';
 import DashboardLayout from '@/app/components/DashboardLayout';
-import BudgetOverview from '@/app/components/budget/BudgetOverview';
+import BudgetOverview from '@/app/components/projects/budget/BudgetOverview';
 
 export default async function BudgetPage() {
   const session = await getServerSession(authOptions);

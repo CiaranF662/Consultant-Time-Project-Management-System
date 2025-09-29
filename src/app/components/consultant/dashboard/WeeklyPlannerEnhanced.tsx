@@ -8,12 +8,14 @@ import {
   formatDate
 } from '@/lib/dates';
 import { FaSave, FaChevronDown, FaChevronRight, FaCheckCircle, FaTimes, FaCheck, FaClock } from 'react-icons/fa';
+import InstructionsPanel from './InstructionsPanel';
+import WeeklyAllocationCard from './WeeklyAllocationCard';
 
 interface PhaseAllocation {
   id: string;
   totalHours: number;
   approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
-  consultantDescription?: string; // Added for phase description
+  consultantDescription?: string | null; // Added for phase description
   phase: {
     id: string;
     name: string;
@@ -533,37 +535,65 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
   };
 
   return (
-    <div className="p-4 relative">
+    <div className="space-y-6">
+        {/* Professional Header */}
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg overflow-hidden">
+          <div className="p-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-lg">
+                <FaClock className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Weekly Hour Planner</h2>
+                <p className="text-blue-100 text-sm">Distribute your allocated hours across weeks</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
       {/* Notification Toast */}
       {notification.show && (
-        <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ${
-          notification.type === 'success' 
-            ? 'bg-green-500 text-white' 
-            : 'bg-red-500 text-white'
+        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-xl shadow-xl backdrop-blur-sm transition-all duration-500 transform ${
+          notification.type === 'success'
+            ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white border border-emerald-400'
+            : 'bg-gradient-to-r from-red-500 to-rose-500 text-white border border-red-400'
         }`}>
-          {notification.type === 'success' ? <FaCheckCircle /> : <FaTimes />}
-          <span>{notification.message}</span>
+          <div className="p-1 rounded-full bg-white/20">
+            {notification.type === 'success' ? <FaCheckCircle className="w-4 h-4" /> : <FaTimes className="w-4 h-4" />}
+          </div>
+          <span className="font-medium">{notification.message}</span>
           <button
             onClick={() => setNotification(prev => ({ ...prev, show: false }))}
-            className="ml-2 hover:opacity-70"
+            className="ml-2 p-1 rounded-full hover:bg-white/20 transition-colors"
           >
-            <FaTimes />
+            <FaTimes className="w-3 h-3" />
           </button>
         </div>
       )}
       
       {/* Description Modal */}
       {showDescriptionModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Phase Description Required
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-8 w-full max-w-lg transform transition-all duration-300 scale-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  Phase Description Required
+                </h3>
+                <p className="text-sm text-gray-500">Define your work plan</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
               Please provide a brief description of what you plan to accomplish during this phase. This helps the Growth Team understand your planned work.
             </p>
             <textarea
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-200 text-sm leading-relaxed"
               rows={4}
               placeholder="Describe your planned work for this phase..."
               value={unsavedDescriptions.get(showDescriptionModal) || ''}
@@ -574,7 +604,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
               }}
               autoFocus
             />
-            <div className="flex justify-end gap-3 mt-4">
+            <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => {
                   setShowDescriptionModal(null);
@@ -583,7 +613,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                   newUnsaved.delete(showDescriptionModal);
                   setUnsavedDescriptions(newUnsaved);
                 }}
-                className="px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                className="px-6 py-3 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all duration-200 font-medium"
               >
                 Cancel
               </button>
@@ -592,7 +622,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                   const description = unsavedDescriptions.get(showDescriptionModal) || '';
                   handleDescriptionSave(showDescriptionModal, description);
                 }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
               >
                 Save & Continue
               </button>
@@ -601,74 +631,155 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
         </div>
       )}
 
-      {/* Project Filter */}
-      <div className="mb-6">
-        <label htmlFor="projectFilter" className="block text-sm font-medium text-gray-700 mb-2">
-          Filter by Project
-        </label>
-        <select
-          id="projectFilter"
-          value={selectedProject}
-          onChange={(e) => setSelectedProject(e.target.value)}
-          className="block w-full max-w-md px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="all">All Projects</option>
-          {uniqueProjects.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.title}
-            </option>
-          ))}
-        </select>
+      {/* Enhanced Project Filter - Matching Approvals Dashboard Style */}
+      <div className="mb-8">
+        <div className="bg-gradient-to-r from-gray-50 to-white rounded-xl shadow-lg border border-gray-200/60 overflow-hidden">
+          {/* Header Section */}
+          <div className="bg-white border-b border-gray-100 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Project Filter</h3>
+                  <p className="text-sm text-gray-500">Focus on specific project allocations</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedProject('all')}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Clear Filter
+              </button>
+            </div>
+          </div>
+
+          {/* Filter Section */}
+          <div className="px-6 py-5 bg-white">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Project
+              </label>
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <select
+                  id="projectFilter"
+                  value={selectedProject}
+                  onChange={(e) => setSelectedProject(e.target.value)}
+                  className="w-full pl-10 pr-8 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                >
+                  <option value="all">All Projects</option>
+                  {uniqueProjects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Results Summary */}
+          <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-t border-blue-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <p className="text-sm font-medium text-gray-700">
+                  <span className="text-blue-600 font-bold">{Object.keys(filteredProjectGroups).length}</span>
+                  <span className="text-gray-500 mx-1">of</span>
+                  <span className="font-bold">{Object.keys(projectGroups).length}</span>
+                  <span className="text-gray-600 ml-1">
+                    project{Object.keys(projectGroups).length !== 1 ? 's' : ''} shown
+                  </span>
+                </p>
+              </div>
+              {selectedProject !== 'all' && (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
+                    <span className="text-xs font-medium text-amber-700 uppercase tracking-wide">
+                      Filtered
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Allocations by Project */}
       <div className="space-y-8">
         {Object.keys(filteredProjectGroups).length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No phase allocations found. Contact your Product Manager to assign you to project phases.
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-12 text-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-gray-300 to-gray-400 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Phase Allocations</h3>
+            <p className="text-gray-500 max-w-md mx-auto">
+              Contact your Product Manager to assign you to project phases and start planning your weekly hours.
+            </p>
           </div>
         ) : (
           Object.values(filteredProjectGroups).map((group: any) => (
-            <div key={group.project.id} className="bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div key={group.project.id} className="bg-white border border-gray-200 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
               {/* Project Header */}
-              <div 
-                className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200 rounded-t-lg cursor-pointer hover:from-blue-100 hover:to-indigo-100 transition-colors"
+              <div
+                className="bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 px-8 py-6 border-b border-gray-200 cursor-pointer hover:from-slate-100 hover:via-blue-100 hover:to-indigo-100 transition-all duration-300 group"
                 onClick={() => toggleProjectCollapse(group.project.id)}
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center p-2 rounded-xl bg-white shadow-sm group-hover:shadow-md transition-shadow">
                     {collapsedProjects.has(group.project.id) ? (
-                      <FaChevronRight className="text-gray-500" />
+                      <FaChevronRight className="text-gray-600 w-4 h-4" />
                     ) : (
-                      <FaChevronDown className="text-gray-500" />
+                      <FaChevronDown className="text-gray-600 w-4 h-4" />
                     )}
                   </div>
-                  <div 
-                    className="w-4 h-4 rounded-full"
+                  <div
+                    className="w-6 h-6 rounded-xl shadow-sm"
                     style={{ backgroundColor: `hsl(${Math.abs(group.project.id.split('').reduce((a: number, b: string) => a + b.charCodeAt(0), 0)) % 360}, 70%, 60%)` }}
                   />
-                  <h3 className="text-xl font-semibold text-gray-800">{group.project.title}</h3>
-                  <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                    {group.phases.length} phase{group.phases.length !== 1 ? 's' : ''}
-                  </span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-1">
+                      <h3 className="text-2xl font-bold text-gray-900">{group.project.title}</h3>
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                        {group.phases.length} phase{group.phases.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    {group.project.description && (
+                      <p className="text-gray-600 leading-relaxed">{group.project.description}</p>
+                    )}
+                  </div>
                 </div>
-                {group.project.description && (
-                  <p className="mt-2 text-sm text-gray-600">{group.project.description}</p>
-                )}
               </div>
 
               {/* Phases within Project */}
               {!collapsedProjects.has(group.project.id) && (
-                <div className="p-6 space-y-6">
+                <div className="p-8 space-y-8 bg-gradient-to-br from-gray-50/50 to-transparent">
                   {group.phases.map((phaseAlloc: any) => {
                   const status = getPhaseAllocationStatus(phaseAlloc);
-                  
+
                   return (
-                    <div key={phaseAlloc.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div key={phaseAlloc.id} className="border border-gray-200 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 bg-white">
                       {/* Phase Header */}
                       <div
-                        className={`relative bg-gray-50 px-4 py-3 border-b cursor-pointer hover:bg-gray-100 transition-colors ${
-                          phaseAlloc.approvalStatus === 'PENDING' ? 'border-orange-200' : ''
+                        className={`relative px-6 py-5 cursor-pointer transition-all duration-300 group ${
+                          phaseAlloc.approvalStatus === 'PENDING'
+                            ? 'bg-gradient-to-r from-orange-50 to-yellow-50 border-b border-orange-200 hover:from-orange-100 hover:to-yellow-100'
+                            : phaseAlloc.approvalStatus === 'APPROVED'
+                            ? 'bg-gradient-to-r from-emerald-50 to-green-50 border-b border-emerald-200 hover:from-emerald-100 hover:to-green-100'
+                            : 'bg-gradient-to-r from-gray-50 to-slate-50 border-b border-gray-200 hover:from-gray-100 hover:to-slate-100'
                         }`}
                         onClick={() => togglePhaseCollapse(phaseAlloc.id)}
                       >
@@ -687,39 +798,42 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                           </div>
                         )}
                         <div className="relative z-10 flex justify-between items-center">
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center">
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center p-2 rounded-lg bg-white/80 shadow-sm group-hover:shadow-md transition-shadow">
                               {collapsedPhases.has(phaseAlloc.id) ? (
-                                <FaChevronRight className="text-gray-500 text-sm" />
+                                <FaChevronRight className="text-gray-600 w-4 h-4" />
                               ) : (
-                                <FaChevronDown className="text-gray-500 text-sm" />
+                                <FaChevronDown className="text-gray-600 w-4 h-4" />
                               )}
                             </div>
                             <div>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <h3 className="text-lg font-semibold text-gray-800">
+                              <div className="flex items-center gap-3 flex-wrap mb-2">
+                                <h3 className="text-xl font-bold text-gray-900">
                                   {phaseAlloc.phase.name}
                                 </h3>
-                                <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                  </svg>
                                   {phaseAlloc.phase.sprints.length} sprint{phaseAlloc.phase.sprints.length !== 1 ? 's' : ''}
                                 </span>
 
                                 {/* Phase Allocation Approval Status */}
                                 {phaseAlloc.approvalStatus === 'PENDING' && (
-                                  <span className="flex items-center gap-1 px-2 py-1 bg-orange-100 border border-orange-200 text-orange-700 rounded-full text-xs font-medium">
-                                    <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+                                  <span className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-100 to-yellow-100 border border-orange-300 text-orange-800 rounded-full text-xs font-semibold shadow-sm">
+                                    <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse shadow-sm"></span>
                                     Allocation Pending
                                   </span>
                                 )}
                                 {phaseAlloc.approvalStatus === 'REJECTED' && (
-                                  <span className="flex items-center gap-1 px-2 py-1 bg-red-100 border border-red-200 text-red-700 rounded-full text-xs font-medium">
-                                    <FaTimes className="w-2 h-2" />
+                                  <span className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-100 to-rose-100 border border-red-300 text-red-800 rounded-full text-xs font-semibold shadow-sm">
+                                    <FaTimes className="w-3 h-3" />
                                     Allocation Rejected
                                   </span>
                                 )}
                                 {phaseAlloc.approvalStatus === 'APPROVED' && (
-                                  <span className="flex items-center gap-1 px-2 py-1 bg-green-100 border border-green-200 text-green-700 rounded-full text-xs font-medium">
-                                    <FaCheckCircle className="w-2 h-2" />
+                                  <span className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-100 to-green-100 border border-emerald-300 text-emerald-800 rounded-full text-xs font-semibold shadow-sm">
+                                    <FaCheckCircle className="w-3 h-3" />
                                     Allocation Approved
                                   </span>
                                 )}
@@ -736,7 +850,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                                   phaseWeeks.forEach(week => {
                                     const key = `${phaseAlloc.id}-${week.weekNumber}-${week.year}`;
                                     const weeklyAllocation = phaseAlloc.weeklyAllocations.find(
-                                      wa => wa.weekNumber === week.weekNumber && wa.year === week.year
+                                      (wa: any) => wa.weekNumber === week.weekNumber && wa.year === week.year
                                     );
 
                                     // Check for local override status first, then fallback to server status
@@ -744,7 +858,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                                     const finalStatus = localStatus || weeklyAllocation?.planningStatus;
 
                                     // Only count weeks that have been planned (have hours allocated)
-                                    const hasPlannedHours = allocations.get(key) > 0 || weeklyAllocation?.proposedHours > 0;
+                                    const hasPlannedHours = (allocations.get(key) || 0) > 0 || (weeklyAllocation?.proposedHours || 0) > 0;
 
                                     if (hasPlannedHours && finalStatus) {
                                       if (finalStatus === 'PENDING') {
@@ -757,7 +871,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                                     }
                                   });
 
-                                  const totalWeeklyCount = pendingWeeklyCount + rejectedWeeklyCount + approvedWeeklyCount;
+                                  // const totalWeeklyCount = pendingWeeklyCount + rejectedWeeklyCount + approvedWeeklyCount;
 
                                   // Priority: Show pending first, then show mixed status if both approved and rejected exist
                                   if (pendingWeeklyCount > 0) {
@@ -798,46 +912,70 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                                   return null;
                                 })()}
                               </div>
-                              <p className="text-sm text-gray-600">
-                                {phaseAlloc.phase.project.title} • {formatHours(phaseAlloc.totalHours)} total
+                              <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                                <span className="font-medium">{phaseAlloc.phase.project.title}</span>
+                                <span className="text-gray-400">•</span>
+                                <span className="inline-flex items-center gap-1">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  {formatHours(phaseAlloc.totalHours)} total
+                                </span>
                                 {phaseAlloc.phase.sprints.length > 0 && (
-                                  <span className="ml-2">
-                                    • Sprint{phaseAlloc.phase.sprints.length > 1 ? 's' : ''} {
-                                      phaseAlloc.phase.sprints
-                                        .sort((a: any, b: any) => a.sprintNumber - b.sprintNumber)
-                                        .map((sprint: any) => sprint.sprintNumber)
-                                        .join(', ')
-                                    }
-                                  </span>
+                                  <>
+                                    <span className="text-gray-400">•</span>
+                                    <span>
+                                      Sprint{phaseAlloc.phase.sprints.length > 1 ? 's' : ''} {
+                                        phaseAlloc.phase.sprints
+                                          .sort((a: any, b: any) => a.sprintNumber - b.sprintNumber)
+                                          .map((sprint: any) => sprint.sprintNumber)
+                                          .join(', ')
+                                      }
+                                    </span>
+                                  </>
                                 )}
-                              </p>
+                              </div>
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-sm text-gray-600">
-                              Allocated: {formatHours(status.allocated)}
-                            </div>
-                            <div className="text-sm text-gray-600">
-                              Distributed: {formatHours(status.distributed)}
-                            </div>
-                            <div className={`text-sm font-medium ${
-                              status.remaining === 0 ? 'text-green-600' : 
-                              status.remaining < 0 ? 'text-red-600' : 'text-yellow-600'
-                            }`}>
-                              {status.remaining === 0 ? 'Fully distributed' :
-                               status.remaining < 0 ? `Over by ${formatHours(Math.abs(status.remaining))}` :
-                               `${formatHours(status.remaining)} remaining`}
+                            <div className="bg-white/70 rounded-xl p-4 shadow-sm border border-gray-200">
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs font-medium text-gray-500">Allocated</span>
+                                  <span className="text-sm font-bold text-gray-900">{formatHours(status.allocated)}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs font-medium text-gray-500">Distributed</span>
+                                  <span className="text-sm font-bold text-blue-600">{formatHours(status.distributed)}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs font-medium text-gray-500">Status</span>
+                                  <span className={`text-sm font-bold ${
+                                    status.remaining === 0 ? 'text-emerald-600' :
+                                    status.remaining < 0 ? 'text-red-600' : 'text-amber-600'
+                                  }`}>
+                                    {status.remaining === 0 ? 'Complete' :
+                                     status.remaining < 0 ? `+${formatHours(Math.abs(status.remaining))}` :
+                                     formatHours(status.remaining)}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
-                        
-                        {/* Progress Bar */}
-                        <div className="mt-3">
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
-                              className={`h-2 rounded-full ${
-                                status.percentage > 100 ? 'bg-red-500' : 
-                                status.percentage === 100 ? 'bg-green-500' : 'bg-blue-500'
+
+                        {/* Enhanced Progress Bar */}
+                        <div className="mt-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-medium text-gray-600">Distribution Progress</span>
+                            <span className="text-xs font-bold text-gray-800">{Math.round(status.percentage)}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
+                            <div
+                              className={`h-3 rounded-full transition-all duration-500 shadow-sm ${
+                                status.percentage > 100 ? 'bg-gradient-to-r from-red-500 to-red-600' :
+                                status.percentage === 100 ? 'bg-gradient-to-r from-emerald-500 to-green-500' :
+                                'bg-gradient-to-r from-blue-500 to-indigo-500'
                               }`}
                               style={{ width: `${Math.min(status.percentage, 100)}%` }}
                             />
@@ -847,26 +985,31 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
 
                       {/* Sprint-based Weekly Allocation */}
                       {!collapsedPhases.has(phaseAlloc.id) && (
-                        <div className="p-4">
+                        <div className="p-6 bg-gradient-to-br from-gray-50/30 to-transparent">
                           {/* Show planning interface only for approved allocations */}
                           {phaseAlloc.approvalStatus === 'APPROVED' ? (
                             <div>
-                        {/* Phase Description */}
-                        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                          <div className="flex items-start gap-3">
+                        {/* Enhanced Phase Description */}
+                        <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 shadow-sm">
+                          <div className="flex items-start gap-4">
                             <div className="flex-shrink-0">
-                              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                               </div>
                             </div>
                             <div className="flex-1">
-                              <label className="block text-sm font-medium text-blue-800 mb-2">
-                                Phase Description - What do you plan to accomplish?
-                              </label>
+                              <div className="flex items-center gap-2 mb-3">
+                                <label className="text-lg font-bold text-blue-900">
+                                  Phase Description
+                                </label>
+                                <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded-lg">
+                                  What do you plan to accomplish?
+                                </span>
+                              </div>
                               <textarea
-                                className="w-full p-3 text-sm border border-blue-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                className="w-full p-4 text-sm border border-blue-200 rounded-xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 shadow-sm"
                                 rows={3}
                                 placeholder="Describe what you plan to accomplish during this phase..."
                                 value={(() => {
@@ -882,7 +1025,10 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                                 }}
                               />
                               {unsavedDescriptions.has(phaseAlloc.id) && (
-                                <div className="mt-2 text-xs text-blue-600">
+                                <div className="mt-3 flex items-center gap-2 text-xs text-blue-700 bg-blue-100 px-3 py-2 rounded-lg">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
                                   Description will be saved with your hour allocations
                                 </div>
                               )}
@@ -901,37 +1047,47 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                           }
                           
                           return (
-                            <div className="space-y-5">
+                            <div className="space-y-6">
                               {sprintWeeks.map(({ sprint, weeks }) => {
                                 const sprintTotal = getSprintTotal(phaseAlloc.id, sprint);
-                                
+
                                 return (
-                                  <div key={sprint.id} className="border border-gray-200 border-l-4 border-l-blue-400 rounded-md overflow-hidden shadow-md bg-white">
-                                    {/* Sprint Header */}
-                                    <div className="bg-gradient-to-r from-blue-50 to-gray-50 px-3 py-2 border-b border-gray-200">
+                                  <div key={sprint.id} className="border border-gray-200 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-white">
+                                    {/* Enhanced Sprint Header */}
+                                    <div className="bg-gradient-to-r from-slate-50 via-indigo-50 to-blue-50 px-6 py-4 border-b border-gray-200">
                                       <div className="flex justify-between items-center">
-                                        <div>
-                                          <h5 className="text-sm font-medium text-gray-700">
-                                            Sprint {sprint.sprintNumber}
-                                          </h5>
-                                          <p className="text-xs text-gray-500">
-                                            {formatDate(new Date(sprint.startDate))} - {formatDate(new Date(sprint.endDate))}
-                                          </p>
+                                        <div className="flex items-center gap-3">
+                                          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                                            <span className="text-white font-bold text-sm">{sprint.sprintNumber}</span>
+                                          </div>
+                                          <div>
+                                            <h5 className="text-lg font-bold text-gray-900">
+                                              Sprint {sprint.sprintNumber}
+                                            </h5>
+                                            <p className="text-sm text-gray-600 flex items-center gap-2">
+                                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                              </svg>
+                                              {formatDate(new Date(sprint.startDate))} - {formatDate(new Date(sprint.endDate))}
+                                            </p>
+                                          </div>
                                         </div>
                                         <div className="text-right">
-                                          <div className="text-sm font-semibold text-blue-600">
-                                            {formatHours(sprintTotal)}
-                                          </div>
-                                          <div className="text-xs text-gray-400">
-                                            total
+                                          <div className="bg-white/80 rounded-xl px-4 py-2 shadow-sm border border-indigo-200">
+                                            <div className="text-lg font-bold text-indigo-600">
+                                              {formatHours(sprintTotal)}
+                                            </div>
+                                            <div className="text-xs font-medium text-gray-500">
+                                              total hours
+                                            </div>
                                           </div>
                                         </div>
                                       </div>
                                     </div>
                                     
-                                    {/* Sprint Weeks */}
-                                    <div className="p-3">
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {/* Enhanced Sprint Weeks */}
+                                    <div className="p-6">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {weeks.map((week) => {
                                           const weekNumber = week.weekNumber;
                                           const year = week.year;
@@ -942,147 +1098,27 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
 
                                           // Find the corresponding weekly allocation to check status
                                           const weeklyAllocation = phaseAlloc.weeklyAllocations.find(
-                                            wa => wa.weekNumber === weekNumber && wa.year === year
+                                            (wa: any) => wa.weekNumber === weekNumber && wa.year === year
                                           );
                                           // Check for local override status first, then fallback to server status
                                           const localStatus = localWeeklyStatuses.get(key);
-                                          const planningStatus = localStatus || weeklyAllocation?.planningStatus;
-                                          const isRejected = planningStatus === 'REJECTED';
-                                          const isApproved = planningStatus === 'APPROVED' || planningStatus === 'MODIFIED';
-                                          const isPending = planningStatus === 'PENDING';
-                                          const rejectionReason = weeklyAllocation?.rejectionReason;
 
                                           // Get other phases planned for this same week
                                           const otherPhases = getOtherPhasesForWeek(weekNumber, year, phaseAlloc.id);
-                                          
-                                          return (
-                                            <div key={key} className={`border rounded p-2 shadow-sm hover:shadow transition-shadow duration-150 ${
-                                              isRejected ? 'border-red-300 bg-red-50' :
-                                              isApproved ? 'border-green-300 bg-green-50' :
-                                              isPending ? 'border-orange-300 bg-orange-50' :
-                                              'border-gray-200 bg-white'
-                                            }`}>
-                                              <div className="mb-2">
-                                                <div className="flex items-center justify-between">
-                                                  <div className="text-xs font-medium text-gray-700">
-                                                    {week.label}
-                                                  </div>
-                                                  {/* Status indicator */}
-                                                  {isRejected && (
-                                                    <div className="flex items-center gap-1">
-                                                      <FaTimes className="w-3 h-3 text-red-500" />
-                                                      <span className="text-xs font-medium text-red-700">Rejected</span>
-                                                    </div>
-                                                  )}
-                                                  {isApproved && (
-                                                    <div className="flex items-center gap-1">
-                                                      <FaCheck className="w-3 h-3 text-green-500" />
-                                                      <span className="text-xs font-medium text-green-700">
-                                                        {planningStatus === 'MODIFIED' ? 'Modified' : 'Approved'}
-                                                      </span>
-                                                    </div>
-                                                  )}
-                                                  {isPending && (
-                                                    <div className="flex items-center gap-1">
-                                                      <FaClock className="w-3 h-3 text-orange-500" />
-                                                      <span className="text-xs font-medium text-orange-700">Pending</span>
-                                                    </div>
-                                                  )}
-                                                </div>
-                                                {/* Status details */}
-                                                {isRejected && (
-                                                  <>
-                                                    {rejectionReason && (
-                                                      <div className="mt-1 p-2 bg-red-100 rounded text-xs text-red-700 border border-red-200">
-                                                        <strong>Reason:</strong> {rejectionReason}
-                                                      </div>
-                                                    )}
-                                                    {weeklyAllocation && weeklyAllocation.approvedHours !== null && weeklyAllocation.approvedHours > 0 && (
-                                                      <div className="mt-1 p-2 bg-gray-100 rounded text-xs text-gray-700 border border-gray-200">
-                                                        <strong>Originally approved for:</strong> {formatHours(weeklyAllocation.approvedHours)}
-                                                      </div>
-                                                    )}
-                                                  </>
-                                                )}
-                                                {isApproved && weeklyAllocation && (
-                                                  <div className="mt-1 p-2 bg-green-100 rounded text-xs text-green-700 border border-green-200">
-                                                    <strong>
-                                                      {planningStatus === 'MODIFIED' ? 'Modified to:' : 'Approved for:'}
-                                                    </strong> {formatHours(weeklyAllocation.approvedHours || 0)}
-                                                    {planningStatus === 'MODIFIED' && weeklyAllocation.proposedHours !== weeklyAllocation.approvedHours && (
-                                                      <span className="text-green-600"> (was {formatHours(weeklyAllocation.proposedHours || 0)})</span>
-                                                    )}
-                                                  </div>
-                                                )}
-                                                {isPending && weeklyAllocation && currentHours > 0 && (
-                                                  <div className="mt-1 p-2 bg-orange-100 rounded text-xs text-orange-700 border border-orange-200">
-                                                    <strong>Awaiting approval for:</strong> {formatHours(weeklyAllocation.proposedHours || 0)}
-                                                  </div>
-                                                )}
-                                              </div>
 
-                                              <input
-                                                type="number"
-                                                min="0"
-                                                step="0.5"
-                                                value={currentHours || ''}
-                                                onChange={(e) => handleHourChange(phaseAlloc.id, weekNumber, year, e.target.value)}
-                                                className={`block w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 ${
-                                                  error ? 'border-red-300 focus:ring-red-500' :
-                                                  hasUnsavedChanges ? 'border-yellow-300 focus:ring-yellow-500' :
-                                                  isRejected ? 'border-red-300 focus:ring-red-500 bg-white' :
-                                                  'border-gray-300 focus:ring-blue-500'
-                                                }`}
-                                                placeholder={isRejected ? "Enter new hours" : "Enter hours"}
-                                              />
-                                              
-                                              {/* Show other phases planned for this week */}
-                                              {otherPhases.length > 0 && (
-                                                <div className="mt-2 pt-1 border-t border-gray-100">
-                                                  <div className="text-xs text-gray-500 mb-1">
-                                                    Other work:
-                                                  </div>
-                                                  <div className="space-y-0.5">
-                                                    {otherPhases.map((phase) => (
-                                                      <div 
-                                                        key={phase.phaseId} 
-                                                        className="flex items-center gap-1.5 text-xs"
-                                                      >
-                                                        <div 
-                                                          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                                                          style={{ backgroundColor: phase.projectColor }}
-                                                        />
-                                                        <div className="flex-1 min-w-0 truncate">
-                                                          <span className="text-gray-600 font-medium">
-                                                            {phase.projectTitle}
-                                                          </span>
-                                                          <span className="text-gray-400"> • {phase.phaseName}</span>
-                                                        </div>
-                                                        <span className="text-gray-600 font-medium text-xs">
-                                                          {formatHours(phase.hours)}
-                                                        </span>
-                                                      </div>
-                                                    ))}
-                                                  </div>
-                                                </div>
-                                              )}
-                                              
-                                              {otherPhases.length === 0 && (
-                                                <div className="mt-2 pt-1 border-t border-gray-100">
-                                                  <div className="text-xs text-gray-400">
-                                                    No other work
-                                                  </div>
-                                                </div>
-                                              )}
-                                              
-                                              {error && (
-                                                <p className="mt-1 text-xs text-red-600">{error}</p>
-                                              )}
-                                              
-                                              {hasUnsavedChanges && !error && (
-                                                <p className="mt-1 text-xs text-yellow-600">Unsaved</p>
-                                              )}
-                                            </div>
+                                          return (
+                                            <WeeklyAllocationCard
+                                              key={key}
+                                              week={week}
+                                              phaseAllocationId={phaseAlloc.id}
+                                              currentHours={currentHours}
+                                              hasUnsavedChanges={hasUnsavedChanges}
+                                              error={error}
+                                              weeklyAllocation={weeklyAllocation}
+                                              localStatus={localStatus}
+                                              otherPhases={otherPhases}
+                                              onHourChange={(value) => handleHourChange(phaseAlloc.id, weekNumber, year, value)}
+                                            />
                                           );
                                         })}
                                       </div>
@@ -1094,16 +1130,18 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                           );
                         })()}
                         
-                        {/* Informational Message */}
+                        {/* Enhanced Informational Message */}
                         {(Array.from(unsavedChanges).some(key => key.startsWith(`${phaseAlloc.id}-`)) || unsavedDescriptions.has(phaseAlloc.id)) && (
-                          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                            <div className="flex items-start gap-2">
-                              <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center mt-0.5">
-                                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                          <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl shadow-sm">
+                            <div className="flex items-start gap-4">
+                              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
                               </div>
-                              <div className="text-sm">
-                                <p className="text-blue-900 font-medium">Ready to submit for approval</p>
-                                <p className="text-blue-700 mt-1">
+                              <div className="flex-1">
+                                <h4 className="text-lg font-bold text-blue-900 mb-1">Ready to Submit for Approval</h4>
+                                <p className="text-blue-700 leading-relaxed">
                                   Your weekly planning will be submitted to the Growth Team for review. You can make changes until it's approved.
                                 </p>
                               </div>
@@ -1111,18 +1149,20 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                           </div>
                         )}
 
-                        {/* Phase Save Button */}
-                        <div className="mt-4 flex justify-end">
+                        {/* Enhanced Phase Save Button */}
+                        <div className="mt-6 flex justify-end">
                           <button
                             onClick={() => savePhaseAllocations(phaseAlloc.id)}
                             disabled={saving || (!Array.from(unsavedChanges).some(key => key.startsWith(`${phaseAlloc.id}-`)) && !unsavedDescriptions.has(phaseAlloc.id))}
-                            className={`px-4 py-2 text-sm font-medium rounded-lg flex items-center gap-2 ${
+                            className={`px-8 py-4 text-sm font-bold rounded-2xl flex items-center gap-3 transition-all duration-300 shadow-lg hover:shadow-xl ${
                               (Array.from(unsavedChanges).some(key => key.startsWith(`${phaseAlloc.id}-`)) || unsavedDescriptions.has(phaseAlloc.id)) && !saving
-                                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105'
                                 : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                             }`}
                           >
-                            <FaSave />
+                            <div className="p-1 rounded-full bg-white/20">
+                              <FaSave className="w-4 h-4" />
+                            </div>
                             {saving ? 'Submitting...' : 'Request Approval'}
                           </button>
                         </div>
@@ -1175,7 +1215,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4">
                                     <h4 className="text-sm font-medium text-gray-800 mb-3">Your Previous Planning</h4>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                      {phaseAlloc.weeklyAllocations.map((weeklyAlloc) => {
+                                      {phaseAlloc.weeklyAllocations.map((weeklyAlloc: any) => {
                                         const weekStart = new Date(weeklyAlloc.weekStartDate);
                                         const weekLabel = `${formatDate(weekStart)} - ${formatDate(new Date(weeklyAlloc.weekEndDate))}`;
                                         const hours = weeklyAlloc.approvedHours || weeklyAlloc.proposedHours || 0;
@@ -1201,28 +1241,16 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                       )}
                     </div>
                   );
-                  })}
+                })}
                 </div>
               )}
             </div>
           ))
         )}
-      </div>
+        </div>
 
-      {/* Instructions */}
-      <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h4 className="text-sm font-medium text-blue-800 mb-2">How to Use</h4>
-        <ul className="text-sm text-blue-700 space-y-1">
-          <li>• <strong>Approval Required:</strong> You can only plan hours for allocations approved by the Growth Team</li>
-          <li>• Click on project headers to collapse/expand phases for better organization</li>
-          <li>• Enter the number of hours you plan to work each week for each approved phase</li>
-          <li>• Edit phase descriptions to explain what you plan to accomplish</li>
-          <li>• Click the "Request Approval" button to submit your weekly plan for Growth Team approval</li>
-          <li>• The progress bar shows how much of your total phase allocation you've distributed</li>
-          <li>• Aim to distribute all your allocated hours across the phase duration</li>
-          <li>• <strong>Need more hours?</strong> You cannot exceed your allocated total - create an Hour Change Request instead</li>
-        </ul>
-      </div>
+        <InstructionsPanel />
+        </div>
     </div>
   );
 }

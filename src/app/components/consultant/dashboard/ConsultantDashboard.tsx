@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { FaCalendarWeek, FaClock, FaChartPie, FaExclamationTriangle, FaCheckCircle, FaProjectDiagram, FaUser, FaChartLine, FaCalendar, FaHourglassHalf } from 'react-icons/fa';
 import { formatHours, formatDate } from '@/lib/dates';
 import { getPhaseStatus, getStatusColorClasses, getProgressBarColor } from '@/lib/phase-status';
-import WeeklyPlannerEnhanced from '../allocation/WeeklyPlannerEnhanced';
-import AllocationCalendar from '../allocation/AllocationCalendar';
+import WeeklyPlannerEnhanced from './WeeklyPlannerEnhanced';
+import WeeklyCalendarView from './WeeklyCalendarView';
+import WeeklyPlanningDashboard from './WeeklyPlanningDashboard';
 
 interface Sprint {
   id: string;
@@ -650,158 +651,29 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
 
       {/* Weekly Planner Tab */}
       {activeView === 'planner' && (
-        <div className="bg-white rounded-lg shadow-md border">
-          <div className="p-4 border-b">
-            <h2 className="text-xl font-semibold text-gray-800">Weekly Hour Planner</h2>
-            <p className="text-sm text-gray-600">Distribute your allocated hours across weeks</p>
-          </div>
-          <WeeklyPlannerEnhanced 
-            consultantId={userId}
-            phaseAllocations={data.phaseAllocations}
-          />
-        </div>
+        <WeeklyPlannerEnhanced
+          consultantId={userId}
+          phaseAllocations={data.phaseAllocations}
+        />
       )}
 
       {/* Calendar Tab */}
       {activeView === 'calendar' && (
-        <div className="bg-white rounded-lg shadow-md border">
-          <div className="p-4 border-b">
-            <h2 className="text-xl font-semibold text-gray-800">Allocation Calendar</h2>
-            <p className="text-sm text-gray-600">View your allocations in calendar format</p>
-          </div>
-          <AllocationCalendar
-            phaseAllocations={data.phaseAllocations}
-            upcomingAllocations={data.upcomingAllocations}
-          />
-        </div>
+        <WeeklyCalendarView
+          phaseAllocations={data.phaseAllocations}
+          upcomingAllocations={data.upcomingAllocations}
+        />
       )}
 
       {/* My Weekly Planning Tab */}
       {activeView === 'planning' && (
-        <div className="bg-white rounded-lg shadow-md border">
-          <div className="p-4 border-b">
-            <h2 className="text-xl font-semibold text-gray-800">My Weekly Planning</h2>
-            <p className="text-sm text-gray-600">Personal weekly schedule and time management</p>
-          </div>
-          <div className="p-6">
-            {/* Current Week Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {/* This Week's Hours */}
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-blue-500 rounded-lg">
-                    <FaCalendarWeek className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-blue-900">{formatHours(enhancedStats.thisWeekHours)}</p>
-                    <p className="text-sm text-blue-600">This Week</p>
-                  </div>
-                </div>
-                <div className="w-full bg-blue-200 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full transition-all ${
-                      enhancedStats.thisWeekHours > 40 ? 'bg-red-500' :
-                      enhancedStats.thisWeekHours >= 35 ? 'bg-orange-500' :
-                      enhancedStats.thisWeekHours >= 20 ? 'bg-green-500' : 'bg-gray-400'
-                    }`}
-                    style={{ width: `${Math.min((enhancedStats.thisWeekHours / 40) * 100, 100)}%` }}
-                  />
-                </div>
-                <p className="text-xs text-blue-700 mt-2">
-                  {enhancedStats.utilizationRate}% utilization
-                </p>
-              </div>
-
-              {/* Upcoming Work */}
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-sm border border-green-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-green-500 rounded-lg">
-                    <FaProjectDiagram className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-green-900">{formatHours(enhancedStats.upcomingWork)}</p>
-                    <p className="text-sm text-green-600">Next 4 Weeks</p>
-                  </div>
-                </div>
-                <p className="text-xs text-green-700">
-                  Across {enhancedStats.projectsInvolved} active projects
-                </p>
-              </div>
-
-              {/* Pending Items */}
-              <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl shadow-sm border border-orange-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-orange-500 rounded-lg">
-                    <FaClock className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-orange-900">{enhancedStats.pendingPhaseApprovals + enhancedStats.pendingWeeklyApprovals}</p>
-                    <p className="text-sm text-orange-600">Pending Approvals</p>
-                  </div>
-                </div>
-                <p className="text-xs text-orange-700">
-                  {enhancedStats.pendingPhaseApprovals} phases, {enhancedStats.pendingWeeklyApprovals} weeks
-                </p>
-              </div>
-            </div>
-
-            {/* Weekly Schedule */}
-            <div className="bg-gray-50 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Weekly Schedule Overview</h3>
-                <p className="text-sm text-gray-500">Current week allocations</p>
-              </div>
-
-              {data.phaseAllocations.length > 0 ? (
-                <div className="space-y-4">
-                  {data.phaseAllocations
-                    .filter(allocation => {
-                      // Show allocations that have current week data
-                      const today = new Date();
-                      const currentWeek = getWeekNumber(today);
-                      const currentYear = today.getFullYear();
-                      return allocation.weeklyAllocations.some(week =>
-                        week.weekNumber === currentWeek &&
-                        week.year === currentYear &&
-                        (week.approvedHours || week.proposedHours || 0) > 0
-                      );
-                    })
-                    .map(allocation => {
-                      const today = new Date();
-                      const currentWeek = getWeekNumber(today);
-                      const currentYear = today.getFullYear();
-                      const thisWeekAllocation = allocation.weeklyAllocations.find(week =>
-                        week.weekNumber === currentWeek && week.year === currentYear
-                      );
-                      const hours = thisWeekAllocation ? (thisWeekAllocation.approvedHours || thisWeekAllocation.proposedHours || 0) : 0;
-
-                      return (
-                        <div key={allocation.id} className="bg-white rounded-lg p-4 border border-gray-200">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="font-medium text-gray-800">{allocation.phase.project.title}</h4>
-                              <p className="text-sm text-gray-600">{allocation.phase.name}</p>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-lg font-bold text-blue-600">{formatHours(hours)}</div>
-                              <div className="text-xs text-gray-500">
-                                {thisWeekAllocation?.planningStatus === 'APPROVED' ? 'Approved' :
-                                 thisWeekAllocation?.planningStatus === 'PENDING' ? 'Pending' : 'Planned'}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <p>No work scheduled for this week</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <WeeklyPlanningDashboard
+          data={data}
+          enhancedStats={enhancedStats}
+          getWeekNumber={getWeekNumber}
+          userId={userId}
+          userName={userName}
+        />
       )}
     </div>
   );

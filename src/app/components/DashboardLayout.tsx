@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import Sidebar from '@/app/components/add-sidebar';
+import Sidebar from './add-sidebar';
 import Loading from '@/app/loading';
 import { cn } from '@/lib/utils';
 

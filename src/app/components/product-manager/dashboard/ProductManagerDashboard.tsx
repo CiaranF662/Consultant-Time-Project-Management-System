@@ -9,9 +9,9 @@ import {
   FaChartPie
 } from 'react-icons/fa';
 import { formatHours } from '@/lib/dates';
-import ProjectHealthView from '@/app/components/pm/ProjectHealthView';
-import PendingRequestsView from '@/app/components/pm/PendingRequestsView';
-import CrossProjectManagementView from '@/app/components/pm/CrossProjectManagementView';
+import ProjectHealthView from '../dashboard-views/ProjectHealthView';
+import PendingRequestsView from '../dashboard-views/PendingRequestsView';
+import CrossProjectManagementView from '../dashboard-views/CrossProjectManagementView';
 
 interface Project {
   id: string;

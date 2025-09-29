@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { FaPlus, FaChartBar } from 'react-icons/fa';
-import ProjectCard from '@/app/components/ProjectCard';
-import CreateProjectModal from '@/app/components/CreateProjectModal';
+import ProjectCard from './ProjectCard';
+import CreateProjectModal from '../growth-team/CreateProjectModal';
 import type { Project, Phase, Sprint, ConsultantsOnProjects, PhaseAllocation } from '@prisma/client';
 
 type ProjectWithDetails = Project & {

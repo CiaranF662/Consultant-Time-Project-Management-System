@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FaUserTie, FaUser } from 'react-icons/fa';
 import ProductManagerDashboard from './ProductManagerDashboard';
-import ConsultantDashboard from './ConsultantDashboard';
+import ConsultantDashboard from '@/app/components/consultant/dashboard/ConsultantDashboard';
 
 interface IntegratedPMDashboardProps {
   userId: string;
