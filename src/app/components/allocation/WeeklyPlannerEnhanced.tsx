@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
-  getWeeksBetween, 
-  formatHours
+import {
+  getWeeksBetween,
+  formatHours,
+  formatDate
 } from '@/lib/dates';
 import { FaSave, FaChevronDown, FaChevronRight, FaCheckCircle, FaTimes, FaCheck, FaClock } from 'react-icons/fa';
 
@@ -914,7 +915,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                                             Sprint {sprint.sprintNumber}
                                           </h5>
                                           <p className="text-xs text-gray-500">
-                                            {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}
+                                            {formatDate(new Date(sprint.startDate))} - {formatDate(new Date(sprint.endDate))}
                                           </p>
                                         </div>
                                         <div className="text-right">
@@ -1176,7 +1177,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                       {phaseAlloc.weeklyAllocations.map((weeklyAlloc) => {
                                         const weekStart = new Date(weeklyAlloc.weekStartDate);
-                                        const weekLabel = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(weeklyAlloc.weekEndDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+                                        const weekLabel = `${formatDate(weekStart)} - ${formatDate(new Date(weeklyAlloc.weekEndDate))}`;
                                         const hours = weeklyAlloc.approvedHours || weeklyAlloc.proposedHours || 0;
 
                                         return hours > 0 ? (

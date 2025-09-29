@@ -85,7 +85,7 @@ export async function GET(request: Request) {
 
     // Group approved allocations by consultant and week for context
     const workloadContext = allWeeklyAllocations.reduce((acc, allocation) => {
-      const weekKey = allocation.weekStartDate.toISOString().split('T')[0];
+      const weekKey = new Date(allocation.weekStartDate).toISOString().split('T')[0];
       const consultantId = allocation.consultantId;
 
       if (!acc[consultantId]) {
@@ -111,7 +111,7 @@ export async function GET(request: Request) {
 
     // Group by week and consultant for easier approval UI, including workload context
     const groupedAllocations = pendingAllocations.reduce((acc, allocation) => {
-      const weekKey = allocation.weekStartDate.toISOString().split('T')[0];
+      const weekKey = new Date(allocation.weekStartDate).toISOString().split('T')[0];
       const consultantId = allocation.consultantId;
 
       if (!acc[weekKey]) {

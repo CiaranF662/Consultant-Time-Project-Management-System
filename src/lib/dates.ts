@@ -182,7 +182,8 @@ import {
   /**
    * Format hours for display
    */
-  export function formatHours(hours: number): string {
+  export function formatHours(hours: number | null | undefined): string {
+    if (hours == null || hours === undefined || isNaN(hours)) return '-';
     if (hours === 0) return '-';
     if (hours % 1 === 0) return `${hours}h`;
     return `${hours.toFixed(1)}h`;
@@ -197,6 +198,26 @@ import {
   }
   
   /**
+   * Format date for display in DD/MM/YYYY format
+   */
+  export function formatDate(date: Date | string): string {
+    if (!date) return '';
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return '';
+    return dateObj.toLocaleDateString('en-GB'); // DD/MM/YYYY format
+  }
+
+  /**
+   * Format date for display in DD/MM/YYYY format with time options
+   */
+  export function formatDateWithOptions(date: Date | string, options?: Intl.DateTimeFormatOptions): string {
+    if (!date) return '';
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return '';
+    return dateObj.toLocaleDateString('en-GB', options);
+  }
+
+  /**
    * Calculate budget utilization percentage
    */
   export function calculateUtilization(used: number, total: number): number {
@@ -205,17 +226,14 @@ import {
   }
   
   /**
-   * Get week color based on utilization
+   * Get week color based on utilization - opaque colors with black text for better readability
    */
-  export function getUtilizationColor(hours: number, maxHours: number = 40): string {
-    const utilization = (hours / maxHours) * 100;
-    
-    if (utilization === 0) return 'bg-gray-50';
-    if (utilization <= 25) return 'bg-green-50';
-    if (utilization <= 50) return 'bg-green-100';
-    if (utilization <= 75) return 'bg-yellow-100';
-    if (utilization <= 100) return 'bg-orange-100';
-    return 'bg-red-400 text-black'; // Over-allocated - prominent red that's clearly visible
+  export function getUtilizationColor(hours: number): string {
+    if (hours === 0) return 'bg-gray-50 text-gray-400';
+    if (hours <= 20) return 'bg-green-100 text-black'; // Low utilization (0-20h)
+    if (hours <= 35) return 'bg-yellow-100 text-black'; // Medium utilization (20-35h)
+    if (hours <= 40) return 'bg-orange-100 text-black'; // High utilization (35-40h)
+    return 'bg-red-100 text-black'; // Over utilization (40h+)
   }
   
   /**

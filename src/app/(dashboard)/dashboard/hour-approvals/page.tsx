@@ -132,7 +132,7 @@ async function getHourApprovalsData() {
 
   // Group weekly allocations by week and consultant for easier approval UI
   const groupedWeeklyAllocations = pendingWeeklyAllocations.reduce((acc, allocation) => {
-    const weekKey = allocation.weekStartDate.toISOString().split('T')[0];
+    const weekKey = new Date(allocation.weekStartDate).toISOString().split('T')[0];
     const consultantId = allocation.consultantId;
 
     if (!acc[weekKey]) {

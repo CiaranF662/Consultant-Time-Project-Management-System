@@ -155,14 +155,56 @@ export async function PATCH(
     try {
         const { projectId } = await params;
         const body = await request.json();
-        const { title, description } = body;
+        const { title, description, budgetedHours, startDate, endDate } = body;
+
+        // Validate required fields
+        if (!title?.trim()) {
+            return new NextResponse(JSON.stringify({ error: 'Project title is required' }), { status: 400 });
+        }
+
+        // Validate dates if provided
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+
+            if (start >= end) {
+                return new NextResponse(JSON.stringify({ error: 'End date must be after start date' }), { status: 400 });
+            }
+
+            const diffTime = Math.abs(end.getTime() - start.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 7) {
+                return new NextResponse(JSON.stringify({ error: 'Project must be at least 1 week long' }), { status: 400 });
+            }
+        }
+
+        // Validate budget hours
+        if (budgetedHours !== undefined && (budgetedHours <= 0 || !Number.isInteger(Number(budgetedHours)))) {
+            return new NextResponse(JSON.stringify({ error: 'Budget hours must be a positive integer' }), { status: 400 });
+        }
+
+        // Build update data object dynamically
+        const updateData: any = {
+            title: title.trim(),
+            description: description?.trim() || null,
+        };
+
+        if (budgetedHours !== undefined) {
+            updateData.budgetedHours = parseInt(budgetedHours);
+        }
+
+        if (startDate) {
+            updateData.startDate = new Date(startDate);
+        }
+
+        if (endDate) {
+            updateData.endDate = new Date(endDate);
+        }
 
         const updatedProject = await prisma.project.update({
             where: { id: projectId },
-            data: {
-                title,
-                description,
-            },
+            data: updateData,
         });
 
         return NextResponse.json(updatedProject);

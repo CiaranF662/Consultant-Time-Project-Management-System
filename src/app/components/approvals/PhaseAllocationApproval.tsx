@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { FaCheck, FaTimes, FaEdit, FaUser, FaClock, FaSearch, FaFilter, FaSortAmountDown } from 'react-icons/fa';
-import { formatHours } from '@/lib/dates';
+import { formatHours, formatDate } from '@/lib/dates';
 import { generateColorFromString } from '@/lib/colors';
 
 interface PhaseAllocation {
@@ -358,7 +358,7 @@ export default function PhaseAllocationApproval({
                         </p>
                       )}
                       <p className="text-xs text-gray-500 mt-1">
-                        Phase: {new Date(allocation.phase.startDate).toLocaleDateString()} - {new Date(allocation.phase.endDate).toLocaleDateString()}
+                        Phase: {formatDate(new Date(allocation.phase.startDate))} - {formatDate(new Date(allocation.phase.endDate))}
                       </p>
                     </div>
                     <div className="text-right ml-4">
@@ -406,7 +406,7 @@ export default function PhaseAllocationApproval({
 
                   <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
                     <span>
-                      <span className="font-medium">Requested:</span> {new Date(allocation.createdAt).toLocaleDateString()}
+                      <span className="font-medium">Requested:</span> {formatDate(new Date(allocation.createdAt))}
                     </span>
                   </div>
                 </div>

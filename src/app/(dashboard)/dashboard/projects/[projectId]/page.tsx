@@ -8,7 +8,7 @@ import axios from 'axios';
 import { FaArrowLeft, FaUsers, FaPlus, FaEdit, FaClock, FaDollarSign, FaChartLine, FaProjectDiagram } from 'react-icons/fa';
 import { UserRole, Sprint, User, Phase, Project } from '@prisma/client';
 
-import PhaseCreationModal from '@/app/components/phase-planning/PhaseCreationModal';
+import PhaseCreationModal from '@/app/components/PhaseCreationModal';
 import PhaseAllocationForm from '@/app/components/allocation/PhaseAllocationForm';
 import EditPhaseModal from '@/app/components/EditPhaseModal';
 import EditProjectModal from '@/app/components/EditProjectModal';
@@ -16,6 +16,7 @@ import BudgetTracker from '@/app/components/allocation/BudgetTracker';
 import PhaseStatusCard from '@/app/components/PhaseStatusCard';
 import ProjectGanttChart from '@/app/components/gantt/ProjectGanttChart';
 import { generateColorFromString } from '@/lib/colors';
+import { formatDate } from '@/lib/dates';
 import DashboardLayout from '@/app/components/DashboardLayout';
 
 // Define comprehensive types
@@ -63,11 +64,6 @@ interface ProjectWithDetails extends Project {
   budgetedHours: number;
 }
 
-function formatDate(date: Date) {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric',
-  }).format(new Date(date));
-}
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { data: session, status } = useSession();

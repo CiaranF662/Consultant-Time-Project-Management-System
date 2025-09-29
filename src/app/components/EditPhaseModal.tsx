@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Phase, Sprint } from '@prisma/client';
 import axios from 'axios';
-import { FaTimes, FaTrash, FaSave } from 'react-icons/fa';
+import { FaTimes, FaTrash, FaSave, FaProjectDiagram, FaCalendarAlt, FaInfoCircle, FaCheckCircle, FaExclamationTriangle, FaEdit } from 'react-icons/fa';
+import { formatDate } from '@/lib/dates';
 
 interface PhaseWithSprints extends Phase {
   sprints: Sprint[];
@@ -22,13 +23,42 @@ interface EditPhaseModalProps {
 }
 
 export default function EditPhaseModal({ phase, projectSprints, onClose, onDelete }: EditPhaseModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
   const [name, setName] = useState(phase.name);
   const [description, setDescription] = useState(phase.description || '');
   const [selectedSprintIds, setSelectedSprintIds] = useState<string[]>(phase.sprints?.map(s => s.id) || []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if Sprint 0 is available for selection (only for Project Kickoff phase)
+  // Click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current === event.target) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [onClose]);
+
+  // ESC key handler
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
+  // Check if Sprint is available for selection
   const isSprintAvailableForSelection = (sprint: Sprint): boolean => {
     const today = new Date();
     const sprintEndDate = new Date(sprint.endDate);
@@ -38,9 +68,9 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
       return phase.name === 'Project Kickoff';
     }
 
-    // Past sprints (end date has passed) cannot be selected
+    // Past sprints (end date has passed) cannot be selected unless already selected
     if (sprintEndDate < today) {
-      return false;
+      return selectedSprintIds.includes(sprint.id);
     }
 
     return true;
@@ -51,279 +81,348 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
     if (sprintIds.length <= 1) return true;
 
     const selectedSprints = projectSprints
-      .filter(s => sprintIds.includes(s.id))
+      .filter(sprint => sprintIds.includes(sprint.id))
       .sort((a, b) => a.sprintNumber - b.sprintNumber);
 
     for (let i = 1; i < selectedSprints.length; i++) {
-      if (selectedSprints[i].sprintNumber !== selectedSprints[i-1].sprintNumber + 1) {
+      if (selectedSprints[i].sprintNumber !== selectedSprints[i - 1].sprintNumber + 1) {
         return false;
       }
     }
+
     return true;
   };
 
-  const handleSprintToggle = (sprintId: string) => {
-    if (!projectSprints) return;
-    
-    setSelectedSprintIds(prev => {
-      let newSelection;
-      
-      if (prev.includes(sprintId)) {
-        // Removing a sprint
-        newSelection = prev.filter(id => id !== sprintId);
-      } else {
-        // Adding a sprint
-        newSelection = [...prev, sprintId].sort((a, b) => {
-          const sprintA = projectSprints.find(s => s.id === a);
-          const sprintB = projectSprints.find(s => s.id === b);
-          return (sprintA?.sprintNumber || 0) - (sprintB?.sprintNumber || 0);
-        });
-      }
-      
-      // Check if the new selection is consecutive
-      if (!validateConsecutiveSprints(newSelection)) {
-        // If not consecutive, don't update selection and show error
-        setError('Selected sprints must be consecutive within a phase');
-        return prev;
-      } else {
-        // Clear any previous error
-        setError(null);
-        return newSelection;
-      }
-    });
+  const handleSprintSelection = (sprintId: string, checked: boolean) => {
+    let newSelection: string[];
+    if (checked) {
+      newSelection = [...selectedSprintIds, sprintId];
+    } else {
+      newSelection = selectedSprintIds.filter(id => id !== sprintId);
+    }
+
+    setSelectedSprintIds(newSelection);
+    setError(null);
   };
 
-  // Calculate phase dates based on selected sprints
-  const getPhasePreview = () => {
-    if (selectedSprintIds.length === 0 || !projectSprints) return null;
-    
+  const getSelectedSprintsSummary = () => {
+    if (selectedSprintIds.length === 0) return null;
+
     const selectedSprints = projectSprints
-      .filter(s => selectedSprintIds.includes(s.id))
+      .filter(sprint => selectedSprintIds.includes(sprint.id))
       .sort((a, b) => a.sprintNumber - b.sprintNumber);
-    
-    if (selectedSprints.length === 0) return null;
-    
+
     const startDate = new Date(selectedSprints[0].startDate);
     const endDate = new Date(selectedSprints[selectedSprints.length - 1].endDate);
-    
+
+    const sprintNumbers = selectedSprints.map(s => s.sprintNumber);
+    const isConsecutive = validateConsecutiveSprints(selectedSprintIds);
+
     return {
-      startDate: startDate.toLocaleDateString(),
-      endDate: endDate.toLocaleDateString(),
-      sprintRange: `Sprint ${selectedSprints[0].sprintNumber} - Sprint ${selectedSprints[selectedSprints.length - 1].sprintNumber}`
+      count: selectedSprints.length,
+      startDate,
+      endDate,
+      sprintNumbers,
+      isConsecutive
     };
   };
 
-  const handleSave = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
     if (!name.trim()) {
       setError('Phase name is required');
       return;
     }
-    
+
     if (selectedSprintIds.length === 0) {
-      setError('At least one sprint must be selected');
+      setError('Please select at least one sprint');
+      return;
+    }
+
+    if (!validateConsecutiveSprints(selectedSprintIds)) {
+      setError('Selected sprints must be consecutive');
       return;
     }
 
     setIsLoading(true);
-    setError(null);
-    
+
     try {
-      // Calculate dates from selected sprints
-      if (!projectSprints) {
-        setError('Project sprints data is not available');
-        setIsLoading(false);
-        return;
-      }
-      
-      const selectedSprints = projectSprints
-        .filter(s => selectedSprintIds.includes(s.id))
-        .sort((a, b) => a.sprintNumber - b.sprintNumber);
-      
-      const startDate = new Date(selectedSprints[0].startDate);
-      const endDate = new Date(selectedSprints[selectedSprints.length - 1].endDate);
-      
-      // Update phase details
-      await axios.patch(`/api/phases/${phase.id}/sprints`, { 
-        name: name.trim(), 
-        description: description.trim() || null,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString()
-      });
-      
-      // Update sprint assignments
-      await axios.patch(`/api/phases/${phase.id}/sprints`, {
+      await axios.put(`/api/phases/${phase.id}`, {
+        name: name.trim(),
+        description: description.trim(),
         sprintIds: selectedSprintIds
       });
-      
+
       onClose();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to save changes.');
+    } catch (error: any) {
+      console.error('Error updating phase:', error);
+      setError(error.response?.data?.error || 'Failed to update phase');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const phasePreview = getPhasePreview();
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this phase? This action cannot be undone.')) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await axios.delete(`/api/phases/${phase.id}`);
+      onDelete();
+    } catch (error: any) {
+      console.error('Error deleting phase:', error);
+      setError(error.response?.data?.error || 'Failed to delete phase');
+      setIsLoading(false);
+    }
+  };
+
+  const summary = getSelectedSprintsSummary();
+  const availableSprints = projectSprints.sort((a, b) => a.sprintNumber - b.sprintNumber);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-800">Edit Phase</h2>
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 rounded"
-              disabled={isLoading}
-            >
-              <FaTimes />
-            </button>
+    <div
+      ref={modalRef}
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+    >
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Modal Header */}
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+              <FaEdit className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">Edit Phase</h1>
+              <p className="text-indigo-100">Modify phase: <strong>{phase.name}</strong></p>
+            </div>
           </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg flex items-center justify-center transition-all duration-200"
+            disabled={isLoading}
+          >
+            <FaTimes className="w-4 h-4" />
+          </button>
         </div>
 
-        <div className="p-6">
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
-
-          {/* Phase Name */}
-          <div className="mb-4">
-            <label htmlFor="phaseName" className="block text-sm font-medium text-gray-700 mb-2">
-              Phase Name *
-            </label>
-            <input
-              type="text"
-              id="phaseName"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="e.g., Planning Phase, Development Phase"
-              disabled={isLoading}
-              required
-            />
-          </div>
-
-          {/* Phase Description */}
-          <div className="mb-6">
-            <label htmlFor="phaseDescription" className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
-            <textarea
-              id="phaseDescription"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Optional description of what this phase includes"
-              disabled={isLoading}
-            />
-          </div>
-
-          {/* Sprint Selection */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Sprints *
-            </label>
-            <p className="text-xs text-gray-600 mb-3">
-              Select consecutive sprints for this phase. Phases can overlap and share sprints.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto border border-gray-200 rounded-md p-3">
-              {projectSprints && projectSprints.length > 0 ? projectSprints.map((sprint) => {
-                const isAvailable = isSprintAvailableForSelection(sprint);
-                const isCurrentlySelected = selectedSprintIds.includes(sprint.id);
-                const isPastSprint = new Date(sprint.endDate) < new Date();
-
-                return (
-                  <label
-                    key={sprint.id}
-                    className={`flex items-center p-2 rounded transition-all duration-200 ${
-                      !isAvailable
-                        ? 'cursor-not-allowed bg-gray-100 border border-gray-200 opacity-60'
-                        : 'cursor-pointer hover:bg-gray-50'
-                    } ${
-                      isCurrentlySelected ? 'bg-blue-50 border border-blue-200' : 'border border-transparent'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isCurrentlySelected}
-                      onChange={() => isAvailable && handleSprintToggle(sprint.id)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      disabled={isLoading || !isAvailable}
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className={`text-sm font-medium ${!isAvailable ? 'text-gray-500' : 'text-gray-700'}`}>
-                        Sprint {sprint.sprintNumber}
-                        {sprint.sprintNumber === 0 && (
-                          <span className="ml-2 text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
-                            Project Kickoff
-                          </span>
-                        )}
-                      </div>
-                      <div className={`text-xs ${!isAvailable ? 'text-gray-400' : 'text-gray-500'}`}>
-                        {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}
-                      </div>
-                      {!isAvailable && (
-                        <div className="text-xs text-red-500 mt-1">
-                          {isPastSprint && 'Phase has ended'}
-                          {sprint.sprintNumber === 0 && phase.name !== 'Project Kickoff' && 'Sprint 0 reserved for Project Kickoff only'}
-                        </div>
-                      )}
-                    </div>
-                  </label>
-                );
-              }) : (
-                <div className="text-center text-gray-500 py-4">
-                  No sprints available for this project
+        {/* Modal Content */}
+        <div className="flex-1 overflow-y-auto">
+          <form onSubmit={handleSubmit} className="space-y-6 p-6">
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center gap-2 text-red-700">
+                  <FaExclamationTriangle className="w-4 h-4" />
+                  <span className="text-sm font-medium">{error}</span>
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+            )}
 
-          {/* Phase Preview */}
-          {phasePreview && (
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-              <h4 className="text-sm font-medium text-blue-800 mb-2">Updated Phase Preview</h4>
-              <div className="text-sm text-blue-700">
-                <p><strong>Duration:</strong> {phasePreview.startDate} - {phasePreview.endDate}</p>
-                <p><strong>Sprints:</strong> {phasePreview.sprintRange}</p>
-                <p><strong>Selected Sprints:</strong> {selectedSprintIds.length}</p>
+            {/* Phase Details Section */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-100">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center">
+                  <FaProjectDiagram className="w-4 h-4" />
+                </div>
+                <h2 className="text-lg font-bold text-gray-800">Phase Information</h2>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="phaseName" className="block text-sm font-medium text-gray-700 mb-2">
+                    Phase Name *
+                  </label>
+                  <input
+                    type="text"
+                    id="phaseName"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
+                    placeholder="Enter a descriptive phase name..."
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="phaseDescription" className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    id="phaseDescription"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={3}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
+                    placeholder="Describe the objectives and scope of this phase..."
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
             </div>
-          )}
 
-          {/* Action Buttons */}
-          <div className="flex justify-between items-center pt-4 border-t">
-            <button
-              onClick={onDelete}
-              disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400"
-            >
-              <FaTrash />
-              {isLoading ? 'Deleting...' : 'Delete Phase'}
-            </button>
-            
-            <div className="flex gap-3">
+            {/* Sprint Selection Section */}
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg border border-green-100">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-green-600 text-white rounded-lg flex items-center justify-center">
+                  <FaCalendarAlt className="w-4 h-4" />
+                </div>
+                <h2 className="text-lg font-bold text-gray-800">Sprint Assignment</h2>
+              </div>
+
+              <p className="text-sm text-gray-600 mb-4">
+                Select the sprints that will be part of this phase. Sprints must be consecutive.
+              </p>
+
+              <div className="space-y-3 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-white">
+                {availableSprints.map((sprint) => {
+                  const isAvailable = isSprintAvailableForSelection(sprint);
+                  const isSelected = selectedSprintIds.includes(sprint.id);
+                  const isPastSprint = new Date(sprint.endDate) < new Date();
+
+                  return (
+                    <div
+                      key={sprint.id}
+                      className={`p-3 rounded-lg border transition-all duration-200 ${
+                        isSelected
+                          ? 'border-green-300 bg-green-50'
+                          : isAvailable
+                          ? 'border-gray-200 hover:border-green-300 hover:bg-green-50'
+                          : 'border-gray-100 bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id={`sprint-${sprint.id}`}
+                          checked={isSelected}
+                          onChange={(e) => handleSprintSelection(sprint.id, e.target.checked)}
+                          disabled={!isAvailable || isLoading}
+                          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded disabled:opacity-50"
+                        />
+                        <label
+                          htmlFor={`sprint-${sprint.id}`}
+                          className={`ml-3 flex-1 cursor-pointer ${isAvailable ? 'text-gray-900' : 'text-gray-400'}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="font-medium">Sprint {sprint.sprintNumber}</span>
+                              {sprint.sprintNumber === 0 && (
+                                <span className="ml-2 text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
+                                  Project Kickoff
+                                </span>
+                              )}
+                              {isPastSprint && !isSelected && (
+                                <span className="text-red-500 text-sm ml-2">(Past sprint)</span>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {formatDate(sprint.startDate)} - {formatDate(sprint.endDate)}
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-2 text-blue-700">
+                  <FaInfoCircle className="w-4 h-4 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-medium mb-1">Sprint Selection Rules:</p>
+                    <ul className="text-xs space-y-1 text-blue-600">
+                      <li>• Selected sprints must be consecutive (no gaps)</li>
+                      <li>• Sprint 0 is reserved for the Project Kickoff phase only</li>
+                      <li>• Past sprints can be kept if already assigned</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Phase Summary */}
+            {summary && (
+              <div className={`p-6 rounded-lg border ${
+                summary.isConsecutive
+                  ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200'
+                  : 'bg-gradient-to-r from-red-50 to-pink-50 border-red-200'
+              }`}>
+                <div className="flex items-center gap-2 mb-4">
+                  {summary.isConsecutive ? (
+                    <FaCheckCircle className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <FaExclamationTriangle className="w-5 h-5 text-red-600" />
+                  )}
+                  <h3 className={`font-semibold ${summary.isConsecutive ? 'text-green-800' : 'text-red-800'}`}>
+                    Updated Phase Summary
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-3 bg-white rounded-lg border border-gray-200">
+                    <div className="text-2xl font-bold text-gray-700">{summary.count}</div>
+                    <div className="text-sm text-gray-600">Sprints Selected</div>
+                  </div>
+                  <div className="text-center p-3 bg-white rounded-lg border border-gray-200">
+                    <div className="text-sm font-medium text-gray-700">{formatDate(summary.startDate)}</div>
+                    <div className="text-sm text-gray-600">Start Date</div>
+                  </div>
+                  <div className="text-center p-3 bg-white rounded-lg border border-gray-200">
+                    <div className="text-sm font-medium text-gray-700">{formatDate(summary.endDate)}</div>
+                    <div className="text-sm text-gray-600">End Date</div>
+                  </div>
+                </div>
+
+                {!summary.isConsecutive && (
+                  <div className="mt-3 p-3 bg-red-100 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-700">
+                      ⚠️ Selected sprints are not consecutive. Please ensure there are no gaps between selected sprints.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex justify-between items-center pt-4 border-t border-gray-200">
               <button
                 type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                onClick={handleDelete}
                 disabled={isLoading}
+                className="inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-700 border border-transparent rounded-lg hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               >
-                Cancel
+                <FaTrash className="mr-2" />
+                Delete Phase
               </button>
-              <button
-                onClick={handleSave}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                disabled={isLoading}
-              >
-                <FaSave />
-                {isLoading ? 'Saving...' : 'Save Changes'}
-              </button>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200"
+                  disabled={isLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading || !summary?.isConsecutive || selectedSprintIds.length === 0}
+                  className="inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 border border-transparent rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                >
+                  {isLoading && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  )}
+                  <FaSave className="mr-2" />
+                  Save Changes
+                </button>
+              </div>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>

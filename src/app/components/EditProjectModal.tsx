@@ -43,6 +43,26 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
   const [description, setDescription] = useState(project.description || '');
   const [budgetedHours, setBudgetedHours] = useState(project.budgetedHours.toString());
 
+  // Start date is fixed (read-only)
+  const startDate = new Date(project.startDate).toISOString().split('T')[0];
+
+  // Calculate initial duration in weeks
+  const initialDuration = project.endDate
+    ? Math.ceil((new Date(project.endDate).getTime() - new Date(project.startDate).getTime()) / (1000 * 60 * 60 * 24 * 7))
+    : 12; // Default to 12 weeks if no end date
+
+  const [durationWeeks, setDurationWeeks] = useState(initialDuration);
+
+  // Calculate end date based on duration
+  const calculateEndDate = (weeks: number) => {
+    const start = new Date(startDate);
+    const end = new Date(start);
+    end.setDate(start.getDate() + (weeks * 7) - 1); // -1 to make it inclusive
+    return end.toISOString().split('T')[0];
+  };
+
+  const endDate = calculateEndDate(durationWeeks);
+
   // Consultant management
   const [allConsultants, setAllConsultants] = useState<User[]>([]);
   const [selectedProductManagerId, setSelectedProductManagerId] = useState(project.productManagerId || '');
@@ -119,6 +139,41 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
     return allConsultants.filter(c => selectedConsultantIds.includes(c.id));
   };
 
+  // Duration calculation helpers
+  const calculateProjectDays = () => {
+    return durationWeeks * 7;
+  };
+
+  // Duration validation
+  const validateDuration = () => {
+    if (durationWeeks < 1) {
+      return { isValid: false, error: 'Project must be at least 1 week long' };
+    }
+
+    if (durationWeeks > 104) { // 2 years
+      return { isValid: false, error: 'Project duration cannot exceed 2 years (104 weeks)' };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const calculatedEndDate = new Date(endDate);
+
+    // Warning for projects ending in the past
+    if (calculatedEndDate < today) {
+      return { isValid: true, error: 'Warning: Project will end in the past' };
+    }
+
+    return { isValid: true, error: null };
+  };
+
+  // Check if duration has changed from original
+  const hasDurationChanged = () => {
+    const originalDuration = project.endDate
+      ? Math.ceil((new Date(project.endDate).getTime() - new Date(project.startDate).getTime()) / (1000 * 60 * 60 * 24 * 7))
+      : 12;
+    return durationWeeks !== originalDuration;
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -136,6 +191,12 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
         throw new Error('Valid budget hours required');
       }
 
+      // Validate duration
+      const durationValidation = validateDuration();
+      if (!durationValidation.isValid) {
+        throw new Error(durationValidation.error);
+      }
+
       // Validation for consultant allocations
       if (consultantAllocations) {
         const allTeamMemberIds = [selectedProductManagerId, ...selectedConsultantIds].filter(Boolean);
@@ -149,7 +210,9 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
       await axios.patch(`/api/projects/${project.id}`, {
         title: title.trim(),
         description: description.trim() || null,
-        budgetedHours: parseInt(budgetedHours)
+        budgetedHours: parseInt(budgetedHours),
+        startDate: new Date(startDate).toISOString(),
+        endDate: new Date(endDate).toISOString()
       });
 
       // Update consultants with their allocated hours
@@ -300,6 +363,26 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
         <div className="flex-1 overflow-y-auto">
           <form onSubmit={handleSave} className="space-y-6 p-6">
             
+            {/* Important Notice */}
+            {hasDurationChanged() && (
+              <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <svg className="w-5 h-5 text-amber-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="text-sm">
+                    <h3 className="font-medium text-amber-800 mb-1">Duration Change Impact</h3>
+                    <p className="text-amber-700">
+                      Changing project duration will adjust the end date and may require updating existing sprints, phases, and resource allocations.
+                      Please review all project components after saving these changes.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Basic Project Information */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-100">
               <div className="flex items-center gap-3 mb-4">
@@ -367,16 +450,86 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                     </div>
                   </div>
 
-                  {/* Project dates info (read-only) */}
-                  <div className="space-y-2">
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium">Start Date:</span> {new Date(project.startDate).toLocaleDateString()}
-                    </div>
-                    {project.endDate && (
-                      <div className="text-sm text-gray-600">
-                        <span className="font-medium">End Date:</span> {new Date(project.endDate).toLocaleDateString()}
+                  {/* Project Timeline Controls */}
+                  <div className="space-y-4">
+                    {/* Start Date (Read-only) */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                        <FaCalendar className="w-3 h-3 text-gray-500" />
+                        Start Date
+                      </label>
+                      <div className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-700">
+                        {new Date(startDate).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
                       </div>
-                    )}
+                      <p className="text-xs text-gray-500 mt-1">Start date cannot be changed once project is created</p>
+                    </div>
+
+                    {/* Duration Control */}
+                    <div>
+                      <label htmlFor="duration" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                        <FaClock className="w-3 h-3 text-blue-600" />
+                        Project Duration *
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          id="duration"
+                          value={durationWeeks}
+                          onChange={(e) => setDurationWeeks(parseInt(e.target.value) || 1)}
+                          className="w-24 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 text-center"
+                          min="1"
+                          max="104"
+                          required
+                        />
+                        <span className="text-sm text-gray-700 font-medium">weeks</span>
+                        <div className="flex-1 ml-4">
+                          <div className="text-xs text-gray-600">
+                            = {calculateProjectDays()} days
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Calculated End Date */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                        <FaCalendar className="w-3 h-3 text-green-600" />
+                        End Date (Calculated)
+                      </label>
+                      <div className="w-full px-3 py-2 border-2 border-green-200 rounded-lg bg-green-50 text-green-800 font-medium">
+                        {new Date(endDate).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Duration Validation */}
+                    {(() => {
+                      const validation = validateDuration();
+                      if (validation.error) {
+                        const isWarning = validation.isValid && validation.error.startsWith('Warning:');
+                        return (
+                          <div className={`p-3 rounded-lg border ${
+                            isWarning ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'
+                          }`}>
+                            <div className={`text-sm font-medium ${
+                              isWarning ? 'text-yellow-800' : 'text-red-800'
+                            }`}>
+                              {isWarning ? '⚠️' : '❌'} {validation.error}
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
               </div>

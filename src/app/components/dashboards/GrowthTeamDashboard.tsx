@@ -1,14 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FaPlus, FaUsers, FaChartBar, FaExclamationCircle, FaClock, FaProjectDiagram, FaTh, FaCheckCircle } from 'react-icons/fa';
+import { FaPlus, FaUsers, FaChartBar, FaExclamationCircle, FaClock, FaProjectDiagram, FaTh, FaCheckCircle, FaBell } from 'react-icons/fa';
 import ResourceTimeline from '@/app/components/timeline/ResourceTimeline';
 import CreateProjectModal from '@/app/components/CreateProjectModal';
-import NotificationSummaryCard from '@/app/components/notifications/NotificationSummaryCard';
 import ProjectCard from '@/app/components/ProjectCard';
 import GrowthTeamGanttChart from '@/app/components/gantt/GrowthTeamGanttChart';
-import ApprovalsSummaryCard from '../approvals/ApprovalsSummaryCard';
 
 import type { Project, Phase, Sprint, ConsultantsOnProjects, PhaseAllocation } from '@prisma/client';
 
@@ -43,6 +41,60 @@ export default function GrowthTeamDashboard({ data, userRole }: GrowthTeamDashbo
   const [timelineWeeks, setTimelineWeeks] = useState(12);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [activeView, setActiveView] = useState<'timeline' | 'gantt' | 'projects'>('timeline');
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  // State for approvals and notifications
+  const [approvalsSummary, setApprovalsSummary] = useState({
+    pendingPhaseAllocations: 0,
+    pendingWeeklyPlans: 0,
+    pendingHourChanges: 0,
+    totalPending: 0
+  });
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [loadingApprovals, setLoadingApprovals] = useState(true);
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
+
+  // Fetch approvals and notifications data
+  useEffect(() => {
+    const fetchApprovals = async () => {
+      try {
+        const response = await fetch('/api/approvals/summary');
+        if (response.ok) {
+          const data = await response.json();
+          setApprovalsSummary(data);
+          setLastUpdated(new Date()); // Update timestamp when data refreshes
+        }
+      } catch (error) {
+        console.error('Error fetching approvals summary:', error);
+      }
+      setLoadingApprovals(false);
+    };
+
+    const fetchNotifications = async () => {
+      try {
+        const response = await fetch('/api/notifications?limit=1&unreadOnly=true');
+        if (response.ok) {
+          const data = await response.json();
+          setUnreadNotifications(data.unreadCount || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
+      setLoadingNotifications(false);
+    };
+
+    fetchApprovals();
+    fetchNotifications();
+  }, []);
+
+  // Update timestamp every minute to show data freshness
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLastUpdated(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Helper function to categorize projects based on dates
   const categorizeProjects = () => {
@@ -84,14 +136,7 @@ export default function GrowthTeamDashboard({ data, userRole }: GrowthTeamDashbo
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">
-            {activeView === 'timeline'
-              ? 'Resource Timeline'
-              : activeView === 'gantt'
-              ? 'Project Portfolio'
-              : 'Project Management'
-            }
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-800">Growth Team Dashboard</h1>
           <p className="text-lg text-gray-600">
             {activeView === 'timeline'
               ? 'Manage consultant allocations and project resources'
@@ -110,43 +155,164 @@ export default function GrowthTeamDashboard({ data, userRole }: GrowthTeamDashbo
         </button>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow-md border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Current Projects</p>
-              <p className="text-2xl font-bold text-gray-900">{current.length}</p>
+      {/* Enhanced Professional Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
+        {/* Current Projects Card */}
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-blue-500 rounded-lg">
+              <FaChartBar className="w-6 h-6 text-white" />
             </div>
-            <FaChartBar className="h-8 w-8 text-blue-500" />
+            <div className="text-right">
+              <p className="text-2xl font-bold text-blue-900">{current.length}</p>
+              <p className="text-sm text-blue-600">Current Projects</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-blue-700">Upcoming: {upcoming.length}</span>
+              <span className="text-blue-600">Past: {past.length}</span>
+            </div>
+            <div className="w-full bg-blue-200 rounded-full h-1.5">
+              <div
+                className="bg-blue-500 h-1.5 rounded-full transition-all"
+                style={{ width: `${Math.min((current.length / Math.max(data.projects.length, 1)) * 100, 100)}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-blue-700">
+              {Math.round((current.length / Math.max(data.projects.length, 1)) * 100)}% currently active
+            </p>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Consultants</p>
-              <p className="text-2xl font-bold text-gray-900">{data.consultants.length}</p>
+        {/* Total Consultants Card */}
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-sm border border-green-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-green-500 rounded-lg">
+              <FaUsers className="w-6 h-6 text-white" />
             </div>
-            <FaUsers className="h-8 w-8 text-green-500" />
+            <div className="text-right">
+              <p className="text-2xl font-bold text-green-900">{data.consultants.length}</p>
+              <p className="text-sm text-green-600">Total Consultants</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-green-700">Active Resources</span>
+              <span className="text-green-800 font-medium">{data.consultants.length}</span>
+            </div>
+            <div className="w-full bg-green-200 rounded-full h-1.5">
+              <div className="bg-green-500 h-1.5 rounded-full w-full transition-all"></div>
+            </div>
+            <p className="text-xs text-green-700">
+              All consultants available
+            </p>
           </div>
         </div>
 
-        <ApprovalsSummaryCard />
-
-        <Link href="/dashboard/admin/user-approvals" className="bg-white p-6 rounded-lg shadow-md border hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">User Approvals</p>
-              <p className="text-2xl font-bold text-gray-900">{data.pendingUserCount}</p>
+        {/* Enhanced Approvals Summary Card */}
+        <Link href="/dashboard/hour-approvals" className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-sm border border-purple-200 p-6 hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-purple-500 rounded-lg">
+              {approvalsSummary.totalPending > 0 ? (
+                <FaExclamationCircle className="w-6 h-6 text-white" />
+              ) : (
+                <FaCheckCircle className="w-6 h-6 text-white" />
+              )}
             </div>
-            {data.pendingUserCount > 0 && (
-              <FaExclamationCircle className="h-8 w-8 text-yellow-500" />
+            <div className="text-right">
+              <p className="text-2xl font-bold text-purple-900">
+                {loadingApprovals ? '...' : approvalsSummary.totalPending}
+              </p>
+              <p className="text-sm text-purple-600">Pending Approvals</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {!loadingApprovals && approvalsSummary.totalPending > 0 ? (
+              <div className="space-y-1">
+                {approvalsSummary.pendingPhaseAllocations > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-purple-700">Phase Allocations:</span>
+                    <span className="text-purple-800 font-medium">{approvalsSummary.pendingPhaseAllocations}</span>
+                  </div>
+                )}
+                {approvalsSummary.pendingWeeklyPlans > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-purple-700">Weekly Plans:</span>
+                    <span className="text-purple-800 font-medium">{approvalsSummary.pendingWeeklyPlans}</span>
+                  </div>
+                )}
+                {approvalsSummary.pendingHourChanges > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-purple-700">Hour Changes:</span>
+                    <span className="text-purple-800 font-medium">{approvalsSummary.pendingHourChanges}</span>
+                  </div>
+                )}
+                <div className="w-full bg-purple-200 rounded-full h-1.5 mt-2">
+                  <div className="bg-purple-500 h-1.5 rounded-full w-full animate-pulse"></div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-purple-700">
+                {loadingApprovals ? 'Loading...' : 'All approvals processed'}
+              </p>
             )}
           </div>
         </Link>
 
-        <NotificationSummaryCard />
+        {/* User Approvals Card */}
+        <Link href="/dashboard/admin/user-approvals" className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl shadow-sm border border-orange-200 p-6 hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-orange-500 rounded-lg">
+              <FaExclamationCircle className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-orange-900">{data.pendingUserCount}</p>
+              <p className="text-sm text-orange-600">User Approvals</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs text-orange-700">
+              {data.pendingUserCount > 0 ? 'Pending user registrations' : 'All users approved'}
+            </p>
+            {data.pendingUserCount > 0 && (
+              <div className="w-full bg-orange-200 rounded-full h-1.5">
+                <div className="bg-orange-500 h-1.5 rounded-full w-full animate-pulse"></div>
+              </div>
+            )}
+          </div>
+        </Link>
+
+        {/* Enhanced Notification Summary Card */}
+        <Link href="/dashboard/notifications" className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl shadow-sm border border-indigo-200 p-6 hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-indigo-500 rounded-lg">
+              <FaBell className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-indigo-900">
+                {loadingNotifications ? '...' : unreadNotifications}
+              </p>
+              <p className="text-sm text-indigo-600">Notifications</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-indigo-700">Status:</span>
+              <span className="text-indigo-800 font-medium">
+                {loadingNotifications ? 'Loading' : unreadNotifications > 0 ? `${unreadNotifications} unread` : 'All read'}
+              </span>
+            </div>
+            {!loadingNotifications && unreadNotifications > 0 && (
+              <div className="w-full bg-indigo-200 rounded-full h-1.5">
+                <div className="bg-indigo-500 h-1.5 rounded-full w-full animate-pulse"></div>
+              </div>
+            )}
+            <p className="text-xs text-indigo-700">
+              {loadingNotifications ? 'Loading...' : unreadNotifications > 0 ? 'Click to view notifications' : 'All notifications read'}
+            </p>
+          </div>
+        </Link>
       </div>
 
       {/* View Switcher */}
@@ -154,7 +320,7 @@ export default function GrowthTeamDashboard({ data, userRole }: GrowthTeamDashbo
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             {[
-              { key: 'timeline', label: 'Resource Timeline', icon: FaClock },
+              { key: 'timeline', label: 'Consultant Allocation Table', icon: FaClock },
               { key: 'gantt', label: 'Portfolio Timeline', icon: FaProjectDiagram },
               { key: 'projects', label: 'Projects', icon: FaTh }
             ].map(({ key, label, icon: Icon }) => (
@@ -178,66 +344,88 @@ export default function GrowthTeamDashboard({ data, userRole }: GrowthTeamDashbo
       {/* Timeline View */}
       {activeView === 'timeline' && (
         <>
-          {/* Timeline Controls */}
-          <div className="bg-white p-4 rounded-lg shadow-md border mb-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-800">Resource Allocation Timeline</h2>
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-700">Time Period:</span>
-            <div className="flex bg-gray-50 border border-gray-200 rounded-lg p-1 shadow-sm">
-              <button
-                onClick={() => setTimelineWeeks(8)}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                  timelineWeeks === 8 
-                    ? 'bg-blue-600 text-white shadow-sm' 
-                    : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
-                }`}
-              >
-                8 weeks
-              </button>
-              <button
-                onClick={() => setTimelineWeeks(12)}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                  timelineWeeks === 12 
-                    ? 'bg-blue-600 text-white shadow-sm' 
-                    : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
-                }`}
-              >
-                12 weeks
-              </button>
-              <button
-                onClick={() => setTimelineWeeks(24)}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                  timelineWeeks === 24 
-                    ? 'bg-blue-600 text-white shadow-sm' 
-                    : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
-                }`}
-              >
-                24 weeks
-              </button>
-              <button
-                onClick={() => setTimelineWeeks(32)}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                  timelineWeeks === 32 
-                    ? 'bg-blue-600 text-white shadow-sm' 
-                    : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
-                }`}
-              >
-                32 weeks
-              </button>
+          {/* Enhanced Timeline Controls */}
+          <div className="bg-gradient-to-r from-white to-gray-50 rounded-t-xl shadow-lg border border-gray-100 border-b-0 mb-0 overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-white/20 rounded-lg">
+                    <FaClock className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Consultant Allocation Table</h2>
+                    <p className="text-blue-100 text-sm">Click on any allocation cell to view detailed breakdown</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-blue-100">Time Period:</span>
+                  <div className="flex bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-1">
+                    {[
+                      { weeks: 8, label: '8 weeks' },
+                      { weeks: 12, label: '12 weeks' },
+                      { weeks: 24, label: '24 weeks' },
+                      { weeks: 32, label: '32 weeks' }
+                    ].map(({ weeks, label }) => (
+                      <button
+                        key={weeks}
+                        onClick={() => setTimelineWeeks(weeks)}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                          timelineWeeks === weeks
+                            ? 'bg-white text-blue-600 shadow-sm'
+                            : 'text-white/90 hover:bg-white/20 hover:text-white'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Timeline Info Bar */}
+            <div className="bg-white p-4 border-t border-gray-100 border-b-4 border-b-gray-300">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-100 border border-green-300 rounded-full"></div>
+                    <span className="text-gray-600">Low utilization (0-20h)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-yellow-100 border border-yellow-300 rounded-full"></div>
+                    <span className="text-gray-600">Medium utilization (20-35h)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-orange-100 border border-orange-300 rounded-full"></div>
+                    <span className="text-gray-600">High utilization (35-40h)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-100 border border-red-300 rounded-full"></div>
+                    <span className="text-gray-600">Over utilization (40h+)</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 text-gray-500">
+                  <span>Viewing {timelineWeeks} weeks • {data.consultants.length} consultants</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Live data connection"></div>
+                    <span className="text-sm">Last updated: {lastUpdated.toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Resource Timeline */}
-      <div className="bg-white rounded-lg shadow-md border overflow-hidden">
-        <ResourceTimeline
-          consultants={data.consultants}
-          weeks={timelineWeeks}
-          onConsultantClick={() => {}} // No action needed for now
-        />
-      </div>
+          {/* Connected Resource Timeline Container */}
+          <div className="bg-white rounded-b-xl shadow-lg border border-gray-100 border-t-0 overflow-hidden">
+            <ResourceTimeline
+              consultants={data.consultants}
+              weeks={timelineWeeks}
+              onConsultantClick={() => {}} // No action needed for now
+            />
+          </div>
         </>
       )}
 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { FaCheck, FaTimes, FaEdit, FaUser, FaSearch, FaFilter, FaSortAmountDown, FaSortAmountUp, FaCheckCircle } from 'react-icons/fa';
-import { formatHoursForApproval } from '@/lib/dates';
+import { formatHoursForApproval, formatDate } from '@/lib/dates';
 import { generateColorFromString } from '@/lib/colors';
 
 interface WeeklyAllocation {
@@ -449,7 +449,7 @@ export default function WeeklyPlanApproval({
                       <span className="mx-2">•</span>
                       <span className="font-medium">{formatHoursForApproval(group.totalHours)} total</span>
                       <span className="mx-2">•</span>
-                      <span>Submitted {group.submissionTime.toLocaleDateString()}</span>
+                      <span>Submitted {formatDate(group.submissionTime)}</span>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -482,7 +482,7 @@ export default function WeeklyPlanApproval({
                                 <span className="font-bold">{allocation.phaseAllocation.phase.project.title}</span> • {allocation.phaseAllocation.phase.name}
                               </p>
                               <p className="text-xs text-gray-500 mt-1">
-                                Week of {new Date(allocation.weekStartDate).toLocaleDateString()} - {new Date(allocation.weekEndDate).toLocaleDateString()}
+                                Week of {formatDate(new Date(allocation.weekStartDate))} - {formatDate(new Date(allocation.weekEndDate))}
                               </p>
                             </div>
                             <div className="text-right ml-4">
@@ -537,7 +537,7 @@ export default function WeeklyPlanApproval({
 
                           {/* Week Workload Context */}
                           {(() => {
-                            const weekKey = allocation.weekStartDate.toISOString().split('T')[0];
+                            const weekKey = new Date(allocation.weekStartDate).toISOString().split('T')[0];
                             const workloadContext = getWeekWorkloadContext(allocation.consultantId, weekKey);
                             return (
                               <div className="mt-3 pt-3 border-t border-gray-100">

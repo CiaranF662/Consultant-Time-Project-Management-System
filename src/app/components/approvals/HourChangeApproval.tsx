@@ -1,7 +1,7 @@
 'use client';
 
 import { FaCheck, FaTimes } from 'react-icons/fa';
-import { formatHours } from '@/lib/dates';
+import { formatHours, formatDate } from '@/lib/dates';
 
 interface HourChangeRequest {
   id: string;
@@ -78,7 +78,7 @@ export default function HourChangeApproval({
                       <span className="font-medium">Consultant:</span> {request.requester.name || request.requester.email}
                     </span>
                     <span>
-                      <span className="font-medium">Requested:</span> {new Date(request.createdAt).toLocaleDateString()}
+                      <span className="font-medium">Requested:</span> {formatDate(new Date(request.createdAt))}
                     </span>
                   </div>
 

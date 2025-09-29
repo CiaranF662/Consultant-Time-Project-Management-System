@@ -8,6 +8,86 @@ import ProjectAssignmentEmail from '@/emails/ProjectAssignmentEmail';
 
 const prisma = new PrismaClient();
 
+// GET all projects the user is involved in (either as consultant or PM)
+export async function GET(request: Request) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
+  }
+
+  try {
+    // Get all projects where the user is involved (either as consultant or PM)
+    const projects = await prisma.project.findMany({
+      where: {
+        consultants: {
+          some: {
+            userId: session.user.id
+          }
+        }
+      },
+      include: {
+        consultants: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        },
+        phases: {
+          include: {
+            allocations: {
+              include: {
+                weeklyAllocations: {
+                  where: {
+                    planningStatus: 'APPROVED'
+                  }
+                }
+              }
+            }
+          }
+        },
+        _count: {
+          select: {
+            phases: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    // Enrich projects with completion percentages
+    const enrichedProjects = projects.map(project => ({
+      ...project,
+      consultants: project.consultants.map(c => c.user),
+      phases: project.phases.map(phase => {
+        const totalAllocatedHours = phase.allocations.reduce((sum, alloc) => sum + alloc.totalHours, 0);
+        const completedHours = phase.allocations.reduce((sum, alloc) =>
+          sum + alloc.weeklyAllocations.reduce((weekSum, weekly) => weekSum + (weekly.approvedHours || 0), 0), 0
+        );
+        const completionPercentage = totalAllocatedHours > 0 ? Math.round((completedHours / totalAllocatedHours) * 100) : 0;
+
+        return {
+          ...phase,
+          totalAllocatedHours,
+          completionPercentage
+        };
+      })
+    }));
+
+    return NextResponse.json(enrichedProjects);
+  } catch (error) {
+    console.error('Error fetching projects:', error);
+    return new NextResponse(JSON.stringify({ error: 'Failed to fetch projects' }), { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
 

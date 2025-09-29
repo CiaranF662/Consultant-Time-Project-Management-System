@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { FaCalendarWeek, FaProjectDiagram, FaClock, FaExclamationCircle, FaClipboardList } from 'react-icons/fa';
-import WeeklyPlannerEnhanced from '@/app/components/allocation/WeeklyPlannerEnhanced';
-import NotificationSummaryCard from '@/app/components/notifications/NotificationSummaryCard';
-import { formatHours } from '@/lib/dates';
+import { FaCalendarWeek, FaClock, FaChartPie, FaExclamationTriangle, FaCheckCircle, FaProjectDiagram, FaUser, FaChartLine, FaCalendar, FaHourglassHalf } from 'react-icons/fa';
+import { formatHours, formatDate } from '@/lib/dates';
+import { getPhaseStatus, getStatusColorClasses, getProgressBarColor } from '@/lib/phase-status';
+import WeeklyPlannerEnhanced from '../allocation/WeeklyPlannerEnhanced';
+import AllocationCalendar from '../allocation/AllocationCalendar';
 
 interface Sprint {
   id: string;
@@ -14,43 +14,43 @@ interface Sprint {
   endDate: Date;
 }
 
-interface Project {
+interface PhaseAllocation {
   id: string;
-  title: string;
+  totalHours: number;
+  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejectionReason?: string | null;
+  phase: {
+    id: string;
+    name: string;
+    startDate: Date;
+    endDate: Date;
+    project: {
+      id: string;
+      title: string;
+      budgetedHours: number;
+    };
+    sprints: Sprint[];
+  };
+  weeklyAllocations: Array<{
+    id: string;
+    weekNumber: number;
+    year: number;
+    proposedHours?: number | null;
+    approvedHours?: number | null;
+    planningStatus: 'PENDING' | 'APPROVED' | 'MODIFIED' | 'REJECTED';
+    weekStartDate: Date;
+    weekEndDate: Date;
+  }>;
 }
 
-interface Phase {
+interface UpcomingAllocation {
   id: string;
-  name: string;
-  startDate: Date;
-  endDate: Date;
-  project: Project;
-  sprints: Sprint[];
-}
-
-interface WeeklyAllocation {
-  id: string;
-  phaseAllocationId: string;
   weekNumber: number;
   year: number;
   proposedHours?: number | null;
   approvedHours?: number | null;
   weekStartDate: Date;
-}
-
-interface PhaseAllocation {
-  id: string;
-  phaseId: string;
-  consultantId: string;
-  totalHours: number;
-  phase: Phase;
-  weeklyAllocations: WeeklyAllocation[];
-}
-
-interface ConsultantAllocation {
-  proposedHours?: number | null;
-  approvedHours?: number | null;
-  planningStatus: 'PENDING' | 'APPROVED' | 'MODIFIED' | 'REJECTED';
+  weekEndDate: Date;
   phaseAllocation: {
     phase: {
       name: string;
@@ -61,267 +61,748 @@ interface ConsultantAllocation {
   };
 }
 
-interface ConsultantProject {
-  id: string;
-  title: string;
-  phases: Array<{ id: string; name: string }>;
-  consultants: Array<{
-    userId: string;
-    user: {
-      id: string;
-      name: string | null;
-      email: string | null;
-    };
-  }>;
+interface AllocationStats {
+  totalAllocatedHours: number;
+  totalDistributedHours: number;
+  remainingToDistribute: number;
+  activePhases: number;
+  upcomingWeeks: number;
 }
 
 interface ConsultantDashboardProps {
   data: {
-    isPM: boolean;
-    pmProjects: Array<{ id: string; title: string }>;
-    pendingHourChangesCount?: number;
-    weeklyAllocations: ConsultantAllocation[];
-    currentWeekAllocations?: ConsultantAllocation[];
     phaseAllocations: PhaseAllocation[];
-    pendingRequests: Array<any>;
-    projects: ConsultantProject[];
+    upcomingAllocations: UpcomingAllocation[];
+    stats: AllocationStats;
   };
   userId: string;
   userName: string;
 }
 
 export default function ConsultantDashboard({ data, userId, userName }: ConsultantDashboardProps) {
-  const [selectedWeek, setSelectedWeek] = useState(new Date());
+  const [activeView, setActiveView] = useState<'overview' | 'planner' | 'calendar' | 'planning'>('overview');
 
-  // Calculate current week's total hours
-  const currentWeekHours = (data.currentWeekAllocations || []).reduce((sum: number, allocation: any) => {
-    return sum + (allocation.approvedHours || allocation.proposedHours || 0);
-  }, 0);
+  // Calculate enhanced stats
+  const calculateEnhancedStats = () => {
+    const today = new Date();
+    const currentWeek = getWeekNumber(today);
+    const currentYear = today.getFullYear();
 
-  // Calculate total allocated hours across all phases (only approved allocations)
-  const totalAllocatedHours = data.phaseAllocations.reduce((sum, allocation) => {
-    // Only count approved allocations
-    if (allocation.approvalStatus === 'APPROVED') {
-      return sum + allocation.totalHours;
+    // Upcoming work in next 4 weeks
+    const fourWeeksFromNow = new Date(today);
+    fourWeeksFromNow.setDate(today.getDate() + 28);
+
+    const upcomingWork = data.phaseAllocations.reduce((total, allocation) => {
+      return total + allocation.weeklyAllocations
+        .filter(week => {
+          const weekStart = new Date(week.weekStartDate);
+          return weekStart >= today && weekStart <= fourWeeksFromNow;
+        })
+        .reduce((sum, week) => sum + (week.approvedHours || week.proposedHours || 0), 0);
+    }, 0);
+
+    // Projects involved in
+    const uniqueProjects = new Set(data.phaseAllocations.map(alloc => alloc.phase.project.id));
+
+    // Pending approvals
+    const pendingPhaseApprovals = data.phaseAllocations.filter(alloc => alloc.approvalStatus === 'PENDING').length;
+    const pendingWeeklyApprovals = data.phaseAllocations.reduce((count, allocation) => {
+      return count + allocation.weeklyAllocations.filter(week => week.planningStatus === 'PENDING').length;
+    }, 0);
+
+    // Utilization rate (this week)
+    const thisWeekHours = data.phaseAllocations.reduce((total, allocation) => {
+      return total + allocation.weeklyAllocations
+        .filter(week => week.weekNumber === currentWeek && week.year === currentYear)
+        .reduce((sum, week) => sum + (week.approvedHours || week.proposedHours || 0), 0);
+    }, 0);
+
+    // Risk assessment
+    const rejectedAllocations = data.phaseAllocations.filter(alloc => alloc.approvalStatus === 'REJECTED').length;
+    const overAllocatedPhases = data.phaseAllocations.filter(allocation => {
+      const approvedHours = allocation.weeklyAllocations.reduce((sum, week) => sum + (week.approvedHours || 0), 0);
+      return approvedHours > allocation.totalHours;
+    }).length;
+
+    return {
+      ...data.stats,
+      upcomingWork,
+      projectsInvolved: uniqueProjects.size,
+      pendingPhaseApprovals,
+      pendingWeeklyApprovals,
+      thisWeekHours,
+      rejectedAllocations,
+      overAllocatedPhases,
+      utilizationRate: thisWeekHours <= 40 ? Math.round((thisWeekHours / 40) * 100) : 100
+    };
+  };
+
+  const getWeekNumber = (date: Date) => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1)/7);
+  };
+
+  const enhancedStats = calculateEnhancedStats();
+
+  const getEnhancedPhaseStatus = (allocation: PhaseAllocation) => {
+    // Transform allocation to match phase structure expected by getPhaseStatus
+    const phaseData = {
+      id: allocation.phase.id,
+      name: allocation.phase.name,
+      startDate: new Date(allocation.phase.startDate),
+      endDate: new Date(allocation.phase.endDate),
+      sprints: allocation.phase.sprints?.map(sprint => ({
+        id: sprint.id,
+        sprintNumber: sprint.sprintNumber,
+        startDate: new Date(sprint.startDate),
+        endDate: new Date(sprint.endDate)
+      })) || [],
+      allocations: [{
+        id: allocation.id,
+        totalHours: allocation.totalHours,
+        weeklyAllocations: allocation.weeklyAllocations.map(week => ({
+          id: week.id,
+          plannedHours: week.approvedHours || week.proposedHours || 0, // For backward compatibility with getPhaseStatus
+          weekStartDate: new Date(week.weekStartDate),
+          weekEndDate: new Date(week.weekEndDate),
+          weekNumber: week.weekNumber,
+          year: week.year
+        }))
+      }]
+    };
+    
+    return getPhaseStatus(phaseData);
+  };
+
+  // Get approval status for phase allocation
+  const getPhaseApprovalStatus = (allocation: PhaseAllocation) => {
+    switch (allocation.approvalStatus) {
+      case 'APPROVED':
+        return { status: 'approved', label: 'Phase Approved', color: 'green', icon: 'check' };
+      case 'REJECTED':
+        return { status: 'rejected', label: 'Phase Rejected', color: 'red', icon: 'warning' };
+      default:
+        return { status: 'pending', label: 'Pending Approval', color: 'yellow', icon: 'clock' };
     }
-    return sum;
-  }, 0);
+  };
 
-  // Calculate distributed hours (only from approved allocations)
-  const totalDistributedHours = data.phaseAllocations.reduce((sum, allocation) => {
-    // Only include weekly allocations from approved phase allocations
-    if (allocation.approvalStatus === 'APPROVED') {
-      return sum + allocation.weeklyAllocations.reduce((weekSum: number, week: any) => {
-        return weekSum + (week.approvedHours || week.proposedHours || 0);
-      }, 0);
+  // Get planning status considering approval system
+  const getPlanningStatus = (allocation: PhaseAllocation) => {
+    if (allocation.approvalStatus !== 'APPROVED') {
+      return getPhaseApprovalStatus(allocation);
     }
-    return sum;
-  }, 0);
+
+    const approvedHours = allocation.weeklyAllocations.reduce((sum, week) =>
+      sum + (week.approvedHours || 0), 0);
+    const proposedHours = allocation.weeklyAllocations.reduce((sum, week) =>
+      sum + (week.proposedHours || 0), 0);
+    const pendingHours = allocation.weeklyAllocations
+      .filter(week => week.planningStatus === 'PENDING')
+      .reduce((sum, week) => sum + (week.proposedHours || 0), 0);
+
+    const remaining = allocation.totalHours - approvedHours;
+
+    if (pendingHours > 0) {
+      return { status: 'pending_weekly', label: `${formatHours(pendingHours)} pending approval`, color: 'blue', icon: 'clock' };
+    } else if (remaining === 0) {
+      return { status: 'complete', label: 'Fully Approved', color: 'green', icon: 'check' };
+    } else if (remaining < 0) {
+      return { status: 'over', label: 'Over-allocated', color: 'red', icon: 'warning' };
+    } else {
+      return { status: 'planning', label: `${formatHours(remaining)} to plan`, color: 'yellow', icon: 'clock' };
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'complete':
+        return <FaCheckCircle className="h-5 w-5 text-green-500" />;
+      case 'overdue':
+      case 'over':
+        return <FaExclamationTriangle className="h-5 w-5 text-red-500" />;
+      case 'in_progress':
+        return <FaClock className="h-5 w-5 text-blue-500" />;
+      case 'ready':
+        return <FaCheckCircle className="h-5 w-5 text-purple-500" />;
+      case 'planning':
+        return <FaChartPie className="h-5 w-5 text-yellow-500" />;
+      default:
+        return <FaClock className="h-5 w-5 text-gray-500" />;
+    }
+  };
+
+  const nextWeekAllocations = data.upcomingAllocations.slice(0, 7); // Next 7 weeks
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Welcome back, {userName}!</h1>
-        <p className="text-lg text-gray-600">
-          {data.isPM ? 'Product Manager & Consultant' : 'Consultant'} Dashboard
-        </p>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
+          <p className="text-lg text-gray-600">
+            {activeView === 'overview'
+              ? 'Manage your time allocation across projects and phases'
+              : activeView === 'planner'
+              ? 'Plan and distribute your weekly hours'
+              : activeView === 'calendar'
+              ? 'View your allocations in calendar format'
+              : 'My weekly planning and schedule overview'
+            }
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm text-gray-500">Welcome back</p>
+          <p className="text-xl font-semibold text-gray-800">{userName}</p>
+        </div>
       </div>
 
-      {/* PM Alert if applicable */}
-      {data.isPM && (
-        <div className="mb-6 bg-blue-50 border-l-4 border-blue-400 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <FaClipboardList className="h-5 w-5 text-blue-400" />
+      {/* Enhanced Professional Stats Cards - Always Visible */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Total Allocated Card */}
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-blue-500 rounded-lg">
+              <FaClock className="w-6 h-6 text-white" />
             </div>
-            <div className="ml-3">
-              <p className="text-sm text-blue-700">
-                You are the Product Manager for {data.pmProjects.length} project{data.pmProjects.length !== 1 ? 's' : ''}.
-                {' '}
-                <Link href="/dashboard/phase-planning" className="font-medium underline">
-                  Manage phase allocations
-                </Link>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-blue-900">{formatHours(data.stats.totalAllocatedHours)}</p>
+              <p className="text-sm text-blue-600">Total Allocated</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-blue-700">Projects: {enhancedStats.projectsInvolved}</span>
+              <span className="text-blue-600">Phases: {data.stats.activePhases}</span>
+            </div>
+            <div className="w-full bg-blue-200 rounded-full h-1.5">
+              <div
+                className="bg-blue-500 h-1.5 rounded-full transition-all"
+                style={{ width: `${Math.min((data.stats.totalDistributedHours / Math.max(data.stats.totalAllocatedHours, 1)) * 100, 100)}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-blue-700">
+              {Math.round((data.stats.totalDistributedHours / Math.max(data.stats.totalAllocatedHours, 1)) * 100)}% distributed
+            </p>
+          </div>
+        </div>
+
+        {/* Active Projects Card */}
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-sm border border-green-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-green-500 rounded-lg">
+              <FaProjectDiagram className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-green-900">{enhancedStats.projectsInvolved}</p>
+              <p className="text-sm text-green-600">Active Projects</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-green-700">Distributed: {formatHours(data.stats.totalDistributedHours)}</span>
+              <span className="text-green-600">This Week: {formatHours(enhancedStats.thisWeekHours)}</span>
+            </div>
+            <div className="w-full bg-green-200 rounded-full h-1.5">
+              <div
+                className="bg-green-500 h-1.5 rounded-full transition-all"
+                style={{ width: `${Math.min((data.stats.totalDistributedHours / Math.max(data.stats.totalAllocatedHours, 1)) * 100, 100)}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-green-700">
+              {Math.round((data.stats.totalDistributedHours / Math.max(data.stats.totalAllocatedHours, 1)) * 100)}% of hours distributed
+            </p>
+          </div>
+        </div>
+
+        {/* Remaining Hours Card */}
+        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl shadow-sm border border-orange-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-orange-500 rounded-lg">
+              <FaExclamationTriangle className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-right">
+              <p className={`text-2xl font-bold ${
+                data.stats.remainingToDistribute > 0 ? 'text-orange-900' : 'text-green-900'
+              }`}>
+                {formatHours(data.stats.remainingToDistribute)}
               </p>
+              <p className="text-sm text-orange-600">Remaining</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-orange-700">Pending: {enhancedStats.pendingPhaseApprovals + enhancedStats.pendingWeeklyApprovals}</span>
+              <span className="text-orange-600">Status: {data.stats.remainingToDistribute === 0 ? 'Complete' : 'Planning'}</span>
+            </div>
+            <div className="w-full bg-orange-200 rounded-full h-1.5">
+              <div
+                className={`h-1.5 rounded-full transition-all ${
+                  data.stats.remainingToDistribute === 0 ? 'bg-green-500' : 'bg-orange-500'
+                }`}
+                style={{ width: `${data.stats.remainingToDistribute === 0 ? 100 : 75}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-orange-700">
+              {data.stats.remainingToDistribute === 0 ? '✅ All hours allocated' : 'Needs distribution'}
+            </p>
+          </div>
+        </div>
+
+        {/* Active Phases Card */}
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-sm border border-purple-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-purple-500 rounded-lg">
+              <FaChartPie className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-purple-900">{data.stats.activePhases}</p>
+              <p className="text-sm text-purple-600">Active Phases</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-purple-700">Approved: {data.phaseAllocations.filter(a => a.approvalStatus === 'APPROVED').length}</span>
+              <span className="text-purple-600">Pending: {enhancedStats.pendingPhaseApprovals}</span>
+            </div>
+            <div className="w-full bg-purple-200 rounded-full h-1.5">
+              <div
+                className="bg-purple-500 h-1.5 rounded-full transition-all"
+                style={{ width: `${Math.min((data.phaseAllocations.filter(a => a.approvalStatus === 'APPROVED').length / Math.max(data.stats.activePhases, 1)) * 100, 100)}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-purple-700">
+              {enhancedStats.rejectedAllocations > 0 ? `⚠️ ${enhancedStats.rejectedAllocations} rejected` : 'All phases on track'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* View Switcher */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            {[
+              { key: 'overview', label: 'Overview', icon: FaChartPie },
+              { key: 'planner', label: 'Weekly Planner', icon: FaCalendarWeek },
+              { key: 'calendar', label: 'Calendar View', icon: FaClock },
+              { key: 'planning', label: 'My Weekly Planning', icon: FaCalendarWeek }
+            ].map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                onClick={() => setActiveView(key as any)}
+                className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                  activeView === key
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Icon />
+                {label}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
+
+      {/* Overview Tab */}
+      {activeView === 'overview' && (
+        <>
+
+          {/* Phase Allocations */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100 flex flex-col overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-lg">
+                    <FaChartPie className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Phase Allocations</h2>
+                    <p className="text-blue-100 text-sm">Your assigned project phases</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 space-y-4 flex-1 overflow-y-auto" style={{ minHeight: '400px', maxHeight: 'calc(100vh - 400px)' }}>
+                {data.phaseAllocations.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                      <FaChartPie className="w-8 h-8 text-blue-500" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-800 mb-2">No Phase Allocations</h3>
+                    <p className="text-gray-500 text-sm">You haven't been assigned to any project phases yet.</p>
+                  </div>
+                ) : (
+                  data.phaseAllocations.map((allocation) => {
+                    const enhancedPhaseStatus = getEnhancedPhaseStatus(allocation);
+                    const planningStatus = getPlanningStatus(allocation);
+
+                    return (
+                      <div key={allocation.id} className={`rounded-xl shadow-sm border-l-4 transition-all hover:shadow-md ${
+                        allocation.approvalStatus === 'APPROVED' ? 'border-l-green-500 bg-gradient-to-r from-green-50 to-white' :
+                        allocation.approvalStatus === 'REJECTED' ? 'border-l-red-500 bg-gradient-to-r from-red-50 to-white' :
+                        'border-l-yellow-500 bg-gradient-to-r from-yellow-50 to-white'
+                      } p-5`}>
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h3 className="font-semibold text-gray-800">{allocation.phase.name}</h3>
+                            <p className="text-sm text-gray-600">{allocation.phase.project.title}</p>
+                            {allocation.approvalStatus === 'REJECTED' && allocation.rejectionReason && (
+                              <p className="text-xs text-red-600 mt-1">Rejected: {allocation.rejectionReason}</p>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            {/* Approval Status */}
+                            <div className="flex items-center gap-2">
+                              {getStatusIcon(planningStatus.status)}
+                              <span className="text-sm font-medium">{planningStatus.label}</span>
+                            </div>
+                            {/* Work Progress Status */}
+                            <div className="flex items-center gap-2">
+                              {getStatusIcon(enhancedPhaseStatus.status)}
+                              <span className="text-xs text-gray-600">{enhancedPhaseStatus.label}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-600">Allocated:</span>
+                            <span className="ml-2 font-medium">{formatHours(allocation.totalHours)}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Sprints:</span>
+                            <span className="ml-2 font-medium">
+                              {allocation.phase.sprints.length > 0 
+                                ? `${allocation.phase.sprints[0].sprintNumber}-${allocation.phase.sprints[allocation.phase.sprints.length-1].sprintNumber}`
+                                : 'None'
+                              }
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Combined Status Display */}
+                        <div className="mt-3 space-y-3">
+                          {/* Approval Progress (for approved phases) */}
+                          {allocation.approvalStatus === 'APPROVED' && (
+                            <div>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span>Weekly Approval Progress</span>
+                                <span>
+                                  {allocation.weeklyAllocations.reduce((sum, week) => sum + (week.approvedHours || 0), 0)} / {allocation.totalHours}h approved
+                                </span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                  className={`h-2 rounded-full ${
+                                    planningStatus.status === 'complete' ? 'bg-green-500' :
+                                    planningStatus.status === 'over' ? 'bg-red-500' :
+                                    planningStatus.status === 'pending_weekly' ? 'bg-blue-500' : 'bg-yellow-500'
+                                  }`}
+                                  style={{
+                                    width: `${Math.min((allocation.weeklyAllocations.reduce((sum, week) => sum + (week.approvedHours || 0), 0) / allocation.totalHours) * 100, 100)}%`
+                                  }}
+                                />
+                              </div>
+                              {allocation.weeklyAllocations.some(week => week.planningStatus === 'PENDING') && (
+                                <div className="text-xs text-blue-600 mt-1">
+                                  {allocation.weeklyAllocations.filter(week => week.planningStatus === 'PENDING').length} week(s) pending Growth Team approval
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Work Progress (always show for approved phases) */}
+                          {allocation.approvalStatus === 'APPROVED' && (
+                            <div>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span>Work Progress</span>
+                                <span>{enhancedPhaseStatus.details.work.workCompletionPercentage}%</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                  className={`h-2 rounded-full ${getProgressBarColor(enhancedPhaseStatus.status, enhancedPhaseStatus.details.overall.isOnTrack)}`}
+                                  style={{
+                                    width: `${Math.min(enhancedPhaseStatus.details.work.workCompletionPercentage, 100)}%`
+                                  }}
+                                />
+                              </div>
+                              {enhancedPhaseStatus.details.work.currentWeekProgress && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {enhancedPhaseStatus.details.work.currentWeekProgress.sprintNumber && enhancedPhaseStatus.details.work.currentWeekProgress.sprintWeek ? (
+                                    <>Current: {Math.round(enhancedPhaseStatus.details.work.currentWeekProgress.weekProgress * 100)}% through Sprint {enhancedPhaseStatus.details.work.currentWeekProgress.sprintNumber}, Week {enhancedPhaseStatus.details.work.currentWeekProgress.sprintWeek}</>
+                                  ) : (
+                                    <>Current week: {Math.round(enhancedPhaseStatus.details.work.currentWeekProgress.weekProgress * 100)}% through week {enhancedPhaseStatus.details.work.currentWeekProgress.weekNumber}</>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Phase Timeline Info */}
+                          <div className="text-xs text-gray-500 flex justify-between">
+                            <span>
+                              {formatDate(new Date(allocation.phase.startDate))} - {formatDate(new Date(allocation.phase.endDate))}
+                            </span>
+                            <span className={`font-medium ${
+                              allocation.approvalStatus === 'APPROVED' && enhancedPhaseStatus.details.overall.riskLevel === 'high' ? 'text-red-600' :
+                              allocation.approvalStatus === 'APPROVED' && enhancedPhaseStatus.details.overall.riskLevel === 'medium' ? 'text-yellow-600' :
+                              allocation.approvalStatus === 'APPROVED' ? 'text-green-600' : 'text-gray-600'
+                            }`}>
+                              {allocation.approvalStatus === 'APPROVED'
+                                ? `Risk: ${enhancedPhaseStatus.details.overall.riskLevel}`
+                                : `Status: ${allocation.approvalStatus.toLowerCase()}`
+                              }
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Show message for non-approved phases */}
+                        {allocation.approvalStatus !== 'APPROVED' && (
+                          <div className="mt-3 p-3 rounded-lg bg-gray-100">
+                            <div className="text-sm text-gray-600">
+                              {allocation.approvalStatus === 'PENDING'
+                                ? 'This phase allocation is pending Growth Team approval. Weekly planning will be available once approved.'
+                                : 'This phase allocation was rejected and cannot be used for weekly planning.'
+                              }
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Upcoming Week Allocations */}
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100 flex flex-col overflow-hidden">
+              <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-lg">
+                    <FaCalendar className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Upcoming Weeks</h2>
+                    <p className="text-purple-100 text-sm">Your scheduled workload</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 space-y-3 flex-1 overflow-y-auto" style={{ minHeight: '400px', maxHeight: 'calc(100vh - 400px)' }}>
+                {nextWeekAllocations.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                      <FaCalendar className="w-8 h-8 text-purple-500" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-800 mb-2">No Upcoming Work</h3>
+                    <p className="text-gray-500 text-sm">You have no scheduled allocations for the next 7 weeks.</p>
+                  </div>
+                ) : (
+                  nextWeekAllocations.map((allocation, index) => (
+                    <div key={allocation.id} className="bg-gradient-to-r from-gray-50 to-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white ${
+                            index === 0 ? 'bg-blue-500' :
+                            index === 1 ? 'bg-green-500' :
+                            index === 2 ? 'bg-purple-500' : 'bg-gray-500'
+                          }`}>
+                            W{allocation.weekNumber}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-gray-800">
+                              Week {allocation.weekNumber}, {allocation.year}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {formatDate(new Date(allocation.weekStartDate))} - {formatDate(new Date(allocation.weekEndDate))}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-blue-600">
+                            {formatHours(allocation.approvedHours || allocation.proposedHours || 0)}
+                          </div>
+                          <div className="text-xs text-gray-500">hours</div>
+                        </div>
+                      </div>
+
+                      <div className="bg-white rounded-lg p-3 border border-gray-100">
+                        <div className="flex items-center gap-2 mb-1">
+                          <FaProjectDiagram className="w-4 h-4 text-blue-500" />
+                          <span className="font-medium text-gray-800 text-sm">
+                            {allocation.phaseAllocation.phase.project.title}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600 ml-6">
+                          Phase: {allocation.phaseAllocation.phase.name}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Weekly Planner Tab */}
+      {activeView === 'planner' && (
+        <div className="bg-white rounded-lg shadow-md border">
+          <div className="p-4 border-b">
+            <h2 className="text-xl font-semibold text-gray-800">Weekly Hour Planner</h2>
+            <p className="text-sm text-gray-600">Distribute your allocated hours across weeks</p>
+          </div>
+          <WeeklyPlannerEnhanced 
+            consultantId={userId}
+            phaseAllocations={data.phaseAllocations}
+          />
+        </div>
+      )}
+
+      {/* Calendar Tab */}
+      {activeView === 'calendar' && (
+        <div className="bg-white rounded-lg shadow-md border">
+          <div className="p-4 border-b">
+            <h2 className="text-xl font-semibold text-gray-800">Allocation Calendar</h2>
+            <p className="text-sm text-gray-600">View your allocations in calendar format</p>
+          </div>
+          <AllocationCalendar
+            phaseAllocations={data.phaseAllocations}
+            upcomingAllocations={data.upcomingAllocations}
+          />
+        </div>
+      )}
+
+      {/* My Weekly Planning Tab */}
+      {activeView === 'planning' && (
+        <div className="bg-white rounded-lg shadow-md border">
+          <div className="p-4 border-b">
+            <h2 className="text-xl font-semibold text-gray-800">My Weekly Planning</h2>
+            <p className="text-sm text-gray-600">Personal weekly schedule and time management</p>
+          </div>
+          <div className="p-6">
+            {/* Current Week Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {/* This Week's Hours */}
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-blue-500 rounded-lg">
+                    <FaCalendarWeek className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-blue-900">{formatHours(enhancedStats.thisWeekHours)}</p>
+                    <p className="text-sm text-blue-600">This Week</p>
+                  </div>
+                </div>
+                <div className="w-full bg-blue-200 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full transition-all ${
+                      enhancedStats.thisWeekHours > 40 ? 'bg-red-500' :
+                      enhancedStats.thisWeekHours >= 35 ? 'bg-orange-500' :
+                      enhancedStats.thisWeekHours >= 20 ? 'bg-green-500' : 'bg-gray-400'
+                    }`}
+                    style={{ width: `${Math.min((enhancedStats.thisWeekHours / 40) * 100, 100)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-blue-700 mt-2">
+                  {enhancedStats.utilizationRate}% utilization
+                </p>
+              </div>
+
+              {/* Upcoming Work */}
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-sm border border-green-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-green-500 rounded-lg">
+                    <FaProjectDiagram className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-green-900">{formatHours(enhancedStats.upcomingWork)}</p>
+                    <p className="text-sm text-green-600">Next 4 Weeks</p>
+                  </div>
+                </div>
+                <p className="text-xs text-green-700">
+                  Across {enhancedStats.projectsInvolved} active projects
+                </p>
+              </div>
+
+              {/* Pending Items */}
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl shadow-sm border border-orange-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-orange-500 rounded-lg">
+                    <FaClock className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-orange-900">{enhancedStats.pendingPhaseApprovals + enhancedStats.pendingWeeklyApprovals}</p>
+                    <p className="text-sm text-orange-600">Pending Approvals</p>
+                  </div>
+                </div>
+                <p className="text-xs text-orange-700">
+                  {enhancedStats.pendingPhaseApprovals} phases, {enhancedStats.pendingWeeklyApprovals} weeks
+                </p>
+              </div>
+            </div>
+
+            {/* Weekly Schedule */}
+            <div className="bg-gray-50 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Weekly Schedule Overview</h3>
+                <p className="text-sm text-gray-500">Current week allocations</p>
+              </div>
+
+              {data.phaseAllocations.length > 0 ? (
+                <div className="space-y-4">
+                  {data.phaseAllocations
+                    .filter(allocation => {
+                      // Show allocations that have current week data
+                      const today = new Date();
+                      const currentWeek = getWeekNumber(today);
+                      const currentYear = today.getFullYear();
+                      return allocation.weeklyAllocations.some(week =>
+                        week.weekNumber === currentWeek &&
+                        week.year === currentYear &&
+                        (week.approvedHours || week.proposedHours || 0) > 0
+                      );
+                    })
+                    .map(allocation => {
+                      const today = new Date();
+                      const currentWeek = getWeekNumber(today);
+                      const currentYear = today.getFullYear();
+                      const thisWeekAllocation = allocation.weeklyAllocations.find(week =>
+                        week.weekNumber === currentWeek && week.year === currentYear
+                      );
+                      const hours = thisWeekAllocation ? (thisWeekAllocation.approvedHours || thisWeekAllocation.proposedHours || 0) : 0;
+
+                      return (
+                        <div key={allocation.id} className="bg-white rounded-lg p-4 border border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium text-gray-800">{allocation.phase.project.title}</h4>
+                              <p className="text-sm text-gray-600">{allocation.phase.name}</p>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-blue-600">{formatHours(hours)}</div>
+                              <div className="text-xs text-gray-500">
+                                {thisWeekAllocation?.planningStatus === 'APPROVED' ? 'Approved' :
+                                 thisWeekAllocation?.planningStatus === 'PENDING' ? 'Pending' : 'Planned'}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No work scheduled for this week</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow-md border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">This Week's Hours</p>
-              <p className="text-2xl font-bold text-gray-900">{formatHours(currentWeekHours)}</p>
-            </div>
-            <FaCalendarWeek className="h-8 w-8 text-blue-500" />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-md border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Active Projects</p>
-              <p className="text-2xl font-bold text-gray-900">{data.projects.length}</p>
-            </div>
-            <FaProjectDiagram className="h-8 w-8 text-green-500" />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-md border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Allocated</p>
-              <p className="text-2xl font-bold text-gray-900">{formatHours(totalAllocatedHours)}</p>
-              <p className="text-xs text-gray-500">{formatHours(totalDistributedHours)} distributed</p>
-            </div>
-            <FaClock className="h-8 w-8 text-purple-500" />
-          </div>
-        </div>
-
-        {data.isPM ? (
-          <Link href="/dashboard/admin/hour-changes" className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Hour Change Approvals</p>
-                <p className="text-2xl font-bold text-gray-900">{data.pendingHourChangesCount || 0}</p>
-              </div>
-              {(data.pendingHourChangesCount || 0) > 0 && (
-                <FaExclamationCircle className="h-8 w-8 text-orange-500" />
-              )}
-            </div>
-          </Link>
-        ) : (
-          <Link href="/dashboard/hour-requests" className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pending Requests</p>
-                <p className="text-2xl font-bold text-gray-900">{data.pendingRequests.length}</p>
-              </div>
-              {data.pendingRequests.length > 0 && (
-                <FaExclamationCircle className="h-8 w-8 text-yellow-500" />
-              )}
-            </div>
-          </Link>
-        )}
-
-        <NotificationSummaryCard />
-      </div>
-
-      {/* Weekly Planner */}
-      <div className="mb-8">
-        <div className="bg-white rounded-lg shadow-md border">
-          <div className="p-4 border-b">
-            <h2 className="text-xl font-semibold text-gray-800">Weekly Hour Planner</h2>
-            <p className="text-sm text-gray-500">Distribute your allocated hours across weeks</p>
-          </div>
-          <WeeklyPlannerEnhanced 
-            consultantId={userId}
-            phaseAllocations={data.phaseAllocations as any}
-          />
-        </div>
-      </div>
-
-      {/* Phase Allocations */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Your Phase Allocations</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {data.phaseAllocations.map((allocation) => {
-            const distributed = allocation.weeklyAllocations.reduce((sum: number, week: any) => {
-              return sum + (week.approvedHours || week.proposedHours || 0);
-            }, 0);
-            const remaining = allocation.totalHours - distributed;
-            const progress = allocation.totalHours > 0 ? (distributed / allocation.totalHours) * 100 : 0;
-
-            return (
-              <div key={allocation.id} className="bg-white p-6 rounded-lg shadow-md border">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="font-semibold text-gray-800">{allocation.phase.name}</h3>
-                    <p className="text-sm text-gray-500">{allocation.phase.project.title}</p>
-                  </div>
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                    remaining === 0 ? 'bg-green-100 text-green-800' : 
-                    remaining < 0 ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {remaining === 0 ? 'Fully Distributed' : 
-                     remaining < 0 ? 'Over-allocated' :
-                     `${formatHours(remaining)} remaining`}
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Total Allocated</span>
-                    <span className="font-medium">{formatHours(allocation.totalHours)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Distributed</span>
-                    <span className="font-medium">{formatHours(distributed)}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                    <div 
-                      className={`h-2 rounded-full ${
-                        progress > 100 ? 'bg-red-500' : 
-                        progress === 100 ? 'bg-green-500' : 
-                        'bg-blue-500'
-                      }`}
-                      style={{ width: `${Math.min(progress, 100)}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-4 border-t">
-                  <p className="text-xs text-gray-500">
-                    Sprint {allocation.phase.sprints[0]?.sprintNumber || 'N/A'} - 
-                    Sprint {allocation.phase.sprints[allocation.phase.sprints.length - 1]?.sprintNumber || 'N/A'}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Your Projects */}
-      <div>
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Your Projects</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {data.projects.map((project) => (
-            <Link key={project.id} href={`/dashboard/projects/${project.id}`}>
-              <div className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
-                <h3 className="font-semibold text-gray-800 truncate">{project.title}</h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  {project.phases.length} phases
-                </p>
-                <div className="mt-4 flex -space-x-2">
-                  {project.consultants.slice(0, 3).map((consultant: any, index: number) => (
-                    <div
-                      key={consultant.userId}
-                      className="w-8 h-8 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center"
-                      title={consultant.user.name || consultant.user.email}
-                    >
-                      <span className="text-white text-xs font-medium">
-                        {(consultant.user.name || consultant.user.email || '?').charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  ))}
-                  {project.consultants.length > 3 && (
-                    <div className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center">
-                      <span className="text-gray-600 text-xs font-medium">
-                        +{project.consultants.length - 3}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
