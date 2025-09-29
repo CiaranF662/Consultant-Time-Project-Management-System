@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTheme } from '@/app/contexts/ThemeContext';
 import axios from 'axios';
 import type { User, UserStatus } from '@prisma/client';
 import Link from 'next/link';
@@ -11,6 +12,7 @@ export default function UserApprovalsPage() {
   const [pendingUsers, setPendingUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { theme } = useTheme();
 
   const fetchPendingUsers = async () => {
     setIsLoading(true);
@@ -39,27 +41,27 @@ export default function UserApprovalsPage() {
     }
   };
 
-  if (isLoading) return <div className="text-center p-12">Loading...</div>;
-  if (error) return <div className="text-center p-12 text-red-500">{error}</div>;
+  if (isLoading) return <div className={`text-center p-12 ${theme === 'dark' ? 'text-gray-300 bg-gray-900' : 'text-gray-700 bg-white'}`}>Loading...</div>;
+  if (error) return <div className={`text-center p-12 text-red-500 ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>{error}</div>;
 
   return (
     <DashboardLayout>
-    <div className="bg-gray-50 min-h-screen">
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
         <div className="container mx-auto p-4 md:p-8">
             <div className="mb-6">
-                <Link href="/dashboard" className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600">
+                <Link href="/dashboard" className={`flex items-center gap-2 text-sm font-medium ${theme === 'dark' ? 'text-gray-300 hover:text-blue-400' : 'text-gray-600 hover:text-blue-600'}`}>
                     <FaArrowLeft /> Back to Dashboard
                 </Link>
             </div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-6">User Sign-Up Approvals</h1>
-            <div className="bg-white rounded-lg shadow-md border">
+            <h1 className={`text-3xl font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>User Sign-Up Approvals</h1>
+            <div className={`rounded-lg shadow-md border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                 {pendingUsers.length > 0 ? (
-                    <ul className="divide-y divide-gray-200">
+                    <ul className={`divide-y ${theme === 'dark' ? 'divide-gray-700' : 'divide-gray-200'}`}>
                         {pendingUsers.map(user => (
                             <li key={user.id} className="p-4 flex justify-between items-center">
                                 <div>
-                                    <p className="font-semibold">{user.name}</p>
-                                    <p className="text-sm text-gray-500">{user.email}</p>
+                                    <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{user.name}</p>
+                                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{user.email}</p>
                                 </div>
                                 <div className="flex gap-2">
                                     <button onClick={() => handleApproval(user.id, 'APPROVED')} className="px-3 py-1 bg-green-500 text-white rounded-md text-sm hover:bg-green-600">
@@ -71,7 +73,7 @@ export default function UserApprovalsPage() {
                         ))}
                     </ul>
                 ) : (
-                    <p className="p-8 text-center text-gray-500">No pending user approvals.</p>
+                    <p className={`p-8 text-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>No pending user approvals.</p>
                 )}
             </div>
         </div>

@@ -1,13 +1,40 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useTheme } from '@/app/contexts/ThemeContext';
 import GrowthTeamGanttChart from '@/app/components/gantt/GrowthTeamGanttChart';
+import PageLoader from '@/app/components/ui/PageLoader';
+import axios from 'axios';
 
 export default function GanttPage() {
+  const { theme } = useTheme();
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const { data } = await axios.get('/api/projects');
+        setProjects(data || []);
+      } catch (error) {
+        console.error('Failed to fetch projects:', error);
+        setProjects([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProjects();
+  }, []);
+  
+  if (loading) return <PageLoader message="Loading project timeline..." />;
+  
   return (
-    <div className="p-6">
+    <div className="px-4 py-6 md:px-8 md:py-8 min-h-screen">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Project Gantt Chart</h1>
-        <p className="text-muted-foreground">Visual timeline of all projects and their phases</p>
+        <h1 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Project Gantt Chart</h1>
+        <p className={`text-lg ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Visual timeline of all projects and their phases</p>
       </div>
-      <GrowthTeamGanttChart />
+      <GrowthTeamGanttChart projects={projects} />
     </div>
   );
 }

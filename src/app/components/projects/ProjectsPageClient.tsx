@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { FaPlus } from 'react-icons/fa';
 import ProjectCard from '@/app/components/projects/ProjectCard';
 import CreateProjectModal from '@/app/components/projects/CreateProjectModal';
+import { useTheme } from '@/app/contexts/ThemeContext';
 
 interface ProjectsPageClientProps {
   projects: any[];
@@ -13,11 +14,12 @@ interface ProjectsPageClientProps {
 
 export default function ProjectsPageClient({ projects, isGrowthTeam }: ProjectsPageClientProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { theme } = useTheme();
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="px-4 py-6 md:px-8 md:py-8 min-h-screen">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-semibold text-gray-800">
+        <h1 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
           {isGrowthTeam ? 'All Projects' : 'Your Projects'}
         </h1>
         {isGrowthTeam && (
@@ -38,9 +40,9 @@ export default function ProjectsPageClient({ projects, isGrowthTeam }: ProjectsP
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 px-6 bg-white rounded-lg shadow-md border">
-          <h3 className="text-xl font-semibold text-gray-800">No Projects Yet</h3>
-          <p className="text-gray-500 mt-2">
+        <div className={`text-center py-12 px-6 rounded-lg shadow-md border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>No Projects Yet</h3>
+          <p className={`mt-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
             {isGrowthTeam 
               ? 'Click "Create New Project" to get started.' 
               : 'You have not been assigned to any projects yet.'}

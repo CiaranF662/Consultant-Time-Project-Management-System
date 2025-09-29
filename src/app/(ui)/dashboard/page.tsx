@@ -4,8 +4,8 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, UserStatus, ChangeStatus, ProjectRole } from '@prisma/client';
 
-import GrowthTeamDashboard from '@/app/components/dashboard/GrowthTeamDashboard';
-import ConsultantDashboard from '@/app/components/dashboard/ConsultantDashboard';
+import ConsultantDashboard, { GrowthTeamDashboard } from '@/app/components/dashboard/GrowthTeamDashboard';
+import { getUserDisplayName } from '@/lib/user-utils';
 
 const prisma = new PrismaClient();
 
@@ -196,14 +196,14 @@ export default async function DashboardPage() {
 
   if (isGrowthTeam) {
     const data = await getGrowthTeamData();
-    return <GrowthTeamDashboard data={data} />;
+    return <GrowthTeamDashboard data={data} userName={getUserDisplayName(session.user)} />;
   } else {
     const data = await getConsultantData(session.user.id);
     return (
       <ConsultantDashboard 
         data={data} 
         userId={session.user.id}
-        userName={session.user.name || session.user.email || 'User'}
+        userName={getUserDisplayName(session.user)}
       />
     );
   }

@@ -2,64 +2,45 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole } from '@prisma/client';
-import DashboardLayout from '@/app/components/layout/DashboardLayout';
+
 import ProjectsPageClient from '@/app/components/projects/ProjectsPageClient';
 
 const prisma = new PrismaClient();
 
 async function getProjectsForDashboard(userId: string, userRole: UserRole) {
-  if (userRole === UserRole.GROWTH_TEAM) {
-    // Growth Team sees all projects
-    return prisma.project.findMany({
-      include: {
-        sprints: true,
-        phases: {
-          include: {
-            allocations: true
-          }
-        },
-        consultants: { 
-          include: { 
-            user: { 
-              select: { 
-                id: true,
-                name: true,
-                email: true
-              } 
+  const baseQuery = {
+    include: {
+      sprints: true,
+      phases: {
+        include: {
+          allocations: true
+        }
+      },
+      consultants: { 
+        include: { 
+          user: { 
+            select: { 
+              id: true,
+              name: true,
+              email: true
             } 
           } 
-        },
+        } 
       },
-      orderBy: { createdAt: 'desc' },
-    });
+    },
+    orderBy: { createdAt: 'desc' as const },
+  };
+
+  if (userRole === UserRole.GROWTH_TEAM) {
+    return prisma.project.findMany(baseQuery);
   } else {
-    // Consultants see only their projects
     return prisma.project.findMany({
+      ...baseQuery,
       where: {
         consultants: {
           some: { userId }
         }
-      },
-      include: {
-        sprints: true,
-        phases: {
-          include: {
-            allocations: true
-          }
-        },
-        consultants: { 
-          include: { 
-            user: { 
-              select: { 
-                id: true,
-                name: true,
-                email: true
-              } 
-            } 
-          } 
-        },
-      },
-      orderBy: { createdAt: 'desc' },
+      }
     });
   }
 }
@@ -74,11 +55,9 @@ export default async function ProjectsPage() {
   const isGrowthTeam = session.user.role === UserRole.GROWTH_TEAM;
 
   return (
-    <DashboardLayout>
-      <ProjectsPageClient 
-        projects={projects} 
-        isGrowthTeam={isGrowthTeam} 
-      />
-    </DashboardLayout>
+    <ProjectsPageClient 
+      projects={projects} 
+      isGrowthTeam={isGrowthTeam} 
+    />
   );
 }

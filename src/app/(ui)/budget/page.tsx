@@ -17,9 +17,5 @@ export default async function BudgetPage() {
     redirect('/dashboard');
   }
 
-  return (
-    <DashboardLayout>
-      <BudgetOverview />
-    </DashboardLayout>
-  );
+  return <BudgetOverview />;
 }

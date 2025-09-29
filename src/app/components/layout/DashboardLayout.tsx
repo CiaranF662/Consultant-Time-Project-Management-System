@@ -1,17 +1,21 @@
+'use client';
+
 import React, { ReactNode } from 'react';
+import { useTheme } from '@/app/contexts/ThemeContext';
+import Sidebar from './add-sidebar';
 
 type Props = {
 	children: ReactNode;
 };
 
 export default function DashboardLayout({ children }: Props) {
+	const { theme } = useTheme();
+	
 	return (
-		<div className="min-h-screen bg-gray-50 text-gray-900">
-			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-
-				<main>{children}</main>
+		<Sidebar>
+			<div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
+				<main className="h-full max-w-7xl mx-auto">{children}</main>
 			</div>
-		</div>
+		</Sidebar>
 	);
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTheme } from '@/app/contexts/ThemeContext';
+import PageLoader from '@/app/components/ui/PageLoader';
 import axios from "axios";
 import Link from "next/link";
 import {
@@ -33,6 +35,7 @@ export default function BudgetOverview() {
   const [data, setData] = useState<BudgetData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const fetchBudgetData = async () => {
@@ -48,9 +51,9 @@ export default function BudgetOverview() {
     fetchBudgetData();
   }, []);
 
-  if (loading) return <div className="p-8 text-gray-500">Loading Budget Overview…</div>;
-  if (error) return <div className="p-8 text-red-600">Error: {error}</div>;
-  if (!data) return <div className="p-8 text-gray-500">No budget data available</div>;
+  if (loading) return <PageLoader message="Loading Budget Overview…" />;
+  if (error) return <div className={`p-8 text-red-600 ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>Error: {error}</div>;
+  if (!data) return <div className={`p-8 ${theme === 'dark' ? 'text-gray-400 bg-gray-900' : 'text-gray-500 bg-white'}`}>No budget data available</div>;
 
   // 📊 Summary stats
   const totalBudget = data.projects.reduce((sum, p) => sum + p.budgetedHours, 0);
@@ -101,8 +104,8 @@ export default function BudgetOverview() {
     ) : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-white p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="px-4 py-6 md:px-8 md:py-8 min-h-screen">
+      <div className="space-y-8">
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -110,7 +113,7 @@ export default function BudgetOverview() {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent mb-2">
               Budget Overview
             </h1>
-            <p className="text-gray-600 text-lg">
+            <p className={`text-lg ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
               Track resource allocation and budget utilization across all projects
             </p>
           </div>
@@ -146,9 +149,9 @@ export default function BudgetOverview() {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Budget vs Allocated */}
-          <div className="bg-white rounded-2xl shadow p-6">
+          <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl shadow p-6`}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Budget vs Allocated</h3>
+              <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Budget vs Allocated</h3>
               {/* Legend */}
               <div className="flex gap-4 text-sm">
                 <span className="flex items-center gap-1">
@@ -208,8 +211,8 @@ export default function BudgetOverview() {
           </div>
 
           {/* Pie Chart */}
-          <div className="bg-white rounded-2xl shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">Allocation Distribution</h3>
+          <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl shadow p-6`}>
+            <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Allocation Distribution</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie data={utilizationChartData} cx="50%" cy="50%" outerRadius={100} dataKey="value">
@@ -222,7 +225,7 @@ export default function BudgetOverview() {
               {utilizationChartData.map((item, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <span className="w-4 h-4 rounded-full" style={{ backgroundColor: item.color }}></span>
-                  <span className="text-sm text-gray-600 truncate">{item.name}</span>
+                  <span className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} truncate`}>{item.name}</span>
                 </div>
               ))}
             </div>
@@ -230,8 +233,8 @@ export default function BudgetOverview() {
         </div>
 
         {/* Trend */}
-        <div className="bg-white rounded-2xl shadow p-6">
-          <h3 className="text-lg font-semibold mb-4">Budget Trends Over Time</h3>
+        <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl shadow p-6`}>
+          <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Budget Trends Over Time</h3>
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={monthlyTrendData}>
               <defs>
@@ -255,38 +258,38 @@ export default function BudgetOverview() {
         </div>
 
         {/* Project Table */}
-        <div className="bg-white rounded-2xl shadow overflow-hidden">
-          <div className="px-6 py-4 border-b bg-gray-50">
-            <h3 className="text-lg font-semibold text-gray-800">Project Budget Breakdown</h3>
+        <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl shadow overflow-hidden`}>
+          <div className={`px-6 py-4 border-b ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+            <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>Project Budget Breakdown</h3>
           </div>
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className={`${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}`}>
               <tr>
-                <th className="py-3 px-6 text-left text-xs font-semibold">Project</th>
-                <th className="py-3 px-6 text-left text-xs font-semibold">Budget</th>
-                <th className="py-3 px-6 text-left text-xs font-semibold">Allocated</th>
-                <th className="py-3 px-6 text-left text-xs font-semibold">Planned</th>
-                <th className="py-3 px-6 text-left text-xs font-semibold">Remaining</th>
-                <th className="py-3 px-6 text-left text-xs font-semibold">Utilization</th>
-                <th className="py-3 px-6 text-left text-xs font-semibold">Team</th>
-                <th className="py-3 px-6 text-left text-xs font-semibold">Actions</th>
+                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Project</th>
+                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Budget</th>
+                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Allocated</th>
+                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Planned</th>
+                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Remaining</th>
+                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Utilization</th>
+                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Team</th>
+                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className={`${theme === 'dark' ? 'divide-gray-700' : 'divide-gray-200'} divide-y`}>
               {data.projects.map((p) => (
-                <tr key={p.id} className="hover:bg-gray-50">
+                <tr key={p.id} className={`${theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
                   <td className="py-4 px-6 flex items-center gap-2">
                     {getStatusIcon(parseFloat(p.utilizationRate))}
-                    <span>{p.title}</span>
+                    <span className={`${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{p.title}</span>
                   </td>
-                  <td className="py-4 px-6">{p.budgetedHours}h</td>
-                  <td className="py-4 px-6">{p.totalAllocated}h</td>
-                  <td className="py-4 px-6">{p.totalPlanned}h</td>
+                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{p.budgetedHours}h</td>
+                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{p.totalAllocated}h</td>
+                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{p.totalPlanned}h</td>
                   <td className={`py-4 px-6 ${p.remaining >= 0 ? "text-green-600" : "text-red-600"}`}>
                     {p.remaining > 0 ? "+" : ""}{p.remaining}h
                   </td>
-                  <td className="py-4 px-6">{p.utilizationRate}%</td>
-                  <td className="py-4 px-6 flex items-center"><FaUsers className="h-4 w-4 mr-1" />{p.teamSize}</td>
+                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{p.utilizationRate}%</td>
+                  <td className={`py-4 px-6 flex items-center ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}><FaUsers className="h-4 w-4 mr-1" />{p.teamSize}</td>
                   <td className="py-4 px-6">
                     <Link href={`/dashboard/budget/${p.id}`} className="flex items-center gap-1 text-blue-600 hover:text-blue-900">
                       <FaEye className="h-4 w-4" /> View Details

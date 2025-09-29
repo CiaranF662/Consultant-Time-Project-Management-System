@@ -32,6 +32,7 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Missing email or password');
         }
+        
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
           include: {
@@ -39,12 +40,26 @@ export const authOptions: NextAuthOptions = {
               where: {
                 role: ProjectRole.PRODUCT_MANAGER
               }
+            },
+            accounts: {
+              where: {
+                provider: 'google'
+              }
             }
           }
         });
         
-        if (!user || !user.password) {
-          throw new Error('No user found with that email or password');
+        if (!user) {
+          throw new Error('No user found with that email');
+        }
+        
+        // Check if user has a Google account linked but no password
+        if (!user.password && user.accounts.length > 0) {
+          throw new Error('This account is linked to Google. Please sign in with Google instead.');
+        }
+        
+        if (!user.password) {
+          throw new Error('No password set for this account');
         }
         
         const passwordsMatch = await bcrypt.compare(

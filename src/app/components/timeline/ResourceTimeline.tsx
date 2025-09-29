@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { formatHours, getUtilizationColor } from '@/lib/dates';
+import { useTheme } from '@/app/contexts/ThemeContext';
 
 interface ResourceTimelineProps {
   consultants: Array<{
@@ -47,6 +48,7 @@ interface TimelineData {
 }
 
 export default function ResourceTimeline({ consultants, weeks, onConsultantClick }: ResourceTimelineProps) {
+  const { theme } = useTheme();
   const [timelineData, setTimelineData] = useState<TimelineData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedWeek, setSelectedWeek] = useState<{
@@ -133,8 +135,8 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -143,16 +145,17 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
     <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
       <div className={`${weeks >= 32 ? 'min-w-[3600px]' : weeks >= 24 ? 'min-w-[2400px]' : weeks >= 12 ? 'min-w-[1300px]' : 'min-w-[1000px]'} ${weeks >= 32 ? 'pr-4' : ''}`}>
         {/* Header */}
-        <div className="flex border-b bg-gray-50 sticky top-0 z-20 shadow-[0_2px_4px_-1px_rgba(0,0,0,0.1)]">
-          <div className="w-56 md:w-64 p-4 font-semibold text-gray-700 border-r flex-shrink-0 sticky left-0 bg-gray-50 z-30 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.1)]">Consultant</div>
+        <div className={`flex border-b sticky top-0 z-20 shadow-[0_2px_4px_-1px_rgba(0,0,0,0.1)] ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+          <div className={`w-56 md:w-64 p-4 font-semibold border-r flex-shrink-0 sticky left-0 z-30 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.1)] ${theme === 'dark' ? 'text-gray-200 bg-gray-800 border-gray-700' : 'text-gray-700 bg-gray-50 border-gray-200'}`}>Consultant</div>
           <div className="flex-1 flex">
             {weekHeaders.map((week, index) => (
               <div
                 key={index}
                 className={`flex-1 ${weeks >= 32 ? 'min-w-[100px]' : weeks >= 24 ? 'min-w-[90px]' : 'min-w-[80px]'} p-2 text-center text-xs font-medium border-r ${
-                  week.isCurrent ? 'bg-blue-50 text-blue-700 font-bold' : 
-                  week.isPast ? 'bg-gray-50 text-gray-400' : 'bg-gray-50 text-gray-600'
-                }`}
+                  week.isCurrent ? (theme === 'dark' ? 'bg-blue-900 text-blue-300 font-bold' : 'bg-blue-50 text-blue-700 font-bold') : 
+                  week.isPast ? (theme === 'dark' ? 'bg-gray-700 text-gray-500' : 'bg-gray-50 text-gray-400') : 
+                  (theme === 'dark' ? 'bg-gray-800 text-gray-300' : 'bg-gray-50 text-gray-600')
+                } ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}
               >
                 {week.label}
                 {week.isCurrent && (
@@ -168,9 +171,9 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
           const consultantData = timelineData.find(td => td.consultantId === consultant.id);
           
           return (
-            <div key={consultant.id} className="flex border-b hover:bg-gray-50">
+            <div key={consultant.id} className={`flex border-b ${theme === 'dark' ? 'border-gray-700 hover:bg-gray-800' : 'border-gray-200 hover:bg-gray-50'}`}>
               <div 
-                className="w-56 md:w-64 p-4 font-medium text-gray-700 border-r cursor-pointer hover:text-blue-600 flex-shrink-0 sticky left-0 bg-white z-10 hover:bg-gray-50 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.1)]"
+                className={`w-56 md:w-64 p-4 font-medium border-r cursor-pointer hover:text-blue-600 flex-shrink-0 sticky left-0 z-10 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.1)] ${theme === 'dark' ? 'text-gray-200 bg-gray-900 border-gray-700 hover:bg-gray-800' : 'text-gray-700 bg-white border-gray-200 hover:bg-gray-50'}`}
                 onClick={() => onConsultantClick?.(consultant.id)}
               >
                 <div className="flex items-center gap-2">
@@ -243,12 +246,12 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
       {/* Week Details Modal */}
       {selectedWeek && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setSelectedWeek(null)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          <div className={`rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`} onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-xl font-bold">{selectedWeek.consultantName}</h2>
+                  <h2 className="text-xl font-bold text-white">{selectedWeek.consultantName}</h2>
                   <p className="text-blue-100">{selectedWeek.weekLabel} Allocation Details</p>
                 </div>
                 <button
@@ -276,7 +279,7 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
             <div className="p-6 overflow-y-auto max-h-[60vh]">
               <div className="space-y-4">
                 {selectedWeek.weekData.allocations.map((alloc: any, index: number) => (
-                  <div key={alloc.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                  <div key={alloc.id} className={`border rounded-lg p-4 ${theme === 'dark' ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'}`}>
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
@@ -284,7 +287,7 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
                             className="w-4 h-4 rounded-full" 
                             style={{ backgroundColor: `hsl(${Math.abs(alloc.projectId.split('').reduce((a: number, b: string) => a + b.charCodeAt(0), 0)) % 360}, 70%, 60%)` }}
                           ></div>
-                          <h3 className="font-semibold text-gray-900">{alloc.project}</h3>
+                          <h3 className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{alloc.project}</h3>
                           {alloc.isProductManager && (
                             <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
                               You manage this project
@@ -292,7 +295,7 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
                           )}
                         </div>
                         <div className="ml-7">
-                          <p className="text-gray-600 text-sm mb-1">{alloc.phase}</p>
+                          <p className={`text-sm mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{alloc.phase}</p>
                           {alloc.sprint && (
                             <div className="flex items-center gap-2 mb-2">
                               <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">
@@ -363,7 +366,7 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-gray-50 px-6 py-4 flex justify-end">
+            <div className={`px-6 py-4 flex justify-end ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}`}>
               <button
                 onClick={() => setSelectedWeek(null)}
                 className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"

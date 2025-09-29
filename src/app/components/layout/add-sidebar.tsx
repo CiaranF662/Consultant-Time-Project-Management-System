@@ -46,6 +46,12 @@ export default function Sidebar({ children }: SidebarProps) {
   const { theme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [activeHref, setActiveHref] = useState('');
+
+  // Clear active state when pathname changes
+  useEffect(() => {
+    setActiveHref('');
+  }, [pathname]);
 
 // #region Load collapse state from localStorage
 useEffect(() => {
@@ -126,12 +132,6 @@ const toggleCollapse = () => {
           label: 'Manage Users',
           href: '/manage-users',
           icon: FaUsers,
-          roles: [UserRole.GROWTH_TEAM]
-        },
-        {
-          label: 'User Approvals',
-          href: '/user-approvals',
-          icon: FaUserPlus,
           roles: [UserRole.GROWTH_TEAM]
         },
         {
@@ -225,10 +225,20 @@ const toggleCollapse = () => {
   const navItems = getNavItems();
 
   const isActive = (href: string) => {
+    // Check if this item was just clicked (immediate feedback)
+    if (activeHref === href) {
+      return true;
+    }
+    // Fall back to pathname matching
     if (href === '/dashboard') {
       return pathname === '/dashboard';
     }
     return pathname.startsWith(href);
+  };
+
+  const handleNavClick = (href: string) => {
+    setActiveHref(href);
+    setIsMobileMenuOpen(false);
   };
 
   const handleSignOut = () => {
@@ -273,7 +283,7 @@ const toggleCollapse = () => {
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={() => handleNavClick(item.href)}
                   className={`
                     flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
                     ${isActive(item.href)
@@ -293,7 +303,7 @@ const toggleCollapse = () => {
             {/* Settings Link for Mobile */}
             <Link
               href="/settings"
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={() => handleNavClick('/settings')}
               className={`
                 flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
                 ${isActive('/settings')
@@ -311,7 +321,7 @@ const toggleCollapse = () => {
           <div className={`p-4 border-t space-y-1 ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
             <Link
               href="/settings"
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={() => handleNavClick('/settings')}
               className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                 isActive('/settings')
                   ? 'bg-blue-100 text-blue-700'
@@ -456,6 +466,7 @@ const toggleCollapse = () => {
                 <div key={item.href} className="relative group">
                   <Link
                     href={item.href}
+                    onClick={() => handleNavClick(item.href)}
                     className={`
                       flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors relative
                       ${isActive(item.href)
@@ -501,6 +512,7 @@ const toggleCollapse = () => {
               <div className="relative group">
                 <Link
                   href="/settings"
+                  onClick={() => handleNavClick('/settings')}
                   className={`w-full flex items-center justify-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                     isActive('/settings')
                       ? 'bg-blue-100 text-blue-700'
@@ -519,6 +531,7 @@ const toggleCollapse = () => {
             ) : (
               <Link
                 href="/settings"
+                onClick={() => handleNavClick('/settings')}
                 className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                   isActive('/settings')
                     ? 'bg-blue-100 text-blue-700'

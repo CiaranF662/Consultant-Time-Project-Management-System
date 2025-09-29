@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Gantt, Task, ViewMode } from 'gantt-task-react';
 import 'gantt-task-react/dist/index.css';
 import { FaCalendarAlt, FaCalendarWeek, FaCalendar, FaSearchPlus, FaSearchMinus } from 'react-icons/fa';
+import { useTheme } from '@/app/contexts/ThemeContext';
 
 // Use any to avoid type conflicts for now - we'll cast the data as needed
 interface GrowthTeamGanttChartProps {
@@ -12,6 +13,7 @@ interface GrowthTeamGanttChartProps {
 }
 
 export default function GrowthTeamGanttChart({ projects }: GrowthTeamGanttChartProps) {
+  const { theme } = useTheme();
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Month);
   const [zoomLevel, setZoomLevel] = useState(1); // 0.5, 0.75, 1, 1.25, 1.5, 2
   const router = useRouter();
@@ -58,7 +60,7 @@ export default function GrowthTeamGanttChart({ projects }: GrowthTeamGanttChartP
   const transformProjectsToTasks = React.useMemo((): Task[] => {
     const tasks: Task[] = [];
 
-    projects.forEach((project: any) => {
+    (projects || []).forEach((project: any) => {
       const projectStart = new Date(project.startDate);
       const projectEnd = project.endDate ? new Date(project.endDate) : new Date(projectStart.getTime() + 30 * 24 * 60 * 60 * 1000);
 
@@ -182,8 +184,8 @@ export default function GrowthTeamGanttChart({ projects }: GrowthTeamGanttChartP
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-700">View Mode:</span>
-            <div className="flex bg-gray-50 border border-gray-200 rounded-lg p-1">
+            <span className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>View Mode:</span>
+            <div className={`flex border rounded-lg p-1 ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
               {[
                 { mode: ViewMode.Week, label: 'Week', icon: FaCalendarWeek },
                 { mode: ViewMode.Month, label: 'Month', icon: FaCalendarAlt },
@@ -195,7 +197,9 @@ export default function GrowthTeamGanttChart({ projects }: GrowthTeamGanttChartP
                   className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 flex items-center gap-1.5 ${
                     viewMode === mode
                       ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
+                      : theme === 'dark' 
+                        ? 'text-gray-300 hover:bg-gray-600 hover:text-white hover:shadow-sm'
+                        : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
                   }`}
                 >
                   <Icon className="h-3 w-3" />
@@ -206,21 +210,23 @@ export default function GrowthTeamGanttChart({ projects }: GrowthTeamGanttChartP
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-700">Zoom:</span>
-            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg p-1">
+            <span className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Zoom:</span>
+            <div className={`flex items-center gap-2 border rounded-lg p-1 ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
               <button
                 onClick={zoomOut}
                 disabled={zoomLevel <= 0.5}
                 className={`p-2 rounded-md transition-all duration-200 ${
                   zoomLevel <= 0.5
                     ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
+                    : theme === 'dark'
+                      ? 'text-gray-300 hover:bg-gray-600 hover:text-white hover:shadow-sm'
+                      : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
                 }`}
                 title="Zoom Out"
               >
                 <FaSearchMinus className="h-3 w-3" />
               </button>
-              <span className="text-xs font-medium text-gray-600 min-w-[3rem] text-center">
+              <span className={`text-xs font-medium min-w-[3rem] text-center ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
                 {Math.round(zoomLevel * 100)}%
               </span>
               <button
@@ -229,7 +235,9 @@ export default function GrowthTeamGanttChart({ projects }: GrowthTeamGanttChartP
                 className={`p-2 rounded-md transition-all duration-200 ${
                   zoomLevel >= 2
                     ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
+                    : theme === 'dark'
+                      ? 'text-gray-300 hover:bg-gray-600 hover:text-white hover:shadow-sm'
+                      : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
                 }`}
                 title="Zoom In"
               >
@@ -239,17 +247,17 @@ export default function GrowthTeamGanttChart({ projects }: GrowthTeamGanttChartP
           </div>
         </div>
 
-        <div className="text-sm text-gray-600">
-          {projects.length} project{projects.length !== 1 ? 's' : ''} • {projects.reduce((total, p) => total + (p.phases?.length || 0), 0)} total phases
+        <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+          {(projects || []).length} project{(projects || []).length !== 1 ? 's' : ''} • {(projects || []).reduce((total, p) => total + (p.phases?.length || 0), 0)} total phases
         </div>
       </div>
 
       {/* Gantt Chart */}
       <div
-        className="border border-gray-200 rounded-lg overflow-hidden"
+        className={`border rounded-lg overflow-hidden ${theme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}
         style={{
-          height: projects.length <= 12
-            ? `${Math.max(projects.length * 50 + 100, 200)}px` // Dynamic height: 50px per project row (35px name + 15px phases) + 100px for header/padding
+          height: (projects || []).length <= 12
+            ? `${Math.max((projects || []).length * 50 + 100, 200)}px` // Dynamic height: 50px per project row (35px name + 15px phases) + 100px for header/padding
             : 'calc(100vh - 300px)', // Fixed height with scroll for 12+ projects
           minHeight: '200px',
           maxHeight: 'calc(100vh - 300px)'
@@ -315,7 +323,7 @@ export default function GrowthTeamGanttChart({ projects }: GrowthTeamGanttChartP
               </div>
             )}
             TooltipContent={({ task }) => {
-              const project = projects.find((p: any) => `project-${p.id}` === task.id);
+              const project = (projects || []).find((p: any) => `project-${p.id}` === task.id);
               const duration = Math.ceil((task.end.getTime() - task.start.getTime()) / (1000 * 60 * 60 * 24));
               const consultantCount = project?.consultants?.length || 0;
               const phaseCount = project?.phases?.length || 0;
@@ -372,9 +380,9 @@ export default function GrowthTeamGanttChart({ projects }: GrowthTeamGanttChartP
       </div>
 
       {/* Instructions */}
-      <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-        <div className="text-sm font-medium text-blue-800 mb-1">How to use:</div>
-        <div className="text-xs text-blue-700">
+      <div className={`mt-4 border rounded-lg p-3 ${theme === 'dark' ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'}`}>
+        <div className={`text-sm font-medium mb-1 ${theme === 'dark' ? 'text-blue-300' : 'text-blue-800'}`}>How to use:</div>
+        <div className={`text-xs ${theme === 'dark' ? 'text-blue-200' : 'text-blue-700'}`}>
           Each row shows a project with its timeline bar. Project phases are listed below each project name. Hover over any project bar to see detailed information including dates, duration, team size, and budget.
         </div>
       </div>

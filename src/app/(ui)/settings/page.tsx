@@ -5,18 +5,134 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { FaMoon, FaSun, FaBell, FaLock, FaCog, FaSave } from 'react-icons/fa';
 import { useTheme } from '@/app/contexts/ThemeContext';
+import { useNotification } from '@/app/contexts/NotificationContext';
+import axios from 'axios';
+
+function SetPasswordForm() {
+  const { data: session } = useSession();
+  const { theme } = useTheme();
+  const { showSuccess, showError } = useNotification();
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isSettingPassword, setIsSettingPassword] = useState(false);
+  const [hasPassword, setHasPassword] = useState(false);
+
+  useEffect(() => {
+    // Check if user has a password (Google users might not have one)
+    const checkPasswordStatus = async () => {
+      try {
+        const response = await axios.get('/api/auth/check-password');
+        setHasPassword(response.data.hasPassword);
+      } catch (error) {
+        console.error('Error checking password status:', error);
+      }
+    };
+    
+    if (session?.user) {
+      checkPasswordStatus();
+    }
+  }, [session]);
+
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      showError('Passwords do not match');
+      return;
+    }
+    
+    if (password.length < 6) {
+      showError('Password must be at least 6 characters');
+      return;
+    }
+    
+    setIsSettingPassword(true);
+    
+    try {
+      await axios.post('/api/auth/set-password', { password });
+      showSuccess('Password set successfully! You can now log in manually.');
+      setPassword('');
+      setConfirmPassword('');
+      setHasPassword(true);
+    } catch (error: any) {
+      showError(error.response?.data?.error || 'Failed to set password');
+    } finally {
+      setIsSettingPassword(false);
+    }
+  };
+
+  return (
+    <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+      <h4 className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-3`}>
+        Password Management
+      </h4>
+      
+      {!hasPassword ? (
+        <div>
+          <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} mb-4`}>
+            You signed up with Google. Set a password to enable manual login with your email and password.
+          </p>
+          
+          <form onSubmit={handleSetPassword} className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+                New Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={`w-full px-3 py-2 border rounded-md ${theme === 'dark' ? 'bg-gray-600 border-gray-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                placeholder="Enter new password"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className={`w-full px-3 py-2 border rounded-md ${theme === 'dark' ? 'bg-gray-600 border-gray-500 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                placeholder="Confirm new password"
+                required
+              />
+            </div>
+            
+            <button
+              type="submit"
+              disabled={isSettingPassword}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {isSettingPassword ? 'Setting Password...' : 'Set Password'}
+            </button>
+          </form>
+        </div>
+      ) : (
+        <div className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-green-900/20 border border-green-700' : 'bg-green-50 border border-green-200'}`}>
+          <p className={`text-sm ${theme === 'dark' ? 'text-green-300' : 'text-green-700'}`}>
+            ✓ Password is set. You can log in manually with your email and password, or continue using Google Sign-In.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
+  const { showSuccess } = useNotification();
 
   const [tempTheme, setTempTheme] = useState<'light' | 'dark'>('light');
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [inAppNotifications, setInAppNotifications] = useState(true);
   const [activeTab, setActiveTab] = useState<'preferences' | 'security'>('preferences');
   const [isSaving, setIsSaving] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
@@ -45,9 +161,8 @@ export default function SettingsPage() {
       localStorage.setItem('emailNotifications', emailNotifications.toString());
       localStorage.setItem('inAppNotifications', inAppNotifications.toString());
       
-      // Show success popup
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
+      // Show success notification
+      showSuccess('Preferences saved successfully!');
     } catch (error) {
       console.error('Error saving preferences:', error);
     } finally {
@@ -56,16 +171,16 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className={`transition-all duration-300 ease-in-out min-h-screen p-4 md:p-8 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className="transition-all duration-300 ease-in-out min-h-screen px-4 py-6 md:px-8 md:py-8">
       <div className={`max-w-5xl mx-auto ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow-lg rounded-lg overflow-hidden`}>
         {/* Header */}
         <div className={`${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} border-b px-6 py-4`}>
           <div className="flex justify-between items-center">
             <div>
-              <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+              <h1 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
                 Settings
               </h1>
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+              <p className={`text-lg ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
                 Manage your application preferences and security settings
               </p>
             </div>
@@ -102,7 +217,7 @@ export default function SettingsPage() {
             <div className="space-y-8">
               {/* Appearance */}
               <div>
-                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'} mb-4 flex items-center gap-2`}>
+                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4 flex items-center gap-2`}>
                   <FaCog className="w-5 h-5" />
                   Display Settings
                 </h3>
@@ -133,7 +248,7 @@ export default function SettingsPage() {
 
               {/* Notifications */}
               <div>
-                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'} mb-4 flex items-center gap-2`}>
+                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4 flex items-center gap-2`}>
                   <FaBell className="w-5 h-5" />
                   Notification Preferences
                 </h3>
@@ -201,39 +316,23 @@ export default function SettingsPage() {
           {activeTab === 'security' && (
             <div className="space-y-8">
               <div>
-                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'} mb-4 flex items-center gap-2`}>
+                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4 flex items-center gap-2`}>
                   <FaLock className="w-5 h-5" />
                   Account Security
                 </h3>
 
-                {/* Password Change Notice */}
-                <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-orange-900/20 border-orange-700' : 'bg-orange-50 border-orange-200'}`}>
-                  <div className="flex items-start gap-3">
-                    <FaLock className={`w-5 h-5 mt-1 ${theme === 'dark' ? 'text-orange-400' : 'text-orange-600'}`} />
-                    <div>
-                      <h4 className={`font-medium ${theme === 'dark' ? 'text-orange-200' : 'text-orange-800'} mb-2`}>
-                        Password Management
-                      </h4>
-                      <p className={`text-sm ${theme === 'dark' ? 'text-orange-300' : 'text-orange-700'} mb-3`}>
-                        Password changes are currently managed by system administrators.
-                        The profile update API is not yet implemented.
-                      </p>
-                      <p className={`text-sm ${theme === 'dark' ? 'text-orange-300' : 'text-orange-700'}`}>
-                        To change your password, please contact your system administrator or use the forgot password option on the login page.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                {/* Password Management */}
+                <SetPasswordForm />
 
                 {/* Account Info */}
                 <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'}`}>
-                  <h4 className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'} mb-3`}>
+                  <h4 className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-3`}>
                     Account Information
                   </h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Account Type:</span>
-                      <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+                      <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
                         {session?.user?.role === 'GROWTH_TEAM' ? 'Growth Team' : 'Consultant'}
                       </span>
                     </div>
@@ -257,15 +356,7 @@ export default function SettingsPage() {
         </div>
       </div>
       
-      {/* Success Popup */}
-      {showSuccess && (
-        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in">
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-          </svg>
-          Preferences saved successfully!
-        </div>
-      )}
+
     </div>
   );
 }

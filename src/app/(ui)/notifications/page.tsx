@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { FaBell, FaCheck, FaTrash, FaFilter, FaSpinner } from 'react-icons/fa';
+import { useTheme } from '@/app/contexts/ThemeContext';
 
 type NotificationType = 
   | 'PROJECT_ASSIGNMENT'
@@ -51,6 +52,7 @@ const notificationTypeLabels = {
 export default function NotificationsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { theme } = useTheme();
   
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -182,12 +184,12 @@ export default function NotificationsPage() {
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-8">
+      <div className="px-4 py-6 md:px-8 md:py-8 min-h-screen">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">Notifications</h1>
-            <p className="text-lg text-gray-600">
+            <h1 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>Notifications</h1>
+            <p className={`text-lg ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
               Stay updated with your project activities
               {unreadCount > 0 && (
                 <span className="ml-2 px-2 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">
@@ -199,15 +201,15 @@ export default function NotificationsPage() {
         </div>
 
         {/* Filters and Actions */}
-        <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+        <div className={`rounded-lg shadow-sm border p-4 mb-6 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <div className="flex flex-wrap items-center justify-between gap-4">
             {/* Filter buttons */}
             <div className="flex items-center gap-2">
-              <FaFilter className="text-gray-500" />
+              <FaFilter className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} />
               <select
                 value={selectedFilter}
                 onChange={(e) => setSelectedFilter(e.target.value as any)}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
               >
                 <option value="all">All Notifications</option>
                 <option value="unread">Unread Only</option>
@@ -221,7 +223,7 @@ export default function NotificationsPage() {
 
             {/* Bulk actions */}
             <div className="flex items-center gap-2">
-              <label className="flex items-center gap-2 text-sm">
+              <label className={`flex items-center gap-2 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                 <input
                   type="checkbox"
                   checked={selectedNotifications.length === notifications.length && notifications.length > 0}
@@ -273,16 +275,16 @@ export default function NotificationsPage() {
 
         {/* Notifications List */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg mb-6">
+          <div className={`border p-4 rounded-lg mb-6 ${theme === 'dark' ? 'bg-red-900/20 border-red-700 text-red-300' : 'bg-red-50 border-red-200 text-red-800'}`}>
             {error}
           </div>
         )}
 
         {notifications.length === 0 && !isLoading ? (
           <div className="text-center py-12">
-            <FaBell className="mx-auto text-4xl text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-600 mb-2">No notifications</h3>
-            <p className="text-gray-500">
+            <FaBell className={`mx-auto text-4xl mb-4 ${theme === 'dark' ? 'text-gray-600' : 'text-gray-300'}`} />
+            <h3 className={`text-lg font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>No notifications</h3>
+            <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}>
               {selectedFilter === 'unread' 
                 ? "You don't have any unread notifications." 
                 : "You don't have any notifications yet."}

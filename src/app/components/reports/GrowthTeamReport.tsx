@@ -111,6 +111,44 @@ export default function GrowthTeamReports() {
     { project: 'AI Implementation', investment: 200000, return: 240000, roi: 20, status: 'in-progress' },
   ]);
 
+  // Resource Utilization Data
+  const [consultantUtilization] = useState([
+    { name: 'John Smith', allocated: 36, available: 40, utilization: 90, trend: '+5%', status: 'optimal' },
+    { name: 'Sarah Johnson', allocated: 42, available: 40, utilization: 105, trend: '+15%', status: 'overbooked' },
+    { name: 'Mike Chen', allocated: 28, available: 40, utilization: 70, trend: '-10%', status: 'underutilized' },
+    { name: 'Emily Davis', allocated: 38, available: 40, utilization: 95, trend: '+8%', status: 'optimal' },
+    { name: 'Alex Rodriguez', allocated: 24, available: 40, utilization: 60, trend: '-20%', status: 'underutilized' },
+  ]);
+
+  const [futureCapacity] = useState([
+    { month: 'Jan 2024', available: 200, allocated: 168, capacity: 84 },
+    { month: 'Feb 2024', available: 200, allocated: 185, capacity: 92.5 },
+    { month: 'Mar 2024', available: 200, allocated: 195, capacity: 97.5 },
+    { month: 'Apr 2024', available: 200, allocated: 180, capacity: 90 },
+  ]);
+
+  // Project Performance Data
+  const [projectProgress] = useState([
+    { project: 'Platform Modernization', progress: 85, milestones: { completed: 8, total: 10 }, status: 'on-track' },
+    { project: 'Mobile App Development', progress: 60, milestones: { completed: 6, total: 12 }, status: 'delayed' },
+    { project: 'Data Analytics Setup', progress: 95, milestones: { completed: 9, total: 10 }, status: 'on-track' },
+    { project: 'Cloud Migration', progress: 40, milestones: { completed: 4, total: 15 }, status: 'at-risk' },
+  ]);
+
+  const [phaseStatus] = useState([
+    { phase: 'Discovery', project: 'Platform Modernization', status: 'completed', budget: 100, spent: 95 },
+    { phase: 'Development', project: 'Mobile App', status: 'delayed', budget: 100, spent: 120 },
+    { phase: 'Testing', project: 'Data Analytics', status: 'on-track', budget: 100, spent: 85 },
+    { phase: 'Deployment', project: 'Cloud Migration', status: 'at-risk', budget: 100, spent: 110 },
+  ]);
+
+  const [sprintVelocity] = useState([
+    { sprint: 'Sprint 1', planned: 25, completed: 23, velocity: 92 },
+    { sprint: 'Sprint 2', planned: 28, completed: 30, velocity: 107 },
+    { sprint: 'Sprint 3', planned: 26, completed: 24, velocity: 92 },
+    { sprint: 'Sprint 4', planned: 30, completed: 28, velocity: 93 },
+  ]);
+
   useEffect(() => {
     // Simulate loading data
     setTimeout(() => setLoading(false), 1000);
@@ -118,37 +156,83 @@ export default function GrowthTeamReports() {
 
   const exportReport = async (reportType: string) => {
     try {
-      // In a real implementation, this would generate and download a PDF/CSV report
-      const reportData = {
-        type: reportType,
-        dateRange: {
-          from: format(dateRange.from, 'yyyy-MM-dd'),
-          to: format(dateRange.to, 'yyyy-MM-dd')
-        },
-        generatedBy: user?.name,
-        generatedAt: new Date().toISOString(),
-        data: {
-          revenue: revenueData,
-          clientProfitability,
-          resourceUtilization,
-          projectROI
-        }
-      };
-
-      // Create a downloadable file
-      const dataStr = JSON.stringify(reportData, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
+      // Create a new window with the report content
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast.error('Please allow popups to export reports');
+        return;
+      }
       
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `growth-team-report-${reportType}-${format(new Date(), 'yyyy-MM-dd')}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const reportContent = `
+        <html>
+          <head>
+            <title>Growth Team Report - ${reportType}</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              h1 { color: #1f2937; text-align: center; }
+              h2 { color: #374151; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; }
+              table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+              th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
+              th { background-color: #f3f4f6; font-weight: bold; }
+              .header-info { margin: 20px 0; }
+              @media print { body { margin: 0; } }
+            </style>
+          </head>
+          <body>
+            <h1>Growth Team Report</h1>
+            <div class="header-info">
+              <p><strong>Report Type:</strong> ${reportType.charAt(0).toUpperCase() + reportType.slice(1)}</p>
+              <p><strong>Generated:</strong> ${format(new Date(), 'yyyy-MM-dd HH:mm')}</p>
+              <p><strong>Period:</strong> ${format(dateRange.from, 'yyyy-MM-dd')} to ${format(dateRange.to, 'yyyy-MM-dd')}</p>
+            </div>
+            
+            ${reportType === 'revenue' || reportType === 'comprehensive' ? `
+              <h2>Revenue Analysis</h2>
+              <table>
+                <thead>
+                  <tr><th>Month</th><th>Actual</th><th>Projected</th><th>Target</th></tr>
+                </thead>
+                <tbody>
+                  ${revenueData.map(item => `
+                    <tr>
+                      <td>${item.month}</td>
+                      <td>$${item.actual.toLocaleString()}</td>
+                      <td>$${item.projected.toLocaleString()}</td>
+                      <td>$${item.target.toLocaleString()}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            ` : ''}
+            
+            ${reportType === 'utilization' || reportType === 'comprehensive' ? `
+              <h2>Resource Utilization</h2>
+              <table>
+                <thead>
+                  <tr><th>Consultant</th><th>Allocated</th><th>Available</th><th>Utilization</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  ${consultantUtilization.map(item => `
+                    <tr>
+                      <td>${item.name}</td>
+                      <td>${item.allocated}h</td>
+                      <td>${item.available}h</td>
+                      <td>${item.utilization}%</td>
+                      <td>${item.status}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            ` : ''}
+          </body>
+        </html>
+      `;
       
-      URL.revokeObjectURL(url);
-      toast.success(`${reportType} report exported successfully`);
+      printWindow.document.write(reportContent);
+      printWindow.document.close();
+      printWindow.print();
+      
+      toast.success(`${reportType} report ready for printing/PDF export`);
     } catch (error) {
       console.error('Export error:', error);
       toast.error('Failed to export report');
@@ -171,11 +255,8 @@ export default function GrowthTeamReports() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading reports...</p>
-        </div>
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -184,10 +265,6 @@ export default function GrowthTeamReports() {
     <div className="space-y-6">
       {/* Header with Export Controls */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Growth Team Reports</h2>
-          <p className="text-muted-foreground">Strategic insights for revenue optimization and resource planning</p>
-        </div>
         <div className="flex items-center gap-3">
           <Select value={selectedTimeframe} onValueChange={setSelectedTimeframe}>
             <SelectTrigger className="w-32">
@@ -207,11 +284,13 @@ export default function GrowthTeamReports() {
       </div>
 
       <Tabs defaultValue="revenue" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="revenue">Revenue Analysis</TabsTrigger>
           <TabsTrigger value="profitability">Client Profitability</TabsTrigger>
           <TabsTrigger value="resources">Resource Planning</TabsTrigger>
           <TabsTrigger value="roi">Project ROI</TabsTrigger>
+          <TabsTrigger value="utilization">Resource Utilization</TabsTrigger>
+          <TabsTrigger value="performance">Project Performance</TabsTrigger>
         </TabsList>
 
         {/* Revenue Analysis */}
@@ -511,6 +590,229 @@ export default function GrowthTeamReports() {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Resource Utilization Reports */}
+        <TabsContent value="utilization" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Average Utilization</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">84%</div>
+                <p className="text-xs text-muted-foreground">Team average utilization</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Overbooked</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">1</div>
+                <p className="text-xs text-muted-foreground">Consultant over 100%</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Underutilized</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600">2</div>
+                <p className="text-xs text-muted-foreground">Consultants under 75%</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader className="flex items-center justify-between">
+                <CardTitle>Consultant Utilization Report</CardTitle>
+                <Button size="sm" variant="outline" onClick={() => exportReport('utilization')}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {consultantUtilization.map((consultant, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex-1">
+                        <div className="font-medium">{consultant.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {consultant.allocated}h / {consultant.available}h allocated
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-lg font-bold ${
+                          consultant.status === 'overbooked' ? 'text-red-600' :
+                          consultant.status === 'underutilized' ? 'text-yellow-600' : 'text-green-600'
+                        }`}>
+                          {consultant.utilization}%
+                        </div>
+                        <Badge variant={
+                          consultant.status === 'overbooked' ? "destructive" :
+                          consultant.status === 'underutilized' ? "secondary" : "default"
+                        }>
+                          {consultant.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Future Capacity Forecast</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={futureCapacity}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="available" fill="#e5e7eb" name="Available Hours" />
+                    <Bar dataKey="allocated" fill="#3b82f6" name="Allocated Hours" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Project Performance Reports */}
+        <TabsContent value="performance" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">On Track</CardTitle>
+                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">2</div>
+                <p className="text-xs text-muted-foreground">Projects on schedule</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">At Risk</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600">1</div>
+                <p className="text-xs text-muted-foreground">Projects need attention</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Delayed</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">1</div>
+                <p className="text-xs text-muted-foreground">Projects behind schedule</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader className="flex items-center justify-between">
+                <CardTitle>Project Progress Report</CardTitle>
+                <Button size="sm" variant="outline" onClick={() => exportReport('performance')}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {projectProgress.map((project, index) => (
+                    <div key={index} className="p-3 border rounded-lg">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="font-medium">{project.project}</div>
+                        <Badge variant={
+                          project.status === 'on-track' ? "default" :
+                          project.status === 'delayed' ? "destructive" : "secondary"
+                        }>
+                          {project.status}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between text-sm text-muted-foreground mb-2">
+                        <span>Progress: {project.progress}%</span>
+                        <span>Milestones: {project.milestones.completed}/{project.milestones.total}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full ${
+                            project.status === 'on-track' ? 'bg-green-500' :
+                            project.status === 'delayed' ? 'bg-red-500' : 'bg-yellow-500'
+                          }`}
+                          style={{ width: `${project.progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Phase Status Report</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {phaseStatus.map((phase, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex-1">
+                        <div className="font-medium">{phase.phase}</div>
+                        <div className="text-sm text-muted-foreground">{phase.project}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-sm font-medium ${
+                          phase.spent > phase.budget ? 'text-red-600' : 'text-green-600'
+                        }`}>
+                          ${phase.spent}% of budget
+                        </div>
+                        <Badge variant={
+                          phase.status === 'completed' ? "default" :
+                          phase.status === 'on-track' ? "secondary" : "destructive"
+                        }>
+                          {phase.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Sprint Velocity Report</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={sprintVelocity}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="sprint" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="planned" fill="#e5e7eb" name="Planned Points" />
+                  <Bar dataKey="completed" fill="#10b981" name="Completed Points" />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </TabsContent>
