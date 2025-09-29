@@ -152,6 +152,31 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role;
         token.isProductManager = user.isProductManager;
       }
+      
+      // Refresh user data from database on each request
+      if (token.id) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              role: true,
+            }
+          });
+          
+          if (dbUser) {
+            token.name = dbUser.name;
+            token.email = dbUser.email;
+            token.picture = dbUser.image;
+          }
+        } catch (error) {
+          console.error('Error refreshing user data:', error);
+        }
+      }
+      
       return token;
     },
     async session({ session, token }) {
@@ -159,6 +184,9 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id;
         session.user.role = token.role;
         session.user.isProductManager = token.isProductManager;
+        session.user.name = token.name;
+        session.user.email = token.email;
+        session.user.image = token.picture;
       }
       return session;
     },

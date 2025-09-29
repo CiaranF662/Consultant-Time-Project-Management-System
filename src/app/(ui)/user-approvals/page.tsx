@@ -15,7 +15,6 @@ export default function UserApprovalsPage() {
   const fetchPendingUsers = async () => {
     setIsLoading(true);
     try {
-      // --- THIS IS THE FIX: Added the query parameter to filter by status ---
       const { data } = await axios.get('/api/users?status=PENDING');
       setPendingUsers(data);
     } catch (err) {

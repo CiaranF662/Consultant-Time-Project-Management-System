@@ -1,638 +1,259 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import { 
-  Settings, 
-  User, 
-  Bell, 
-  Shield, 
-  Monitor, 
-  Palette, 
-  Globe,
-  Key,
-  Database,
-  Mail,
-  Smartphone,
-  Clock
-} from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'react-hot-toast';
+'use client';
 
-interface UserSettings {
-  notifications: {
-    emailDigest: boolean;
-    projectUpdates: boolean;
-    resourceConflicts: boolean;
-    weeklyReports: boolean;
-    mobileNotifications: boolean;
-  };
-  preferences: {
-    timezone: string;
-    dateFormat: string;
-    timeFormat: string;
-    weekStart: string;
-    theme: string;
-    language: string;
-  };
-  privacy: {
-    profileVisibility: string;
-    shareWorkload: boolean;
-    allowMentions: boolean;
-  };
-  integrations: {
-    jiraEnabled: boolean;
-    slackEnabled: boolean;
-    calendarSync: boolean;
-  };
-}
-
-const defaultSettings: UserSettings = {
-  notifications: {
-    emailDigest: true,
-    projectUpdates: true,
-    resourceConflicts: true,
-    weeklyReports: false,
-    mobileNotifications: true,
-  },
-  preferences: {
-    timezone: 'UTC',
-    dateFormat: 'MM/DD/YYYY',
-    timeFormat: '12h',
-    weekStart: 'monday',
-    theme: 'light',
-    language: 'en',
-  },
-  privacy: {
-    profileVisibility: 'team',
-    shareWorkload: true,
-    allowMentions: true,
-  },
-  integrations: {
-    jiraEnabled: false,
-    slackEnabled: false,
-    calendarSync: false,
-  },
-};
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { FaMoon, FaSun, FaBell, FaLock, FaCog, FaSave } from 'react-icons/fa';
 
 export default function SettingsPage() {
-  const { user } = useAuth();
-  const [settings, setSettings] = useState<UserSettings>(defaultSettings);
-  const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('general');
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
-  const [jiraConfig, setJiraConfig] = useState({
-    serverUrl: '',
-    email: '',
-    apiToken: '',
-    projectKey: ''
-  });
-
-  const [profileData, setProfileData] = useState({
-    displayName: user?.name || '',
-    email: user?.email || '',
-    title: '',
-    department: user?.department || '',
-    skills: user?.skills || '',
-    hourlyRate: user?.hourlyRate?.toString() || '',
-    bio: ''
-  });
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [inAppNotifications, setInAppNotifications] = useState(true);
+  const [activeTab, setActiveTab] = useState<'preferences' | 'security'>('preferences');
 
   useEffect(() => {
-    // Load user settings from localStorage or API
-    const savedSettings = localStorage.getItem(`user-settings-${user?.id}`);
-    if (savedSettings) {
-      setSettings(JSON.parse(savedSettings));
-    }
-  }, [user]);
+    if (status === 'unauthenticated') router.push('/login');
+    if (status === 'authenticated') {
+      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light';
+      const savedEmailNotifications = localStorage.getItem('emailNotifications') !== 'false';
+      const savedInAppNotifications = localStorage.getItem('inAppNotifications') !== 'false';
 
-  const saveSettings = async () => {
-    setIsSaving(true);
-    try {
-      // Save to localStorage (in a real app, this would go to the backend)
-      localStorage.setItem(`user-settings-${user?.id}`, JSON.stringify(settings));
-      
-      // Update user profile in database
-      if (user) {
-        await blink.db.users.update(user.id, {
-          name: profileData.displayName,
-          department: profileData.department,
-          skills: profileData.skills,
-          hourlyRate: profileData.hourlyRate ? parseFloat(profileData.hourlyRate) : null
-        });
-      }
+      setTheme(savedTheme);
+      setEmailNotifications(savedEmailNotifications);
+      setInAppNotifications(savedInAppNotifications);
 
-      toast.success('Settings saved successfully');
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      toast.error('Failed to save settings');
-    } finally {
-      setIsSaving(false);
+      document.documentElement.className = savedTheme;
     }
+  }, [status, router]);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.className = newTheme;
   };
 
-  const updateSetting = <T extends keyof UserSettings>(
-    section: T,
-    key: keyof UserSettings[T],
-    value: any
-  ) => {
-    setSettings(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [key]: value
-      }
-    }));
-  };
-
-  const testJiraConnection = async () => {
-    if (!jiraConfig.serverUrl || !jiraConfig.email || !jiraConfig.apiToken) {
-      toast.error('Please fill in all Jira configuration fields');
-      return;
-    }
-
-    try {
-      // In a real implementation, this would test the Jira API connection
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Jira connection successful');
-      updateSetting('integrations', 'jiraEnabled', true);
-    } catch (error) {
-      toast.error('Failed to connect to Jira');
-    }
+  const handlePreferencesSave = () => {
+    localStorage.setItem('theme', theme);
+    localStorage.setItem('emailNotifications', emailNotifications.toString());
+    localStorage.setItem('inAppNotifications', inAppNotifications.toString());
+    alert('Preferences saved successfully!');
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <Settings className="w-8 h-8" />
-        <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-muted-foreground">Manage your account settings and preferences</p>
+    <div className={`transition-all duration-300 ease-in-out min-h-screen p-4 md:p-8 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <div className={`max-w-5xl mx-auto ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow-lg rounded-lg overflow-hidden`}>
+        {/* Header */}
+        <div className={`${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} border-b px-6 py-4`}>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+                Settings
+              </h1>
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                Manage your application preferences and security settings
+              </p>
+            </div>
+
+            <button
+              onClick={toggleTheme}
+              className={`p-3 rounded-lg transition-colors ${
+                theme === 'dark'
+                  ? 'bg-gray-600 hover:bg-gray-500 text-yellow-400'
+                  : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+              }`}
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            >
+              {theme === 'dark' ? <FaSun className="w-5 h-5" /> : <FaMoon className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
-      </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="general" className="flex items-center gap-2">
-            <User className="w-4 h-4" />
-            General
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
-            <Bell className="w-4 h-4" />
-            Notifications
-          </TabsTrigger>
-          <TabsTrigger value="privacy" className="flex items-center gap-2">
-            <Shield className="w-4 h-4" />
-            Privacy
-          </TabsTrigger>
-          <TabsTrigger value="integrations" className="flex items-center gap-2">
-            <Database className="w-4 h-4" />
-            Integrations
-          </TabsTrigger>
-          <TabsTrigger value="advanced" className="flex items-center gap-2">
-            <Key className="w-4 h-4" />
-            Advanced
-          </TabsTrigger>
-        </TabsList>
+        {/* Tab Navigation */}
+        <div className={`${theme === 'dark' ? 'border-gray-600' : 'border-gray-200'} border-b`}>
+          <nav className="flex px-6">
+            {[
+              { key: 'preferences', label: 'Preferences', icon: FaCog },
+              { key: 'security', label: 'Security', icon: FaLock },
+            ].map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key as any)}
+                className={`flex items-center gap-2 py-4 px-6 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === key
+                    ? 'border-blue-500 text-blue-600'
+                    : `border-transparent ${theme === 'dark' ? 'text-gray-300 hover:text-gray-100' : 'text-gray-500 hover:text-gray-700'}`
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </button>
+            ))}
+          </nav>
+        </div>
 
-        <TabsContent value="general" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="w-5 h-5" />
-                Profile Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="displayName">Display Name</Label>
-                  <Input
-                    id="displayName"
-                    value={profileData.displayName}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, displayName: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={profileData.email}
-                    disabled
-                    className="bg-muted"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="title">Job Title</Label>
-                  <Input
-                    id="title"
-                    value={profileData.title}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Senior Consultant"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="department">Department</Label>
-                  <Select value={profileData.department} onValueChange={(value) => setProfileData(prev => ({ ...prev, department: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="engineering">Engineering</SelectItem>
-                      <SelectItem value="design">Design</SelectItem>
-                      <SelectItem value="product">Product</SelectItem>
-                      <SelectItem value="marketing">Marketing</SelectItem>
-                      <SelectItem value="sales">Sales</SelectItem>
-                      <SelectItem value="operations">Operations</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="skills">Skills</Label>
-                  <Input
-                    id="skills"
-                    value={profileData.skills}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, skills: e.target.value }))}
-                    placeholder="React, TypeScript, Node.js"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="hourlyRate">Hourly Rate ($)</Label>
-                  <Input
-                    id="hourlyRate"
-                    type="number"
-                    value={profileData.hourlyRate}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, hourlyRate: e.target.value }))}
-                    placeholder="150"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  value={profileData.bio}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
-                  placeholder="Tell us about yourself..."
-                  rows={3}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Monitor className="w-5 h-5" />
-                Preferences
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Timezone</Label>
-                  <Select value={settings.preferences.timezone} onValueChange={(value) => updateSetting('preferences', 'timezone', value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="UTC">UTC</SelectItem>
-                      <SelectItem value="America/New_York">Eastern Time</SelectItem>
-                      <SelectItem value="America/Chicago">Central Time</SelectItem>
-                      <SelectItem value="America/Denver">Mountain Time</SelectItem>
-                      <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
-                      <SelectItem value="Europe/London">London</SelectItem>
-                      <SelectItem value="Europe/Paris">Paris</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Date Format</Label>
-                  <Select value={settings.preferences.dateFormat} onValueChange={(value) => updateSetting('preferences', 'dateFormat', value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
-                      <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-                      <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Time Format</Label>
-                  <Select value={settings.preferences.timeFormat} onValueChange={(value) => updateSetting('preferences', 'timeFormat', value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="12h">12 Hour</SelectItem>
-                      <SelectItem value="24h">24 Hour</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Week Starts On</Label>
-                  <Select value={settings.preferences.weekStart} onValueChange={(value) => updateSetting('preferences', 'weekStart', value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sunday">Sunday</SelectItem>
-                      <SelectItem value="monday">Monday</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="notifications" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mail className="w-5 h-5" />
-                Email Notifications
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label>Daily Email Digest</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive a summary of daily activities
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.notifications.emailDigest}
-                  onCheckedChange={(checked) => updateSetting('notifications', 'emailDigest', checked)}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label>Project Updates</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Get notified when projects are updated
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.notifications.projectUpdates}
-                  onCheckedChange={(checked) => updateSetting('notifications', 'projectUpdates', checked)}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label>Resource Conflicts</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Alert when resource allocation conflicts occur
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.notifications.resourceConflicts}
-                  onCheckedChange={(checked) => updateSetting('notifications', 'resourceConflicts', checked)}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label>Weekly Reports</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive weekly performance reports
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.notifications.weeklyReports}
-                  onCheckedChange={(checked) => updateSetting('notifications', 'weeklyReports', checked)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Smartphone className="w-5 h-5" />
-                Mobile Notifications
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label>Push Notifications</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive notifications on your mobile device
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.notifications.mobileNotifications}
-                  onCheckedChange={(checked) => updateSetting('notifications', 'mobileNotifications', checked)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="privacy" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="w-5 h-5" />
-                Privacy Settings
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Profile Visibility</Label>
-                <Select value={settings.privacy.profileVisibility} onValueChange={(value) => updateSetting('privacy', 'profileVisibility', value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="public">Public - Visible to everyone</SelectItem>
-                    <SelectItem value="team">Team - Visible to team members only</SelectItem>
-                    <SelectItem value="private">Private - Only visible to managers</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label>Share Workload Information</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Allow others to see your current workload and availability
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.privacy.shareWorkload}
-                  onCheckedChange={(checked) => updateSetting('privacy', 'shareWorkload', checked)}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label>Allow Mentions</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Allow team members to mention you in comments and discussions
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.privacy.allowMentions}
-                  onCheckedChange={(checked) => updateSetting('privacy', 'allowMentions', checked)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="integrations" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="w-5 h-5" />
-                Jira Integration
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="space-y-1">
-                  <Label>Enable Jira Integration</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Connect with Jira to sync project data and time tracking
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={settings.integrations.jiraEnabled ? "default" : "secondary"}>
-                    {settings.integrations.jiraEnabled ? "Connected" : "Disconnected"}
-                  </Badge>
-                  <Switch
-                    checked={settings.integrations.jiraEnabled}
-                    onCheckedChange={(checked) => updateSetting('integrations', 'jiraEnabled', checked)}
-                  />
+        {/* Tab Content */}
+        <div className="p-6">
+          {/* Preferences Tab */}
+          {activeTab === 'preferences' && (
+            <div className="space-y-8">
+              {/* Appearance */}
+              <div>
+                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'} mb-4 flex items-center gap-2`}>
+                  <FaCog className="w-5 h-5" />
+                  Display Settings
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200">
+                    <div>
+                      <label className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
+                        Theme
+                      </label>
+                      <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                        Choose between light and dark mode for better comfort
+                      </p>
+                    </div>
+                    <button
+                      onClick={toggleTheme}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                        theme === 'dark'
+                          ? 'bg-gray-700 border-gray-600 text-yellow-400 hover:bg-gray-600'
+                          : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {theme === 'dark' ? <FaSun className="w-4 h-4" /> : <FaMoon className="w-4 h-4" />}
+                      {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {settings.integrations.jiraEnabled && (
-                <div className="grid grid-cols-1 gap-4 p-4 border rounded-lg">
-                  <Input
-                    placeholder="Jira Server URL (e.g., https://yourcompany.atlassian.net)"
-                    value={jiraConfig.serverUrl}
-                    onChange={(e) => setJiraConfig(prev => ({ ...prev, serverUrl: e.target.value }))}
-                  />
-                  <Input
-                    placeholder="Email Address"
-                    type="email"
-                    value={jiraConfig.email}
-                    onChange={(e) => setJiraConfig(prev => ({ ...prev, email: e.target.value }))}
-                  />
-                  <Input
-                    placeholder="API Token"
-                    type="password"
-                    value={jiraConfig.apiToken}
-                    onChange={(e) => setJiraConfig(prev => ({ ...prev, apiToken: e.target.value }))}
-                  />
-                  <Input
-                    placeholder="Project Key (optional)"
-                    value={jiraConfig.projectKey}
-                    onChange={(e) => setJiraConfig(prev => ({ ...prev, projectKey: e.target.value }))}
-                  />
-                  <Button onClick={testJiraConnection}>
-                    Test Connection
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              {/* Notifications */}
+              <div>
+                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'} mb-4 flex items-center gap-2`}>
+                  <FaBell className="w-5 h-5" />
+                  Notification Preferences
+                </h3>
+                <div className="space-y-4">
+                  <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
+                          Email Notifications
+                        </label>
+                        <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Receive important updates via email
+                        </p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={emailNotifications}
+                        onChange={(e) => setEmailNotifications(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Other Integrations</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label>Slack Integration</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Get notifications and updates in Slack
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">Coming Soon</Badge>
-                  <Switch disabled />
+                  <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
+                          In-App Notifications
+                        </label>
+                        <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Show notification badge and alerts in the application
+                        </p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={inAppNotifications}
+                        onChange={(e) => setInAppNotifications(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-yellow-900/20 border-yellow-700' : 'bg-yellow-50 border-yellow-200'} border`}>
+                    <p className={`text-xs ${theme === 'dark' ? 'text-yellow-200' : 'text-yellow-700'}`}>
+                      <strong>Note:</strong> These preferences are currently saved locally and will affect future notification functionality.
+                    </p>
+                  </div>
                 </div>
               </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label>Calendar Sync</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Sync your schedule with Google Calendar or Outlook
-                  </p>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={handlePreferencesSave}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+                >
+                  <FaSave className="w-4 h-4" />
+                  Save Preferences
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Security Tab */}
+          {activeTab === 'security' && (
+            <div className="space-y-8">
+              <div>
+                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'} mb-4 flex items-center gap-2`}>
+                  <FaLock className="w-5 h-5" />
+                  Account Security
+                </h3>
+
+                {/* Password Change Notice */}
+                <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-orange-900/20 border-orange-700' : 'bg-orange-50 border-orange-200'}`}>
+                  <div className="flex items-start gap-3">
+                    <FaLock className={`w-5 h-5 mt-1 ${theme === 'dark' ? 'text-orange-400' : 'text-orange-600'}`} />
+                    <div>
+                      <h4 className={`font-medium ${theme === 'dark' ? 'text-orange-200' : 'text-orange-800'} mb-2`}>
+                        Password Management
+                      </h4>
+                      <p className={`text-sm ${theme === 'dark' ? 'text-orange-300' : 'text-orange-700'} mb-3`}>
+                        Password changes are currently managed by system administrators.
+                        The profile update API is not yet implemented.
+                      </p>
+                      <p className={`text-sm ${theme === 'dark' ? 'text-orange-300' : 'text-orange-700'}`}>
+                        To change your password, please contact your system administrator or use the forgot password option on the login page.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">Coming Soon</Badge>
-                  <Switch disabled />
+
+                {/* Account Info */}
+                <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'}`}>
+                  <h4 className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'} mb-3`}>
+                    Account Information
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Account Type:</span>
+                      <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+                        {session?.user?.role === 'GROWTH_TEAM' ? 'Growth Team' : 'Consultant'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Status:</span>
+                      <span className="font-medium text-green-600">
+                        Active
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Account ID:</span>
+                      <span className={`font-mono text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {session?.user?.id}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="advanced" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="w-5 h-5" />
-                API Access
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Generate API tokens to integrate Jira Insight with external systems.
-                </p>
-                <Button variant="outline">
-                  Generate API Token
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-destructive">Danger Zone</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 border border-destructive/20 rounded-lg">
-                <div className="space-y-2">
-                  <Label className="text-destructive">Delete Account</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Permanently delete your account and all associated data. This action cannot be undone.
-                  </p>
-                  <Button variant="destructive" size="sm">
-                    Delete Account
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      <div className="flex justify-end pt-6 border-t">
-        <Button onClick={saveSettings} disabled={isSaving}>
-          {isSaving ? 'Saving...' : 'Save Changes'}
-        </Button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

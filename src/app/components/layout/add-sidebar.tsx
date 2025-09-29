@@ -18,7 +18,8 @@ import {
   FaSignOutAlt,
   FaClipboardList,
   FaMoneyBillWave,
-  FaBell
+  FaBell,
+  FaCog
 } from 'react-icons/fa';
 import NotificationBadge from '@/app/components/notifications/NotificationBadge';
 import { UserRole } from '@prisma/client';
@@ -284,8 +285,36 @@ const toggleCollapse = () => {
                 </Link>
               );
             })}
+            
+            {/* Settings Link for Mobile */}
+            <Link
+              href="/settings"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`
+                flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
+                ${isActive('/settings')
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }
+              `}
+            >
+              <FaCog className="h-5 w-5 mr-3" />
+              Settings
+            </Link>
           </nav>
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-gray-200 space-y-1">
+            <Link
+              href="/settings"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                isActive('/settings')
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              <FaCog className="mr-3 h-5 w-5" />
+              Settings
+            </Link>
             <button
               onClick={handleSignOut}
               className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
@@ -352,10 +381,18 @@ const toggleCollapse = () => {
             <div className="p-4 border-b border-gray-200">
               <div className="flex items-center space-x-3">
                 <Link href="/profile" className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-medium text-sm">
-                      {session.user.name?.charAt(0) || session.user.email?.charAt(0)}
-                    </span>
+                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center overflow-hidden">
+                    {session.user.image ? (
+                      <img
+                        src={session.user.image}
+                        alt="Profile"
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-white font-medium text-sm">
+                        {session.user.name?.charAt(0) || session.user.email?.charAt(0)}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -375,10 +412,18 @@ const toggleCollapse = () => {
           {isCollapsed && (
             <div className="p-2 border-b border-gray-200 flex justify-center">
               <Link href="/profile" className="relative group">
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-medium text-xs">
-                  {session.user.name?.charAt(0) || session.user.email?.charAt(0)}
-                </span>
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center overflow-hidden">
+                {session.user.image ? (
+                  <img
+                    src={session.user.image}
+                    alt="Profile"
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white font-medium text-xs">
+                    {session.user.name?.charAt(0) || session.user.email?.charAt(0)}
+                  </span>
+                )}
               </div>
 
               {/* Tooltip */}
@@ -439,8 +484,41 @@ const toggleCollapse = () => {
             })}
           </nav>
 
-          {/* Sign out button */}
-          <div className="p-2 border-t border-gray-200">
+          {/* Settings and Sign out buttons */}
+          <div className="p-2 border-t border-gray-200 space-y-1">
+            {/* Settings Button */}
+            {isCollapsed ? (
+              <div className="relative group">
+                <Link
+                  href="/settings"
+                  className={`w-full flex items-center justify-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    isActive('/settings')
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <FaCog className="h-5 w-5" />
+                </Link>
+                <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 top-1/2 transform -translate-y-1/2">
+                  Settings
+                  <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 border-4 border-transparent border-r-gray-900"></div>
+                </div>
+              </div>
+            ) : (
+              <Link
+                href="/settings"
+                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  isActive('/settings')
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <FaCog className="mr-3 h-5 w-5" />
+                Settings
+              </Link>
+            )}
+
+            {/* Sign Out Button */}
             {isCollapsed ? (
               <div className="relative group">
                 <button

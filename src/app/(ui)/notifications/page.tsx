@@ -180,16 +180,6 @@ export default function NotificationsPage() {
     );
   };
 
-  if (status === 'loading' || isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center p-12">
-          <FaSpinner className="animate-spin text-2xl text-gray-400" />
-        </div>
-      </DashboardLayout>
-    );
-  }
-
   return (
     <DashboardLayout>
       <div className="p-4 md:p-8">
