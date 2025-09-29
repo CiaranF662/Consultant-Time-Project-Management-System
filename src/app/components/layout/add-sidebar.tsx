@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useTheme } from '@/app/contexts/ThemeContext';
 import { 
   FaHome, 
   FaProjectDiagram, 
@@ -42,6 +43,7 @@ interface NavItem {
 export default function Sidebar({ children }: SidebarProps) {
   const { data: session } = useSession();
   const pathname = usePathname();
+  const { theme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -234,16 +236,16 @@ const toggleCollapse = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200">
+      <div className={`lg:hidden fixed top-0 left-0 right-0 z-50 shadow-sm border-b ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="flex items-center justify-between p-4">
-          <h1 className="text-xl font-bold text-gray-800">AgileRS</h1>
+          <h1 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>AgileRS</h1>
           <div className="flex items-center gap-2">
             <NotificationBadge />
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              className={`p-2 rounded-md transition-colors ${theme === 'dark' ? 'text-gray-300 hover:text-white hover:bg-gray-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
             >
               {isMobileMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
             </button>
@@ -257,12 +259,12 @@ const toggleCollapse = () => {
       )}
 
       {/* Mobile menu drawer */}
-      <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform ${
+      <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 shadow-lg transform transition-transform ${
         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      } ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="flex flex-col h-full">
-          <div className="p-4 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-gray-800">AgileRS</h1>
+          <div className={`p-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+            <h1 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>AgileRS</h1>
           </div>
           <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
@@ -276,7 +278,9 @@ const toggleCollapse = () => {
                     flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
                     ${isActive(item.href)
                       ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      : theme === 'dark' 
+                        ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                     }
                   `}
                 >
@@ -294,7 +298,9 @@ const toggleCollapse = () => {
                 flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
                 ${isActive('/settings')
                   ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  : theme === 'dark'
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }
               `}
             >
@@ -302,14 +308,16 @@ const toggleCollapse = () => {
               Settings
             </Link>
           </nav>
-          <div className="p-4 border-t border-gray-200 space-y-1">
+          <div className={`p-4 border-t space-y-1 ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
             <Link
               href="/settings"
               onClick={() => setIsMobileMenuOpen(false)}
               className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                 isActive('/settings')
                   ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  : theme === 'dark'
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
               <FaCog className="mr-3 h-5 w-5" />
@@ -317,7 +325,7 @@ const toggleCollapse = () => {
             </Link>
             <button
               onClick={handleSignOut}
-              className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${theme === 'dark' ? 'text-gray-300 hover:text-white hover:bg-gray-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
             >
               <FaSignOutAlt className="mr-3 h-5 w-5" />
               Sign Out
@@ -328,14 +336,14 @@ const toggleCollapse = () => {
 
       {/* Desktop Sidebar */}
       <div className={`
-        hidden lg:block fixed inset-y-0 left-0 z-50 bg-white shadow-lg transition-all duration-300 ease-in-out
-        ${isCollapsed ? 'w-16' : 'w-64'}
+        hidden lg:block fixed inset-y-0 left-0 z-50 shadow-lg transition-all duration-300 ease-in-out
+        ${isCollapsed ? 'w-16' : 'w-64'} ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}
       `}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+          <div className={`flex items-center justify-between h-16 px-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
             {!isCollapsed && (
-              <h1 className="text-xl font-bold text-gray-800">AgileRS</h1>
+              <h1 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>AgileRS</h1>
             )}
             {/* Collapse/Expand Notifications */}
             <div className="flex items-center gap-2">
@@ -343,9 +351,9 @@ const toggleCollapse = () => {
               <div className="relative group">
                 <button
                   onClick={toggleCollapse}
-                  className={`p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors ${
+                  className={`p-2 rounded-md transition-colors ${
                     isCollapsed ? 'w-full flex justify-center' : ''
-                  }`}
+                  } ${theme === 'dark' ? 'text-gray-300 hover:text-white hover:bg-gray-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
                 >
                   {isCollapsed ? <FaChevronRight size={16} /> : <FaChevronLeft size={16} />}
                 </button>
@@ -378,7 +386,7 @@ const toggleCollapse = () => {
 
           {/* User info */}
           {!isCollapsed && (
-            <div className="p-4 border-b border-gray-200">
+            <div className={`p-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
               <div className="flex items-center space-x-3">
                 <Link href="/profile" className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center overflow-hidden">
@@ -396,10 +404,10 @@ const toggleCollapse = () => {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p className={`text-sm font-medium truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
                       {session.user.name || 'User'}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">
+                    <p className={`text-xs truncate ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                       {isGrowthTeam ? 'Growth Team' : isProductManager ? 'Product Manager' : 'Consultant'}
                     </p>
                   </div>
@@ -410,7 +418,7 @@ const toggleCollapse = () => {
 
           {/* Collapsed user avatar */}
           {isCollapsed && (
-            <div className="p-2 border-b border-gray-200 flex justify-center">
+            <div className={`p-2 border-b flex justify-center ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
               <Link href="/profile" className="relative group">
               <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center overflow-hidden">
                 {session.user.image ? (
@@ -452,7 +460,9 @@ const toggleCollapse = () => {
                       flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors relative
                       ${isActive(item.href)
                         ? 'bg-blue-100 text-blue-700'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                        : theme === 'dark'
+                          ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                       }
                       ${isCollapsed ? 'justify-center' : ''}
                     `}
@@ -485,7 +495,7 @@ const toggleCollapse = () => {
           </nav>
 
           {/* Settings and Sign out buttons */}
-          <div className="p-2 border-t border-gray-200 space-y-1">
+          <div className={`p-2 border-t space-y-1 ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
             {/* Settings Button */}
             {isCollapsed ? (
               <div className="relative group">
@@ -494,7 +504,9 @@ const toggleCollapse = () => {
                   className={`w-full flex items-center justify-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                     isActive('/settings')
                       ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      : theme === 'dark'
+                        ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
                   <FaCog className="h-5 w-5" />
@@ -510,7 +522,9 @@ const toggleCollapse = () => {
                 className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                   isActive('/settings')
                     ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    : theme === 'dark'
+                      ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
                 <FaCog className="mr-3 h-5 w-5" />
@@ -523,7 +537,7 @@ const toggleCollapse = () => {
               <div className="relative group">
                 <button
                   onClick={handleSignOut}
-                  className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  className={`w-full flex items-center justify-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${theme === 'dark' ? 'text-gray-300 hover:text-white hover:bg-gray-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
                 >
                   <FaSignOutAlt className="h-5 w-5" />
                 </button>
@@ -535,7 +549,7 @@ const toggleCollapse = () => {
             ) : (
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${theme === 'dark' ? 'text-gray-300 hover:text-white hover:bg-gray-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
               >
                 <FaSignOutAlt className="mr-3 h-5 w-5" />
                 Sign Out

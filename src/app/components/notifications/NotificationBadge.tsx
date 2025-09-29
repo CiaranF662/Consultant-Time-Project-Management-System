@@ -6,6 +6,7 @@ import Link from 'next/link';
 import axios from 'axios';
 import { FaBell, FaSpinner } from 'react-icons/fa';
 import NotificationDropdown from './NotificationDropdown';
+import { useTheme } from '@/app/contexts/ThemeContext';
 
 interface NotificationBadgeProps {
   className?: string;
@@ -13,6 +14,7 @@ interface NotificationBadgeProps {
 
 export default function NotificationBadge({ className = '' }: NotificationBadgeProps) {
   const { data: session } = useSession();
+  const { theme } = useTheme();
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -120,7 +122,11 @@ export default function NotificationBadge({ className = '' }: NotificationBadgeP
       <button
         ref={buttonRef}
         onClick={handleToggleDropdown}
-        className="relative p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors border border-gray-300"
+        className={`relative p-2 rounded-lg transition-colors border ${
+          theme === 'dark'
+            ? 'text-gray-300 hover:text-white hover:bg-gray-700 border-gray-600'
+            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100 border-gray-300'
+        }`}
         aria-label="Notifications"
         title="Notifications"
       >

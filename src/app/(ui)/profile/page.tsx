@@ -7,6 +7,7 @@ import axios from 'axios';
 
 import Loading from '@/app/loading';
 import { FaUser, FaSave } from 'react-icons/fa';
+import { useTheme } from '@/app/contexts/ThemeContext';
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -20,7 +21,7 @@ export default function ProfilePage() {
   const [currentUserImage, setCurrentUserImage] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
@@ -29,11 +30,6 @@ export default function ProfilePage() {
       setEmail(session.user.email || '');
       setAvatarPreview(session.user.image || null);
       setCurrentUserImage(session.user.image || null);
-
-      // Load theme from localStorage
-      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light';
-      setTheme(savedTheme);
-      document.documentElement.className = savedTheme;
     }
   }, [status, session, router]);
 

@@ -4,43 +4,55 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { FaMoon, FaSun, FaBell, FaLock, FaCog, FaSave } from 'react-icons/fa';
+import { useTheme } from '@/app/contexts/ThemeContext';
 
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
 
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [tempTheme, setTempTheme] = useState<'light' | 'dark'>('light');
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [inAppNotifications, setInAppNotifications] = useState(true);
   const [activeTab, setActiveTab] = useState<'preferences' | 'security'>('preferences');
+  const [isSaving, setIsSaving] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
     if (status === 'authenticated') {
-      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light';
+      setTempTheme(theme);
       const savedEmailNotifications = localStorage.getItem('emailNotifications') !== 'false';
       const savedInAppNotifications = localStorage.getItem('inAppNotifications') !== 'false';
 
-      setTheme(savedTheme);
       setEmailNotifications(savedEmailNotifications);
       setInAppNotifications(savedInAppNotifications);
-
-      document.documentElement.className = savedTheme;
     }
-  }, [status, router]);
+  }, [status, router, theme]);
 
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    document.documentElement.className = newTheme;
-  };
 
-  const handlePreferencesSave = () => {
-    localStorage.setItem('theme', theme);
-    localStorage.setItem('emailNotifications', emailNotifications.toString());
-    localStorage.setItem('inAppNotifications', inAppNotifications.toString());
-    alert('Preferences saved successfully!');
+
+  const handlePreferencesSave = async () => {
+    setIsSaving(true);
+    
+    try {
+      // Apply theme change if different
+      if (tempTheme !== theme) {
+        toggleTheme();
+      }
+      
+      // Save notification preferences
+      localStorage.setItem('emailNotifications', emailNotifications.toString());
+      localStorage.setItem('inAppNotifications', inAppNotifications.toString());
+      
+      // Show success popup
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -57,18 +69,6 @@ export default function SettingsPage() {
                 Manage your application preferences and security settings
               </p>
             </div>
-
-            <button
-              onClick={toggleTheme}
-              className={`p-3 rounded-lg transition-colors ${
-                theme === 'dark'
-                  ? 'bg-gray-600 hover:bg-gray-500 text-yellow-400'
-                  : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-              }`}
-              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-            >
-              {theme === 'dark' ? <FaSun className="w-5 h-5" /> : <FaMoon className="w-5 h-5" />}
-            </button>
           </div>
         </div>
 
@@ -117,15 +117,15 @@ export default function SettingsPage() {
                       </p>
                     </div>
                     <button
-                      onClick={toggleTheme}
+                      onClick={() => setTempTheme(tempTheme === 'light' ? 'dark' : 'light')}
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-                        theme === 'dark'
+                        tempTheme === 'dark'
                           ? 'bg-gray-700 border-gray-600 text-yellow-400 hover:bg-gray-600'
                           : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      {theme === 'dark' ? <FaSun className="w-4 h-4" /> : <FaMoon className="w-4 h-4" />}
-                      {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                      {tempTheme === 'dark' ? <FaSun className="w-4 h-4" /> : <FaMoon className="w-4 h-4" />}
+                      {tempTheme === 'dark' ? 'Light Mode' : 'Dark Mode'}
                     </button>
                   </div>
                 </div>
@@ -178,7 +178,7 @@ export default function SettingsPage() {
 
                   <div className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-yellow-900/20 border-yellow-700' : 'bg-yellow-50 border-yellow-200'} border`}>
                     <p className={`text-xs ${theme === 'dark' ? 'text-yellow-200' : 'text-yellow-700'}`}>
-                      <strong>Note:</strong> These preferences are currently saved locally and will affect future notification functionality.
+                      <strong>Note:</strong> All preferences are saved when you click "Save Preferences".
                     </p>
                   </div>
                 </div>
@@ -187,10 +187,11 @@ export default function SettingsPage() {
               <div className="flex justify-end">
                 <button
                   onClick={handlePreferencesSave}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+                  disabled={isSaving}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
                 >
                   <FaSave className="w-4 h-4" />
-                  Save Preferences
+                  {isSaving ? 'Saving...' : 'Save Preferences'}
                 </button>
               </div>
             </div>
@@ -255,6 +256,16 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+      
+      {/* Success Popup */}
+      {showSuccess && (
+        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+          Preferences saved successfully!
+        </div>
+      )}
     </div>
   );
 }

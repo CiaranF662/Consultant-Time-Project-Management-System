@@ -6,6 +6,7 @@ import { FaCalendarWeek, FaProjectDiagram, FaClock, FaExclamationCircle, FaClipb
 import WeeklyPlannerEnhanced from '@/app/components/allocation/WeeklyPlannerEnhanced';
 import NotificationSummaryCard from '@/app/components/notifications/NotificationSummaryCard';
 import { formatHours } from '@/lib/dates';
+import { useTheme } from '@/app/contexts/ThemeContext';
 
 interface Sprint {
   id: string;
@@ -89,6 +90,7 @@ interface ConsultantDashboardProps {
 
 export default function ConsultantDashboard({ data, userId, userName }: ConsultantDashboardProps) {
   const [selectedWeek, setSelectedWeek] = useState(new Date());
+  const { theme } = useTheme();
 
   // Calculate current week's total hours
   const currentWeekHours = (data.currentWeekAllocations || []).reduce((sum: number, allocation: any) => {
@@ -108,24 +110,24 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
   }, 0);
 
   return (
-    <div className="p-4 md:p-8">
+    <div className={`p-4 md:p-8 min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Welcome back, {userName}!</h1>
-        <p className="text-lg text-gray-600">
+        <h1 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>Welcome back, {userName}!</h1>
+        <p className={`text-lg ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
           {data.isPM ? 'Product Manager & Consultant' : 'Consultant'} Dashboard
         </p>
       </div>
 
       {/* PM Alert if applicable */}
       {data.isPM && (
-        <div className="mb-6 bg-blue-50 border-l-4 border-blue-400 p-4">
+        <div className={`mb-6 border-l-4 border-blue-400 p-4 ${theme === 'dark' ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
           <div className="flex">
             <div className="flex-shrink-0">
               <FaClipboardList className="h-5 w-5 text-blue-400" />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-blue-700">
+              <p className={`text-sm ${theme === 'dark' ? 'text-blue-300' : 'text-blue-700'}`}>
                 You are the Product Manager for {data.pmProjects.length} project{data.pmProjects.length !== 1 ? 's' : ''}.
                 {' '}
                 <Link href="/dashboard/phase-planning" className="font-medium underline">
@@ -139,43 +141,43 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow-md border">
+        <div className={`p-6 rounded-lg shadow-md border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">This Week's Hours</p>
-              <p className="text-2xl font-bold text-gray-900">{formatHours(currentWeekHours)}</p>
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>This Week's Hours</p>
+              <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{formatHours(currentWeekHours)}</p>
             </div>
             <FaCalendarWeek className="h-8 w-8 text-blue-500" />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md border">
+        <div className={`p-6 rounded-lg shadow-md border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Active Projects</p>
-              <p className="text-2xl font-bold text-gray-900">{data.projects.length}</p>
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Active Projects</p>
+              <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{data.projects.length}</p>
             </div>
             <FaProjectDiagram className="h-8 w-8 text-green-500" />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md border">
+        <div className={`p-6 rounded-lg shadow-md border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Allocated</p>
-              <p className="text-2xl font-bold text-gray-900">{formatHours(totalAllocatedHours)}</p>
-              <p className="text-xs text-gray-500">{formatHours(totalDistributedHours)} distributed</p>
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Total Allocated</p>
+              <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{formatHours(totalAllocatedHours)}</p>
+              <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{formatHours(totalDistributedHours)} distributed</p>
             </div>
             <FaClock className="h-8 w-8 text-purple-500" />
           </div>
         </div>
 
         {data.isPM ? (
-          <Link href="/dashboard/admin/hour-changes" className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
+          <Link href="/dashboard/admin/hour-changes" className={`p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Hour Change Approvals</p>
-                <p className="text-2xl font-bold text-gray-900">{data.pendingHourChangesCount || 0}</p>
+                <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Hour Change Approvals</p>
+                <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{data.pendingHourChangesCount || 0}</p>
               </div>
               {(data.pendingHourChangesCount || 0) > 0 && (
                 <FaExclamationCircle className="h-8 w-8 text-orange-500" />
@@ -183,11 +185,11 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
             </div>
           </Link>
         ) : (
-          <Link href="/dashboard/hour-requests" className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
+          <Link href="/dashboard/hour-requests" className={`p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Pending Requests</p>
-                <p className="text-2xl font-bold text-gray-900">{data.pendingRequests.length}</p>
+                <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Pending Requests</p>
+                <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{data.pendingRequests.length}</p>
               </div>
               {data.pendingRequests.length > 0 && (
                 <FaExclamationCircle className="h-8 w-8 text-yellow-500" />
@@ -201,10 +203,10 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
 
       {/* Weekly Planner */}
       <div className="mb-8">
-        <div className="bg-white rounded-lg shadow-md border">
-          <div className="p-4 border-b">
-            <h2 className="text-xl font-semibold text-gray-800">Weekly Hour Planner</h2>
-            <p className="text-sm text-gray-500">Distribute your allocated hours across weeks</p>
+        <div className={`rounded-lg shadow-md border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <div className={`p-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+            <h2 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>Weekly Hour Planner</h2>
+            <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Distribute your allocated hours across weeks</p>
           </div>
           <WeeklyPlannerEnhanced 
             consultantId={userId}
@@ -215,7 +217,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
 
       {/* Phase Allocations */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Your Phase Allocations</h2>
+        <h2 className={`text-xl font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>Your Phase Allocations</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {data.phaseAllocations.map((allocation) => {
             const distributed = allocation.weeklyAllocations.reduce((sum: number, week: any) => {
@@ -225,11 +227,11 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
             const progress = allocation.totalHours > 0 ? (distributed / allocation.totalHours) * 100 : 0;
 
             return (
-              <div key={allocation.id} className="bg-white p-6 rounded-lg shadow-md border">
+              <div key={allocation.id} className={`p-6 rounded-lg shadow-md border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="font-semibold text-gray-800">{allocation.phase.name}</h3>
-                    <p className="text-sm text-gray-500">{allocation.phase.project.title}</p>
+                    <h3 className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{allocation.phase.name}</h3>
+                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{allocation.phase.project.title}</p>
                   </div>
                   <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                     remaining === 0 ? 'bg-green-100 text-green-800' : 
@@ -244,12 +246,12 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Total Allocated</span>
-                    <span className="font-medium">{formatHours(allocation.totalHours)}</span>
+                    <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Total Allocated</span>
+                    <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{formatHours(allocation.totalHours)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Distributed</span>
-                    <span className="font-medium">{formatHours(distributed)}</span>
+                    <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Distributed</span>
+                    <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{formatHours(distributed)}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                     <div 
@@ -263,8 +265,8 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t">
-                  <p className="text-xs text-gray-500">
+                <div className={`mt-4 pt-4 border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                     Sprint {allocation.phase.sprints[0]?.sprintNumber || 'N/A'} - 
                     Sprint {allocation.phase.sprints[allocation.phase.sprints.length - 1]?.sprintNumber || 'N/A'}
                   </p>
@@ -277,13 +279,13 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
 
       {/* Your Projects */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Your Projects</h2>
+        <h2 className={`text-xl font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>Your Projects</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {data.projects.map((project) => (
             <Link key={project.id} href={`/dashboard/projects/${project.id}`}>
-              <div className="bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors">
-                <h3 className="font-semibold text-gray-800 truncate">{project.title}</h3>
-                <p className="text-sm text-gray-500 mt-1">
+              <div className={`p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                <h3 className={`font-semibold truncate ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{project.title}</h3>
+                <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                   {project.phases.length} phases
                 </p>
                 <div className="mt-4 flex -space-x-2">
