@@ -2,7 +2,6 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole } from '@prisma/client';
-import DashboardLayout from '@/app/components/DashboardLayout';
 import ApprovalsDashboard from '@/app/components/growth-team/approvals/ApprovalsDashboard';
 
 const prisma = new PrismaClient();
@@ -170,7 +169,7 @@ export default async function HourApprovalsPage() {
   const data = await getHourApprovalsData();
 
   return (
-    <DashboardLayout>
+    
       <ApprovalsDashboard
         userRole={session.user.role}
         pendingAllocations={data.pendingAllocations}
@@ -178,6 +177,6 @@ export default async function HourApprovalsPage() {
         pendingWeeklyAllocations={data.pendingWeeklyAllocations}
         showFullInterface={true}
       />
-    </DashboardLayout>
+    
   );
 }

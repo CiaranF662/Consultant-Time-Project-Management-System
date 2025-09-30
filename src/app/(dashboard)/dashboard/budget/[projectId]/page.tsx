@@ -2,7 +2,6 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { UserRole } from '@prisma/client';
-import DashboardLayout from '@/app/components/DashboardLayout';
 import ProjectBudgetDetails from '@/app/components/projects/budget/ProjectBudgetDetails';
 
 interface PageProps {
@@ -24,8 +23,8 @@ export default async function ProjectBudgetPage({ params }: PageProps) {
   const { projectId } = await params;
 
   return (
-    <DashboardLayout>
+    
       <ProjectBudgetDetails projectId={projectId} />
-    </DashboardLayout>
+    
   );
 }

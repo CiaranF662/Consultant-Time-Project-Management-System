@@ -6,6 +6,7 @@ import { formatHours } from '@/lib/dates';
 import PhaseAllocationApproval from './PhaseAllocationApproval';
 import WeeklyPlanApproval from './WeeklyPlanApproval';
 import HourChangeApproval from './HourChangeApproval';
+import { ComponentLoading } from '@/app/components/ui/LoadingSpinner';
 
 interface PhaseAllocation {
   id: string;
@@ -417,9 +418,7 @@ export default function ApprovalsDashboard({
       </div>
 
       {loading ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        </div>
+        <ComponentLoading message="Loading approvals..." />
       ) : (
         <>
           {/* Phase Allocations Tab */}

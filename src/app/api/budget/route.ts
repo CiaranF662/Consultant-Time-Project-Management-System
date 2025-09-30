@@ -55,7 +55,7 @@ export async function GET(request: Request) {
       const totalPlanned = project.phases.reduce((sum, phase) => {
         return sum + phase.allocations.reduce((phaseSum, allocation) => {
           return phaseSum + allocation.weeklyAllocations.reduce((weekSum, week) => {
-            return weekSum + week.plannedHours;
+            return weekSum + (week.proposedHours || 0);
           }, 0);
         }, 0);
       }, 0);
@@ -67,7 +67,7 @@ export async function GET(request: Request) {
         totalAllocated,
         totalPlanned,
         remaining: project.budgetedHours - totalAllocated,
-        utilizationRate: project.budgetedHours > 0 
+        utilizationRate: project.budgetedHours > 0
           ? ((totalAllocated / project.budgetedHours) * 100).toFixed(1)
           : 0,
         teamSize: project.consultants.length,

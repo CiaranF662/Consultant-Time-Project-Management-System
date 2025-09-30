@@ -20,7 +20,8 @@ import {
   FaMoneyBillWave,
   FaCalendarWeek,
   FaBell,
-  FaCheckCircle
+  FaCheckCircle,
+  FaChartLine
 } from 'react-icons/fa';
 import NotificationBadge from './notifications/NotificationBadge';
 import { UserRole } from '@prisma/client';
@@ -97,6 +98,13 @@ export default function Sidebar({ children }: SidebarProps) {
           key: 'growth-budget'
         },
         {
+          label: 'Portfolio Timeline',
+          href: '/dashboard/gantt',
+          icon: FaChartLine,
+          roles: [UserRole.GROWTH_TEAM],
+          key: 'growth-gantt'
+        },
+        {
           label: 'Hour Approvals',
           href: '/dashboard/hour-approvals',
           icon: FaCheckCircle,
@@ -150,6 +158,13 @@ export default function Sidebar({ children }: SidebarProps) {
           key: 'consultant-projects'
         },
         {
+          label: 'Portfolio View',
+          href: '/dashboard/gantt',
+          icon: FaChartLine,
+          roles: [UserRole.CONSULTANT],
+          key: 'consultant-gantt'
+        },
+        {
           label: 'Hour Requests',
           href: '/dashboard/hour-requests',
           icon: FaClock,
@@ -179,14 +194,6 @@ export default function Sidebar({ children }: SidebarProps) {
           };
         }
 
-        // Add Budget Overview after Dashboard
-        items.splice(1, 0, {
-          label: 'Budget Overview',
-          href: '/dashboard/pm-budget',
-          icon: FaMoneyBillWave,
-          requiresPM: true,
-          key: 'pm-budget'
-        });
       }
     }
 

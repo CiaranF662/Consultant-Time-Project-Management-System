@@ -12,6 +12,7 @@ import { formatHours } from '@/lib/dates';
 import ProjectHealthView from '../dashboard-views/ProjectHealthView';
 import PendingRequestsView from '../dashboard-views/PendingRequestsView';
 import CrossProjectManagementView from '../dashboard-views/CrossProjectManagementView';
+import { ComponentLoading } from '@/app/components/ui/LoadingSpinner';
 
 interface Project {
   id: string;
@@ -211,13 +212,7 @@ export default function ProductManagerDashboard() {
 
 
   if (loading) {
-    return (
-      <div className="p-8">
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        </div>
-      </div>
-    );
+    return <ComponentLoading message="Loading product manager dashboard..." />;
   }
 
   return (

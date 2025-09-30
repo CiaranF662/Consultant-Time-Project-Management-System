@@ -17,15 +17,20 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Get all projects where the user is involved (either as consultant or PM)
-    const projects = await prisma.project.findMany({
-      where: {
-        consultants: {
-          some: {
-            userId: session.user.id
+    // Growth Team can see all projects, others see only projects where they're involved
+    const whereCondition = session.user.role === UserRole.GROWTH_TEAM
+      ? {} // No filter for Growth Team - see all projects
+      : {
+          consultants: {
+            some: {
+              userId: session.user.id
+            }
           }
-        }
-      },
+        };
+
+    // Get projects based on user role
+    const projects = await prisma.project.findMany({
+      where: whereCondition,
       include: {
         consultants: {
           include: {

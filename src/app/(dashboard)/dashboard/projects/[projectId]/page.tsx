@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -17,7 +17,7 @@ import PhaseStatusCard from '@/app/components/projects/phases/PhaseStatusCard';
 import ProjectGanttChart from '@/app/components/projects/gantt/ProjectGanttChart';
 import { generateColorFromString } from '@/lib/colors';
 import { formatDate } from '@/lib/dates';
-import DashboardLayout from '@/app/components/DashboardLayout';
+import { ComponentLoading } from '@/app/components/ui/LoadingSpinner';
 
 // Define comprehensive types
 interface PhaseAllocation {
@@ -68,9 +68,9 @@ interface ProjectWithDetails extends Project {
 export default function ProjectDetailPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { projectId } = use(params);
 
   const [project, setProject] = useState<ProjectWithDetails | null>(null);
-  const [projectId, setProjectId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<'details' | 'gantt'>('details');
   const [isAddPhaseModalOpen, setIsAddPhaseModalOpen] = useState(false);
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
@@ -90,16 +90,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
     phase: null,
   });
 
-  // Unwrap params Promise
-  useEffect(() => {
-    params.then((unwrappedParams) => {
-      setProjectId(unwrappedParams.projectId);
-    });
-  }, [params]);
-
   const fetchProjectDetails = useCallback(async () => {
-    if (!projectId) return;
-    
     try {
       const { data } = await axios.get(`/api/projects/${projectId}`);
       setProject(data);
@@ -107,16 +98,16 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
       console.error("Failed to fetch project details", error);
       setProject(null);
     }
-  }, [projectId]);
+  }, []);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
     }
-    if (status === 'authenticated' && projectId) {
+    if (status === 'authenticated') {
       fetchProjectDetails();
     }
-  }, [status, router, fetchProjectDetails, projectId]);
+  }, [status, router, fetchProjectDetails]);
   
   const handleDeletePhase = async (phaseId: string) => {
     if(confirm('Are you sure you want to delete this phase? This will remove all allocations and unassign its sprints.')) {
@@ -152,11 +143,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   };
 
   if (status === 'loading' || !project) {
-    return <div className="text-center p-12">Loading...</div>;
+    return <ComponentLoading message="Loading project details..." />;
   }
-  
+
   if (!session?.user) {
-    return <div className="text-center p-12">Loading session...</div>;
+    return <ComponentLoading message="Loading session..." />;
   }
 
   const sprintsInPhases = new Set(project.phases.flatMap(p => p.sprints.map(s => s.id)));
@@ -178,8 +169,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   }, 0);
 
   return (
-    <DashboardLayout>
-      <div className="bg-gray-50 min-h-screen w-full">
+    <div className="bg-gray-50 min-h-screen w-full">
         <div className="container mx-auto p-4 md:p-8">
           
           {/* Breadcrumb */}
@@ -478,7 +468,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
               </div>
             </div>
           )}
-        </div>
 
         {/* Modals */}
         {isAddPhaseModalOpen && project && (
@@ -498,7 +487,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
 
         {isEditProjectModalOpen && project && (
           <EditProjectModal
-            project={project}
+            project={{
+              ...project,
+              consultants: project.consultants.map(c => ({
+                ...c,
+                allocatedHours: c.allocatedHours ?? undefined
+              }))
+            }}
             onClose={() => {
               setIsEditProjectModalOpen(false);
               fetchProjectDetails();
@@ -530,6 +525,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
           />
         )}
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

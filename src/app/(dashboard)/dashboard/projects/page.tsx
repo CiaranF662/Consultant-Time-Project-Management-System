@@ -2,7 +2,6 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole } from '@prisma/client';
-import DashboardLayout from '@/app/components/DashboardLayout';
 import ProjectsPageClient from '@/app/components/projects/details/ProjectsPageClient';
 
 const prisma = new PrismaClient();
@@ -74,11 +73,9 @@ export default async function ProjectsPage() {
   const isGrowthTeam = session.user.role === UserRole.GROWTH_TEAM;
 
   return (
-    <DashboardLayout>
-      <ProjectsPageClient 
-        projects={projects} 
-        isGrowthTeam={isGrowthTeam} 
-      />
-    </DashboardLayout>
+    <ProjectsPageClient
+      projects={projects}
+      isGrowthTeam={isGrowthTeam}
+    />
   );
 }

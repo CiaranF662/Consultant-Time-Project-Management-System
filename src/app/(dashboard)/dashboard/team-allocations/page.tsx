@@ -2,7 +2,6 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient } from '@prisma/client';
-import DashboardLayout from '@/app/components/DashboardLayout';
 import TeamAllocationsClient from '@/app/components/product-manager/TeamAllocationsClient';
 
 const prisma = new PrismaClient();
@@ -65,7 +64,7 @@ export default async function TeamAllocationsPage() {
 
   if (projects.length === 0) {
     return (
-      <DashboardLayout>
+      
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Team Allocations</h1>
@@ -79,13 +78,13 @@ export default async function TeamAllocationsPage() {
             </div>
           </div>
         </div>
-      </DashboardLayout>
+      
     );
   }
 
   return (
-    <DashboardLayout>
+    
       <TeamAllocationsClient projects={projects} />
-    </DashboardLayout>
+    
   );
 }

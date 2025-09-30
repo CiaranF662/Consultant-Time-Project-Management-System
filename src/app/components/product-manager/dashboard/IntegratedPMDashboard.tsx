@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { FaUserTie, FaUser } from 'react-icons/fa';
 import ProductManagerDashboard from './ProductManagerDashboard';
 import ConsultantDashboard from '@/app/components/consultant/dashboard/ConsultantDashboard';
+import { ComponentLoading } from '@/app/components/ui/LoadingSpinner';
 
 interface IntegratedPMDashboardProps {
   userId: string;
@@ -88,12 +89,7 @@ export default function IntegratedPMDashboard({ userId, userName }: IntegratedPM
         ) : (
           <div>
             {loadingConsultantData ? (
-              <div className="p-8">
-                <div className="flex justify-center items-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
-                  <span className="ml-4 text-gray-600">Loading consultant data...</span>
-                </div>
-              </div>
+              <ComponentLoading message="Loading consultant dashboard..." />
             ) : consultantData ? (
               <ConsultantDashboard
                 data={consultantData}

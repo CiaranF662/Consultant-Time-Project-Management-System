@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import axios from 'axios';
 import { User } from '@prisma/client';
-import DashboardLayout from '@/app/components/DashboardLayout';
 import { FaInfoCircle, FaClock, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
 
 // Helper function to get today's date in YYYY-MM-DD format
@@ -213,7 +212,7 @@ export default function CreateProjectPage() {
   const suggestedBudget = getSuggestedBudget();
 
   return (
-    <DashboardLayout>
+    
       <div className="bg-gray-50 min-h-screen">
         <div className="container mx-auto p-4 md:p-8">
           <div className="max-w-3xl mx-auto">
@@ -619,6 +618,6 @@ export default function CreateProjectPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    
   );
 }

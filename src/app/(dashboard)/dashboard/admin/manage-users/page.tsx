@@ -5,7 +5,6 @@ import axios from 'axios';
 import type { User, UserRole } from '@prisma/client';
 import Link from 'next/link';
 import { FaArrowLeft } from 'react-icons/fa';
-import DashboardLayout from '@/app/components/DashboardLayout';
 
 export default function ManageUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -43,7 +42,7 @@ export default function ManageUsersPage() {
   if (error) return <div className="text-center p-12 text-red-500">{error}</div>;
 
   return (
-    <DashboardLayout>
+    
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto p-4 md:p-8">
         <div className="mb-6">
@@ -73,6 +72,6 @@ export default function ManageUsersPage() {
         </div>
       </div>
     </div>
-    </DashboardLayout>
+    
   );
 }

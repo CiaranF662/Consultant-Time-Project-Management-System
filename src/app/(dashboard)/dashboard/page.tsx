@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, UserStatus, ChangeStatus, ProjectRole } from '@prisma/client';
-import DashboardLayout from '@/app/components/DashboardLayout';
 import GrowthTeamDashboard from '@/app/components/growth-team/dashboard/GrowthTeamDashboard';
 import ConsultantDashboard from '@/app/components/consultant/dashboard/ConsultantDashboard';
 import IntegratedPMDashboard from '@/app/components/product-manager/dashboard/IntegratedPMDashboard';
@@ -152,35 +151,27 @@ export default async function DashboardPage() {
 
   if (isGrowthTeam) {
     const data = await getGrowthTeamData();
-    return (
-      <DashboardLayout>
-        <GrowthTeamDashboard data={data} userRole={session.user.role} />
-      </DashboardLayout>
-    );
+    return <GrowthTeamDashboard data={data} userRole={session.user.role} />;
   } else {
     const data = await getConsultantData(session.user.id);
 
     // If user is a Product Manager, show the Integrated PM Dashboard with role switcher
     if (data.isPM) {
       return (
-        <DashboardLayout>
-          <IntegratedPMDashboard
-            userId={session.user.id}
-            userName={session.user.name || session.user.email || 'User'}
-          />
-        </DashboardLayout>
+        <IntegratedPMDashboard
+          userId={session.user.id}
+          userName={session.user.name || session.user.email || 'User'}
+        />
       );
     }
 
     // Otherwise show the regular Consultant Dashboard
     return (
-      <DashboardLayout>
-        <ConsultantDashboard
-          data={data}
-          userId={session.user.id}
-          userName={session.user.name || session.user.email || 'User'}
-        />
-      </DashboardLayout>
+      <ConsultantDashboard
+        data={data}
+        userId={session.user.id}
+        userName={session.user.name || session.user.email || 'User'}
+      />
     );
   }
 }

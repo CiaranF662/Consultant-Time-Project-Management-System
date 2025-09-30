@@ -2,7 +2,6 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, ChangeStatus } from '@prisma/client';
-import DashboardLayout from '@/app/components/DashboardLayout';
 import HourRequestsManager from '@/app/components/consultant/requests/HourRequestsManager';
 
 const prisma = new PrismaClient();
@@ -55,12 +54,12 @@ export default async function HourRequestsPage() {
   const data = await getUserHourRequests(session.user.id);
 
   return (
-    <DashboardLayout>
+    
       <HourRequestsManager 
         data={data} 
         userId={session.user.id}
         userName={session.user.name || session.user.email || 'User'}
       />
-    </DashboardLayout>
+    
   );
 }

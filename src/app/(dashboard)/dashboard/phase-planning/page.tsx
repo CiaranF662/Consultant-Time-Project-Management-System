@@ -2,7 +2,6 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, ProjectRole } from '@prisma/client';
-import DashboardLayout from '@/app/components/DashboardLayout';
 import PhasePlanningDashboard from '@/app/components/projects/product-manager/PhasePlanningDashboard';
 
 const prisma = new PrismaClient();
@@ -89,7 +88,7 @@ export default async function PhasePlanningPage() {
 
   if (pmProjects.length === 0) {
     return (
-      <DashboardLayout>
+      
         <div className="p-8">
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
             <div className="flex">
@@ -106,15 +105,15 @@ export default async function PhasePlanningPage() {
             </div>
           </div>
         </div>
-      </DashboardLayout>
+      
     );
   }
 
   const data = await getProductManagerData(session.user.id);
 
   return (
-    <DashboardLayout>
+    
       <PhasePlanningDashboard data={data} userId={session.user.id} />
-    </DashboardLayout>
+    
   );
 }

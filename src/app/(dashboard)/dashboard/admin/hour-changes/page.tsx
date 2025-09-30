@@ -2,7 +2,6 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, ChangeStatus } from '@prisma/client';
-import DashboardLayout from '@/app/components/DashboardLayout';
 import HourChangeApprovalsManager from '@/app/components/growth-team/approvals/HourChangeApprovalsManager';
 
 const prisma = new PrismaClient();
@@ -71,7 +70,7 @@ export default async function HourChangeApprovalsPage() {
   
   if (!isGrowthTeam && !isProductManager) {
     return (
-      <DashboardLayout>
+      
         <div className="p-8">
           <div className="bg-red-50 border-l-4 border-red-400 p-4">
             <div className="flex">
@@ -88,18 +87,18 @@ export default async function HourChangeApprovalsPage() {
             </div>
           </div>
         </div>
-      </DashboardLayout>
+      
     );
   }
 
   const requests = await getPendingHourRequests(session.user.id, isGrowthTeam);
 
   return (
-    <DashboardLayout>
+    
       <HourChangeApprovalsManager 
         requests={requests} 
         userId={session.user.id}
       />
-    </DashboardLayout>
+    
   );
 }

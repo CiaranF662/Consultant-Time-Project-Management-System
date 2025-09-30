@@ -2,7 +2,6 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole } from '@prisma/client';
-import DashboardLayout from '@/app/components/DashboardLayout';
 import WeeklyPlannerEnhanced from '@/app/components/consultant/dashboard/WeeklyPlannerEnhanced';
 
 const prisma = new PrismaClient();
@@ -50,13 +49,13 @@ export default async function WeeklyPlannerPage() {
   const phaseAllocations = await getPhaseAllocationsForPlanner(session.user.id);
 
   return (
-    <DashboardLayout>
+    
       <div className="p-6">
         <WeeklyPlannerEnhanced
           consultantId={session.user.id}
           phaseAllocations={phaseAllocations}
         />
       </div>
-    </DashboardLayout>
+    
   );
 }

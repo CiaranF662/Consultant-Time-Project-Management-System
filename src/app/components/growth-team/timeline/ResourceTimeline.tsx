@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { formatHours, getUtilizationColor } from '@/lib/dates';
+import { ComponentLoading } from '@/app/components/ui/LoadingSpinner';
 
 interface ResourceTimelineProps {
   consultants: Array<{
@@ -174,11 +175,7 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <ComponentLoading message="Loading resource timeline..." />;
   }
 
   return (
