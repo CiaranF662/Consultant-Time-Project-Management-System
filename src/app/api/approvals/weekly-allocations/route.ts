@@ -1,25 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { requireGrowthTeam, isAuthError } from '@/lib/api-auth';
+import { UserRole } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 // GET pending weekly allocations for Growth Team approval
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
-
-  // Check if user is Growth Team
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id }
-  });
-
-  if (user?.role !== UserRole.GROWTH_TEAM) {
-    return new NextResponse(JSON.stringify({ error: 'Only Growth Team can access weekly allocation approvals' }), { status: 403 });
-  }
+  const auth = await requireGrowthTeam();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   const url = new URL(request.url);
   const weekStartDate = url.searchParams.get('weekStartDate');
@@ -41,9 +30,13 @@ export async function GET(request: Request) {
           select: { id: true, name: true, email: true }
         },
         phaseAllocation: {
-          include: {
+          select: {
+            id: true,
+            totalHours: true,
             phase: {
-              include: {
+              select: {
+                id: true,
+                name: true,
                 project: {
                   select: { id: true, title: true }
                 }

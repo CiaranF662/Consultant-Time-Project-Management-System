@@ -1,17 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { requireAuth, isAuthError } from '@/lib/api-auth';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 // POST /api/notifications/actions - Bulk actions on notifications
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   try {
     const body = await request.json();

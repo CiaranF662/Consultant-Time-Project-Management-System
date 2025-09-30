@@ -1,20 +1,19 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { requireAuth, isAuthError } from '@/lib/api-auth';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 // GET handler to fetch existing hours for the logged-in user for a specific sprint
 export async function GET(
   request: Request,
   context: { params: Promise<{ sprintId: string }> }
 ) {
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
+
   const params = await context.params;
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
 
   const hours = await prisma.consultantSprintHours.findMany({
     where: {

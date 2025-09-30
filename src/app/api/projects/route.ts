@@ -1,20 +1,17 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, ProjectRole, NotificationType } from '@prisma/client';
+import { requireAuth, isAuthError } from '@/lib/api-auth';
+import { UserRole, ProjectRole, NotificationType } from '@prisma/client';
 import { sendEmail, renderEmailTemplate } from '@/lib/email';
 import { createNotification, createNotificationsForUsers, NotificationTemplates } from '@/lib/notifications';
 import ProjectAssignmentEmail from '@/emails/ProjectAssignmentEmail';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 // GET all projects the user is involved in (either as consultant or PM)
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   try {
     // Growth Team can see all projects, others see only projects where they're involved
@@ -94,11 +91,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   // Only Growth Team can create projects
   if (session.user.role !== UserRole.GROWTH_TEAM) {

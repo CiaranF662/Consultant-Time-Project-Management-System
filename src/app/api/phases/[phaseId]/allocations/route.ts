@@ -1,20 +1,18 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { PrismaClient, ProjectRole, NotificationType } from '@prisma/client';
+import { requireAuth, isAuthError } from '@/lib/api-auth';
+import { ProjectRole, NotificationType } from '@prisma/client';
 import { getGrowthTeamMemberIds, createNotificationsForUsers, NotificationTemplates } from '@/lib/notifications';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 // GET all allocations for a phase
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ phaseId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   const { phaseId } = await params;
 
@@ -43,10 +41,9 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ phaseId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   const { phaseId } = await params;
 
@@ -326,10 +323,9 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ phaseId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   const { phaseId } = await params;
 
@@ -424,11 +420,12 @@ export async function PUT(
     // Use transaction to update allocations
     await prisma.$transaction(async (tx) => {
 
-      // Create a map of existing approval statuses and hours
+      // Create a map of existing allocations with full data
       const existingApprovalMap = new Map(
         existingAllocations.map(alloc => [
           alloc.consultantId,
           {
+            id: alloc.id,
             totalHours: alloc.totalHours,
             approvalStatus: alloc.approvalStatus,
             approvedBy: alloc.approvedBy,
@@ -438,35 +435,54 @@ export async function PUT(
         ])
       );
 
-      // Delete existing allocations
-      await tx.phaseAllocation.deleteMany({
-        where: { phaseId }
-      });
+      // Get the consultant IDs from the new allocations
+      const newConsultantIds = new Set(allocations.map((a: any) => a.consultantId));
+      const existingConsultantIds = new Set(existingAllocations.map(a => a.consultantId));
 
-      // Create new allocations, preserving approval status for existing consultants
-      if (allocations.length > 0) {
-        const allocationData = allocations.map((alloc: any) => {
-          const existingApproval = existingApprovalMap.get(alloc.consultantId);
-          const newHours = parseFloat(alloc.totalHours);
+      // Find consultant IDs to delete (were in existing but not in new)
+      const consultantsToDelete = Array.from(existingConsultantIds).filter(id => !newConsultantIds.has(id));
 
-          // Check if hours have changed - if so, reset to PENDING approval
-          const hoursChanged = existingApproval && existingApproval.totalHours !== newHours;
-
-          return {
+      // Delete only the allocations for consultants that were removed
+      if (consultantsToDelete.length > 0) {
+        await tx.phaseAllocation.deleteMany({
+          where: {
             phaseId,
-            consultantId: alloc.consultantId,
-            totalHours: newHours,
-            // Reset to PENDING if hours changed, otherwise preserve existing status, or set to PENDING for new consultants
-            approvalStatus: hoursChanged ? 'PENDING' : (existingApproval?.approvalStatus || 'PENDING'),
-            approvedBy: hoursChanged ? null : (existingApproval?.approvedBy || null),
-            approvedAt: hoursChanged ? null : (existingApproval?.approvedAt || null),
-            rejectionReason: hoursChanged ? null : (existingApproval?.rejectionReason || null)
-          };
+            consultantId: { in: consultantsToDelete }
+          }
         });
+      }
 
-        await tx.phaseAllocation.createMany({
-          data: allocationData
-        });
+      // Process each allocation: update existing or create new
+      for (const alloc of allocations) {
+        const existingApproval = existingApprovalMap.get(alloc.consultantId);
+        const newHours = parseFloat(alloc.totalHours);
+
+        if (existingApproval) {
+          // Update existing allocation
+          const hoursChanged = existingApproval.totalHours !== newHours;
+
+          await tx.phaseAllocation.update({
+            where: { id: existingApproval.id },
+            data: {
+              totalHours: newHours,
+              // Reset to PENDING if hours changed, otherwise preserve existing status
+              approvalStatus: hoursChanged ? 'PENDING' : existingApproval.approvalStatus,
+              approvedBy: hoursChanged ? null : existingApproval.approvedBy,
+              approvedAt: hoursChanged ? null : existingApproval.approvedAt,
+              rejectionReason: hoursChanged ? null : existingApproval.rejectionReason
+            }
+          });
+        } else {
+          // Create new allocation for new consultant
+          await tx.phaseAllocation.create({
+            data: {
+              phaseId,
+              consultantId: alloc.consultantId,
+              totalHours: newHours,
+              approvalStatus: 'PENDING'
+            }
+          });
+        }
       }
     });
 

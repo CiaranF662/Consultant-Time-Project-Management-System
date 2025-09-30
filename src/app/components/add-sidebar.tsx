@@ -98,7 +98,7 @@ export default function Sidebar({ children }: SidebarProps) {
           key: 'growth-budget'
         },
         {
-          label: 'Portfolio Timeline',
+          label: 'Portfolio View',
           href: '/dashboard/gantt',
           icon: FaChartLine,
           roles: [UserRole.GROWTH_TEAM],
@@ -194,6 +194,14 @@ export default function Sidebar({ children }: SidebarProps) {
           };
         }
 
+        // Add Budget Overview after Dashboard
+        items.splice(1, 0, {
+          label: 'Budget Overview',
+          href: '/dashboard/pm-budget',
+          icon: FaMoneyBillWave,
+          requiresPM: true,
+          key: 'pm-budget'
+        });
       }
     }
 

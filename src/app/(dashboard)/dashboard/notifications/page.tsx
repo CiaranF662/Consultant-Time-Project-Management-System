@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import NotificationsPageClient from '@/app/components/notifications/NotificationsPageClient';
+import NotificationsPageClient from '@/components/notifications/NotificationsPageClient';
 
 type NotificationType =
   | 'PROJECT_ASSIGNMENT'
@@ -54,7 +54,7 @@ async function getInitialNotifications(): Promise<NotificationsResponse> {
   try {
     // Import the notifications API logic directly instead of making HTTP call
     const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
+    import { prisma } from "@/lib/prisma";
     
     console.log('Fetching notifications for user:', session.user.id);
     

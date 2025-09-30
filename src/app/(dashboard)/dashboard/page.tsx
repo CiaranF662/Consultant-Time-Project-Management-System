@@ -2,11 +2,11 @@
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, UserStatus, ChangeStatus, ProjectRole } from '@prisma/client';
-import GrowthTeamDashboard from '@/app/components/growth-team/dashboard/GrowthTeamDashboard';
-import ConsultantDashboard from '@/app/components/consultant/dashboard/ConsultantDashboard';
-import IntegratedPMDashboard from '@/app/components/product-manager/dashboard/IntegratedPMDashboard';
-const prisma = new PrismaClient();
+import { UserRole, UserStatus, ChangeStatus, ProjectRole } from '@prisma/client';
+import GrowthTeamDashboard from '@/components/growth-team/dashboard/GrowthTeamDashboard';
+import ConsultantDashboard from '@/components/consultant/dashboard/ConsultantDashboard';
+import IntegratedPMDashboard from '@/components/product-manager/dashboard/IntegratedPMDashboard';
+import { prisma } from "@/lib/prisma";
 
 
 async function getGrowthTeamData() {

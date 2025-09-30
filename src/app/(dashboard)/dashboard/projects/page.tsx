@@ -1,10 +1,10 @@
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
-import ProjectsPageClient from '@/app/components/projects/details/ProjectsPageClient';
+import { UserRole } from '@prisma/client';
+import ProjectsPageClient from '@/components/projects/details/ProjectsPageClient';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 async function getProjectsForDashboard(userId: string, userRole: UserRole) {
   if (userRole === UserRole.GROWTH_TEAM) {

@@ -1,16 +1,14 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient, ChangeStatus } from '@prisma/client';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { ChangeStatus } from '@prisma/client';
+import { requireGrowthTeam, isAuthError } from '@/lib/api-auth';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 // --- THIS GET FUNCTION WAS MISSING ---
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== 'GROWTH_TEAM') {
-    return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
-  }
+  const auth = await requireGrowthTeam();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   try {
     const requests = await prisma.hourChangeRequest.findMany({

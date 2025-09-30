@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { requireGrowthTeam, isAuthError } from '@/lib/api-auth';
+import { UserRole } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id || session.user.role !== UserRole.GROWTH_TEAM) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireGrowthTeam();
+    if (isAuthError(auth)) return auth;
+    const { session, user } = auth;
 
     const { action, rejectionReason } = await request.json();
     const requestId = params.id;

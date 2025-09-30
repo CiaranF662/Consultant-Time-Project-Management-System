@@ -1,20 +1,19 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { requireAuth, isAuthError } from '@/lib/api-auth';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 // GET a specific weekly allocation by ID
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ allocationsId: string }> }
 ) {
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
+
   const { allocationsId } = await params;
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
 
   try {
     const allocation = await prisma.weeklyAllocation.findUnique({
@@ -55,11 +54,11 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ allocationsId: string }> }
 ) {
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
+
   const { allocationsId } = await params;
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
 
   try {
     const body = await request.json();
@@ -111,11 +110,11 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ allocationsId: string }> }
 ) {
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
+
   const { allocationsId } = await params;
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
 
   try {
     // First check if allocation exists and user has access

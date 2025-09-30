@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { UserRole } from '@prisma/client';
-import ProjectBudgetDetails from '@/app/components/projects/budget/ProjectBudgetDetails';
+import ProjectBudgetDetails from '@/components/projects/budget/ProjectBudgetDetails';
 
 interface PageProps {
   params: Promise<{ projectId: string }>;

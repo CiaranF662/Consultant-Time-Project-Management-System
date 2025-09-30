@@ -1,30 +1,19 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, NotificationType } from '@prisma/client';
+import { requireGrowthTeam, isAuthError } from '@/lib/api-auth';
+import { UserRole, NotificationType } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 // POST approve, modify, or reject weekly allocation
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ allocationId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
+  const auth = await requireGrowthTeam();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   const { allocationId } = await params;
-
-  // Check if user is Growth Team
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id }
-  });
-
-  if (user?.role !== UserRole.GROWTH_TEAM) {
-    return new NextResponse(JSON.stringify({ error: 'Only Growth Team can approve weekly allocations' }), { status: 403 });
-  }
 
   try {
     const body = await request.json();

@@ -1,17 +1,14 @@
-import { getServerSession } from 'next-auth/next';
+import { requireAuth, isAuthError } from '@/lib/api-auth';
 import { NextResponse } from 'next/server';
-import { PrismaClient, ProjectRole } from '@prisma/client';
-import { authOptions } from '@/lib/auth';
+import { ProjectRole } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    const auth = await requireAuth();
+    if (isAuthError(auth)) return auth;
+    const { session, user } = auth;
 
     // Check if user has any PRODUCT_MANAGER role assignments
     const pmAssignments = await prisma.consultantsOnProjects.findMany({

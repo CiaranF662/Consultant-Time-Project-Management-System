@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import GrowthTeamGanttChart from '@/app/components/growth-team/gantt/GrowthTeamGanttChart';
-import PageLoader from '@/app/components/ui/PageLoader';
+import GrowthTeamGanttChart from '@/components/growth-team/gantt/GrowthTeamGanttChart';
+import PageLoader from '@/components/ui/PageLoader';
 import axios from 'axios';
 
 export default function GanttPage() {

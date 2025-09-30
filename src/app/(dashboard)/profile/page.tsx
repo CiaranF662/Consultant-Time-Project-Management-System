@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import DashboardLayout from '@/app/components/DashboardLayout';
+import DashboardLayout from '@/components/DashboardLayout';
 import Loading from '@/app/loading';
 import { FaMoon, FaSun, FaBell, FaUser, FaLock, FaCog, FaSave } from 'react-icons/fa';
 

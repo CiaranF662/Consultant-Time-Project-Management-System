@@ -1,21 +1,19 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, ProjectRole } from '@prisma/client';
+import { requireAuth, isAuthError } from '@/lib/api-auth';
+import { UserRole, ProjectRole } from '@prisma/client';
 import { sendEmail, renderEmailTemplate } from '@/lib/email';
 import { createNotification, NotificationTemplates } from '@/lib/notifications';
 import ProjectAssignmentEmail from '@/emails/ProjectAssignmentEmail';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   const { projectId } = await params;
   const { id: userId, role } = session.user;
@@ -73,10 +71,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   // Only Growth Team can update project consultants
   if (session.user.role !== UserRole.GROWTH_TEAM) {

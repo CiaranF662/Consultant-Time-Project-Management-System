@@ -1,10 +1,10 @@
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, ChangeStatus } from '@prisma/client';
-import HourRequestsManager from '@/app/components/consultant/requests/HourRequestsManager';
+import { ChangeStatus } from '@prisma/client';
+import HourRequestsManager from '@/components/consultant/requests/HourRequestsManager';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 async function getUserHourRequests(userId: string) {
   const requests = await prisma.hourChangeRequest.findMany({

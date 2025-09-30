@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
-import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
+import { UserRole, UserStatus } from '@prisma/client';
 import { sendEmail, renderEmailTemplate } from '@/lib/email';
 import { createMultipleNotifications, NotificationTemplates } from '@/lib/notifications';
 import GrowthTeamSignupEmail from '@/emails/GrowthTeamSignupEmail';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
   try {

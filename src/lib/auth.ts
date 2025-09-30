@@ -1,11 +1,10 @@
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
-import { PrismaClient, UserStatus, UserRole, ProjectRole } from '@prisma/client';
+import { UserStatus, UserRole, ProjectRole } from '@prisma/client';
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from "bcryptjs";
-
-const prisma = new PrismaClient();
+import { prisma } from './prisma';
 
 // Remove the declare module blocks - they're now in next-auth.d.ts
 

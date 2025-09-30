@@ -1,10 +1,10 @@
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
-import WeeklyPlannerEnhanced from '@/app/components/consultant/dashboard/WeeklyPlannerEnhanced';
+import { UserRole } from '@prisma/client';
+import WeeklyPlannerEnhanced from '@/components/consultant/dashboard/WeeklyPlannerEnhanced';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 async function getPhaseAllocationsForPlanner(userId: string) {
   // Get all phase allocations for the consultant - this is what WeeklyPlannerEnhanced needs

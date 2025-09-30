@@ -1,10 +1,10 @@
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
-import ApprovalsDashboard from '@/app/components/growth-team/approvals/ApprovalsDashboard';
+import { UserRole } from '@prisma/client';
+import ApprovalsDashboard from '@/components/growth-team/approvals/ApprovalsDashboard';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 async function getHourApprovalsData() {
   // Get all pending phase allocations that need approval

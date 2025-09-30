@@ -1,6 +1,6 @@
 'use client';
 
-import { useTheme } from '@/app/contexts/ThemeContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface PageLoaderProps {
   message?: string;

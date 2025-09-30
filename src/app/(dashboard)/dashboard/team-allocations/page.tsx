@@ -2,9 +2,9 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient } from '@prisma/client';
-import TeamAllocationsClient from '@/app/components/product-manager/TeamAllocationsClient';
+import TeamAllocationsClient from '@/components/product-manager/TeamAllocationsClient';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 async function getProductManagerProjects(userId: string) {
   // Get projects where the user is the product manager

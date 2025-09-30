@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient, UserRole } from '@prisma/client';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { UserRole } from '@prisma/client';
+import { requireGrowthTeam, isAuthError } from '@/lib/api-auth';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ userId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== 'GROWTH_TEAM') {
-    return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
-  }
+  const auth = await requireGrowthTeam();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   try {
     const { userId } = await params;

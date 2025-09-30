@@ -1,10 +1,10 @@
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, ChangeStatus } from '@prisma/client';
-import HourChangeApprovalsManager from '@/app/components/growth-team/approvals/HourChangeApprovalsManager';
+import { UserRole, ChangeStatus } from '@prisma/client';
+import HourChangeApprovalsManager from '@/components/growth-team/approvals/HourChangeApprovalsManager';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 async function getPendingHourRequests(userId: string, isGrowthTeam: boolean) {
   let whereClause: any = { status: ChangeStatus.PENDING };

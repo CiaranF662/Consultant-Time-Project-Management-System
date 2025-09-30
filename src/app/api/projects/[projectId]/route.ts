@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { requireAuth, isAuthError } from '@/lib/api-auth';
+import { UserRole } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   const { projectId } = await params;
   const { id: userId, role } = session.user;
@@ -105,7 +103,8 @@ export async function GET(
             consultantName: allocation.consultant.name || allocation.consultant.email || 'Unknown',
             hours: allocation.totalHours,
             plannedHours: totalPlannedHours,
-            approvalStatus: allocation.approvalStatus
+            approvalStatus: allocation.approvalStatus,
+            rejectionReason: allocation.rejectionReason
           };
         }),
         // Keep allocations for phase status calculation
@@ -130,6 +129,7 @@ export async function GET(
             consultantId: allocation.consultantId,
             totalHours: allocation.totalHours,
             approvalStatus: allocation.approvalStatus,
+            rejectionReason: allocation.rejectionReason,
             weeklyAllocations: combinedWeeklyAllocations
           };
         })
@@ -147,8 +147,11 @@ export async function PATCH(
     request: Request,
     { params }: { params: Promise<{ projectId: string }> }
 ) {
-    const session = await getServerSession(authOptions);
-    if (session?.user?.role !== 'GROWTH_TEAM') {
+    const auth = await requireAuth();
+    if (isAuthError(auth)) return auth;
+    const { session } = auth;
+
+    if (session.user.role !== 'GROWTH_TEAM') {
         return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
     }
 
@@ -218,8 +221,11 @@ export async function DELETE(
     request: Request,
     { params }: { params: Promise<{ projectId: string }> }
 ) {
-    const session = await getServerSession(authOptions);
-    if (session?.user?.role !== 'GROWTH_TEAM') {
+    const auth = await requireAuth();
+    if (isAuthError(auth)) return auth;
+    const { session } = auth;
+
+    if (session.user.role !== 'GROWTH_TEAM') {
         return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
     }
 

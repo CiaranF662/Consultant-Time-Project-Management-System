@@ -8,16 +8,16 @@ import axios from 'axios';
 import { FaArrowLeft, FaUsers, FaPlus, FaEdit, FaClock, FaDollarSign, FaChartLine, FaProjectDiagram } from 'react-icons/fa';
 import { UserRole, Sprint, User, Phase, Project } from '@prisma/client';
 
-import PhaseCreationModal from '@/app/components/projects/product-manager/PhaseCreationModal';
-import PhaseAllocationForm from '@/app/components/projects/allocations/PhaseAllocationForm';
-import EditPhaseModal from '@/app/components/projects/product-manager/EditPhaseModal';
-import EditProjectModal from '@/app/components/projects/growth-team/EditProjectModal';
-import BudgetTracker from '@/app/components/projects/budget/BudgetTracker';
-import PhaseStatusCard from '@/app/components/projects/phases/PhaseStatusCard';
-import ProjectGanttChart from '@/app/components/projects/gantt/ProjectGanttChart';
+import PhaseCreationModal from '@/components/projects/product-manager/PhaseCreationModal';
+import PhaseAllocationForm from '@/components/projects/allocations/PhaseAllocationForm';
+import EditPhaseModal from '@/components/projects/product-manager/EditPhaseModal';
+import EditProjectModal from '@/components/projects/growth-team/EditProjectModal';
+import BudgetTracker from '@/components/projects/budget/BudgetTracker';
+import PhaseStatusCard from '@/components/projects/phases/PhaseStatusCard';
+import ProjectGanttChart from '@/components/projects/gantt/ProjectGanttChart';
 import { generateColorFromString } from '@/lib/colors';
 import { formatDate } from '@/lib/dates';
-import { ComponentLoading } from '@/app/components/ui/LoadingSpinner';
+import { ComponentLoading } from '@/components/ui/LoadingSpinner';
 
 // Define comprehensive types
 interface PhaseAllocation {
@@ -27,6 +27,7 @@ interface PhaseAllocation {
   hours: number; // Changed from allocatedHours to hours
   plannedHours: number;
   approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejectionReason?: string | null;
 }
 
 interface PhaseWithAllocations extends Phase {
@@ -37,6 +38,7 @@ interface PhaseWithAllocations extends Phase {
     consultantId: string;
     totalHours: number;
     approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    rejectionReason?: string | null;
     weeklyAllocations: Array<{
       id: string;
       plannedHours: number;

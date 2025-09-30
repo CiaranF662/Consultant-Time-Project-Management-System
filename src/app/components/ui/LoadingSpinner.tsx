@@ -1,81 +1,52 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { useTheme } from '@/app/contexts/ThemeContext';
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   variant?: 'primary' | 'secondary' | 'white';
   className?: string;
-  message?: string;
+  text?: string;
   centered?: boolean;
 }
+
+const sizeClasses = {
+  sm: 'h-4 w-4',
+  md: 'h-6 w-6',
+  lg: 'h-8 w-8',
+  xl: 'h-12 w-12'
+};
+
+const variantClasses = {
+  primary: 'border-blue-500',
+  secondary: 'border-gray-400',
+  white: 'border-white'
+};
 
 export default function LoadingSpinner({
   size = 'md',
   variant = 'primary',
   className,
-  message,
+  text,
   centered = false
 }: LoadingSpinnerProps) {
-  const { theme } = useTheme();
-
-  const sizeClasses = {
-    sm: 'w-8 h-8',
-    md: 'w-12 h-12',
-    lg: 'w-16 h-16',
-    xl: 'w-20 h-20'
-  };
-
-  const dotSizes = {
-    sm: 'w-1.5 h-1.5',
-    md: 'w-2 h-2',
-    lg: 'w-3 h-3',
-    xl: 'w-4 h-4'
-  };
-
   const spinnerContent = (
-    <div className="flex flex-col items-center gap-4">
-      {/* Enhanced multi-layer spinner matching universal design */}
-      <div className={cn("relative", sizeClasses[size])}>
-        <div className={cn(
-          "absolute inset-0 rounded-full border-4 animate-spin",
-          theme === 'dark' ? 'border-gray-600' : 'border-gray-300'
-        )}></div>
-        <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
-        <div
-          className="absolute inset-2 rounded-full border-2 border-blue-400 border-b-transparent animate-spin"
-          style={{ animationDirection: "reverse", animationDuration: "0.8s" }}
-        ></div>
-      </div>
-
-      {/* Enhanced pulsing dots matching universal design */}
-      <div className="flex gap-2">
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className={cn(
-              "rounded-full bg-blue-600 animate-pulse",
-              dotSizes[size]
-            )}
-            style={{
-              animationDelay: `${i * 0.2}s`,
-              animationDuration: '1s'
-            }}
-          ></div>
-        ))}
-      </div>
-
-      {/* Enhanced loading text matching universal design */}
-      {message && (
-        <div className="text-center">
-          <p className={cn(
-            "text-sm font-medium animate-pulse",
-            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-          )}>
-            {message}
-          </p>
-        </div>
+    <div className={cn("flex items-center gap-3", centered && "justify-center")}>
+      <div
+        className={cn(
+          "animate-spin rounded-full border-2 border-t-transparent",
+          sizeClasses[size],
+          variantClasses[variant],
+          className
+        )}
+      />
+      {text && (
+        <span className={cn(
+          "text-sm font-medium",
+          variant === 'white' ? 'text-white' : 'text-gray-600'
+        )}>
+          {text}
+        </span>
       )}
     </div>
   );
@@ -92,11 +63,12 @@ export default function LoadingSpinner({
 }
 
 // Full page loading overlay
-export function LoadingOverlay({ message = "Loading..." }: { message?: string }) {
+export function LoadingOverlay({ text = "Loading..." }: { text?: string }) {
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <LoadingSpinner size="lg" message={message} />
+      <div className="bg-white rounded-lg shadow-lg p-6 flex items-center gap-4">
+        <LoadingSpinner size="lg" />
+        <span className="text-lg font-medium text-gray-700">{text}</span>
       </div>
     </div>
   );
@@ -105,28 +77,21 @@ export function LoadingOverlay({ message = "Loading..." }: { message?: string })
 // Inline loading state for buttons
 export function ButtonSpinner({ size = 'sm' }: { size?: 'sm' | 'md' }) {
   return (
-    <div className="flex items-center">
-      <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-    </div>
-  );
-}
-
-// Page section loading
-export function SectionLoader({ message }: { message?: string }) {
-  return (
     <LoadingSpinner
-      size="lg"
-      message={message}
-      centered
+      size={size}
+      variant="white"
+      className="mr-2"
     />
   );
 }
 
-// Component loading (alias for consistency with universal loading)
-export function ComponentLoading({ message, className }: { message?: string; className?: string }) {
+// Page section loading
+export function SectionLoader({ text }: { text?: string }) {
   return (
-    <div className={cn("py-8", className)}>
-      <LoadingSpinner size="md" message={message} centered />
-    </div>
+    <LoadingSpinner
+      size="lg"
+      text={text}
+      centered
+    />
   );
 }

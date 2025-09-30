@@ -1,10 +1,10 @@
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, ProjectRole } from '@prisma/client';
-import PhasePlanningDashboard from '@/app/components/projects/product-manager/PhasePlanningDashboard';
+import { ProjectRole } from '@prisma/client';
+import PhasePlanningDashboard from '@/components/projects/product-manager/PhasePlanningDashboard';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 async function getProductManagerData(userId: string) {
   // Get projects where user is Product Manager

@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, ProjectRole } from '@prisma/client';
+import { requireAuth, isAuthError } from '@/lib/api-auth';
+import { UserRole, ProjectRole } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   const { projectId } = await params;
 
@@ -81,7 +79,7 @@ export async function GET(
           consultantId: a.consultant.id,
           consultantName: a.consultant.name || a.consultant.email,
           allocated: a.totalHours,
-          planned: a.weeklyAllocations.reduce((sum, w) => sum + w.plannedHours, 0)
+          planned: a.weeklyAllocations.reduce((sum, w) => sum + (w.approvedHours || w.proposedHours || 0), 0)
         }))
       };
     });
