@@ -11,6 +11,8 @@ interface AccessibilityContextType {
   setTooltipDelay: (delay: number) => void;
   toggleHighContrast: () => void;
   toggleReducedMotion: () => void;
+  setShowTooltips: (v: boolean) => void;
+  setHighContrast: (v: boolean) => void;
 }
 
 const AccessibilityContext = createContext<AccessibilityContextType | undefined>(undefined);
@@ -46,6 +48,11 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
     localStorage.setItem('accessibility-tooltips', JSON.stringify(newValue));
   };
 
+  const setShowTooltipsValue = (v: boolean) => {
+    setShowTooltips(v);
+    localStorage.setItem('accessibility-tooltips', JSON.stringify(v));
+  };
+
   const setTooltipDelay = (delay: number) => {
     setTooltipDelayState(delay);
     localStorage.setItem('accessibility-tooltip-delay', delay.toString());
@@ -62,6 +69,13 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
     } else {
       document.body.classList.remove('high-contrast');
     }
+  };
+
+  const setHighContrastValue = (v: boolean) => {
+    setHighContrast(v);
+    localStorage.setItem('accessibility-high-contrast', JSON.stringify(v));
+    if (v) document.body.classList.add('high-contrast');
+    else document.body.classList.remove('high-contrast');
   };
 
   const toggleReducedMotion = () => {
@@ -86,7 +100,9 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
       toggleTooltips,
       setTooltipDelay,
       toggleHighContrast,
-      toggleReducedMotion
+      toggleReducedMotion,
+      setShowTooltips: setShowTooltipsValue,
+      setHighContrast: setHighContrastValue
     }}>
       {children}
     </AccessibilityContext.Provider>

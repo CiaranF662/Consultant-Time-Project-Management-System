@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTheme } from '@/app/contexts/ThemeContext';
-import Tooltip from '@/app/components/ui/Tooltip';
+import Tooltip from '@/app/components/ui/tooltip';
 import HelpText from '@/app/components/ui/HelpText';
 import PageLoader from '@/app/components/ui/PageLoader';
 import { FaCalendarWeek, FaClock, FaChartPie, FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa';

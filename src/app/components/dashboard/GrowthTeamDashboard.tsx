@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { FaCalendarWeek, FaProjectDiagram, FaClock, FaExclamationCircle, FaClipboardList, FaUsers, FaUserCheck, FaChartBar } from 'react-icons/fa';
-import Tooltip from '@/app/components/ui/Tooltip';
+import Tooltip from '@/app/components/ui/tooltip';
 import HelpText from '@/app/components/ui/HelpText';
 import WeeklyPlannerEnhanced from '@/app/components/allocation/WeeklyPlannerEnhanced';
 import NotificationSummaryCard from '@/app/components/notifications/NotificationSummaryCard';

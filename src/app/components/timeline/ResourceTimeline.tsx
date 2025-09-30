@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { formatHours, getUtilizationColor } from '@/lib/dates';
 import { useTheme } from '@/app/contexts/ThemeContext';
-import Tooltip from '@/app/components/ui/Tooltip';
+import Tooltip from '@/app/components/ui/tooltip';
 import HelpText from '@/app/components/ui/HelpText';
 
 interface ResourceTimelineProps {

@@ -36,7 +36,7 @@ import { useAuth } from '@/app/hooks/useAuth';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from 'react-hot-toast';
-import CustomTooltip from '@/app/components/ui/Tooltip';
+import CustomTooltip from '@/app/components/ui/tooltip';
 import HelpText from '@/app/components/ui/HelpText';
 
 interface RevenueData {
