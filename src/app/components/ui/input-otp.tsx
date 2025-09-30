@@ -4,6 +4,12 @@ import { Dot } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+// Local minimal shape for OTPInputContext used by input-otp package.
+// We only rely on 'slots' for rendering individual slot characters.
+interface InputOTPContextShape {
+  slots: Array<{ char: React.ReactNode; hasFakeCaret?: boolean; isActive?: boolean }>;
+}
+
 const InputOTP = React.forwardRef<
   React.ElementRef<typeof OTPInput>,
   React.ComponentPropsWithoutRef<typeof OTPInput>
@@ -32,7 +38,12 @@ const InputOTPSlot = React.forwardRef<
   React.ElementRef<"div">,
   React.ComponentPropsWithoutRef<"div"> & { index: number }
 >(({ index, className, ...props }, ref) => {
-  const inputOTPContext = React.useContext(OTPInputContext)
+  const inputOTPContext = React.useContext(OTPInputContext) as unknown as InputOTPContextShape | null
+  if (!inputOTPContext || !inputOTPContext.slots) {
+    return (
+      <div ref={ref} className={cn("relative flex h-10 w-10 items-center justify-center border-y border-r border-input text-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md", className)} {...props} />
+    )
+  }
   const { char, hasFakeCaret, isActive } = inputOTPContext.slots[index]
 
   return (

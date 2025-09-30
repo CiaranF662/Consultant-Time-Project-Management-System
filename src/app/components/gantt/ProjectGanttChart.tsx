@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Gantt, Task, ViewMode } from 'gantt-task-react';
 import 'gantt-task-react/dist/index.css';
 import { FaCalendarAlt, FaCalendarWeek, FaCalendar, FaSearchPlus, FaSearchMinus } from 'react-icons/fa';
+import formatDate from '@/lib/formatDate';
 
 interface Sprint {
   id: string;
@@ -193,13 +194,8 @@ export default function ProjectGanttChart({ project }: ProjectGanttChartProps) {
     getPhaseColor
   ]);
 
-  // Format date for display
-  const formatDate = React.useCallback((date: Date): string => {
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  const formatDateForUI = React.useCallback((date: Date | string | undefined): string => {
+    return formatDate(date as any);
   }, []);
 
   const tasks = transformProjectToTasks;

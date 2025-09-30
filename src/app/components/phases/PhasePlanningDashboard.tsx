@@ -6,6 +6,7 @@ import { formatHours } from '@/lib/dates';
 import PhaseCreationModal from './PhaseCreationModal';
 import PhaseAllocationModal from './PhaseAllocationModal';
 import EditPhaseModal from '../../projects/components/EditPhaseModal';
+import formatDate from '@/lib/formatDate'
 
 interface Sprint {
   id: string;
@@ -209,7 +210,7 @@ export default function PhasePlanningDashboard({ data, userId }: PhasePlanningDa
                             )}
                             <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                               <span>
-                                {new Date(phase.startDate).toLocaleDateString()} - {new Date(phase.endDate).toLocaleDateString()}
+                                {formatDate(phase.startDate)} - {formatDate(phase.endDate)}
                               </span>
                               <span>
                                 Sprints: {phase.sprints.map(s => s.sprintNumber).join(', ')}

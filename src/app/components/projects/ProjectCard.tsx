@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { Project, Phase, Sprint, ConsultantsOnProjects, PhaseAllocation } from '@prisma/client';
 import { FaUsers, FaCalendarAlt, FaClock, FaChartBar } from 'react-icons/fa';
 import { generateColorFromString } from '@/lib/colors';
+import formatDate from '@/lib/formatDate';
 import { useTheme } from '@/app/contexts/ThemeContext';
 
 type ProjectWithDetails = Project & {
@@ -24,11 +25,8 @@ interface ProjectCardProps {
   project: ProjectWithDetails;
 }
 
-// Helper to format dates
-function formatDate(date: Date | null) {
-    if (!date) return 'N/A';
-    return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(date));
-}
+// Note: using centralized formatDate for dd/mm/yyyy display
+// local helper removed
 
 // Helper to calculate project duration in weeks
 function getProjectDurationInWeeks(start: Date, end: Date | null): string {
@@ -131,7 +129,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             </div>
             <div className="flex items-center">
                 <FaCalendarAlt className={`mr-2 flex-shrink-0 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
-                <span>{formatDate(project.startDate)} - {formatDate(project.endDate)}</span>
+                <span>{project.startDate ? formatDate(project.startDate) : 'N/A'} - {project.endDate ? formatDate(project.endDate) : 'Ongoing'}</span>
             </div>
             <div className="flex items-center">
                 <FaClock className={`mr-2 flex-shrink-0 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />

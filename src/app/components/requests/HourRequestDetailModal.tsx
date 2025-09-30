@@ -2,6 +2,7 @@
 
 import { FaTimes, FaClock, FaExchangeAlt, FaCheck, FaTimes as FaReject, FaUser } from 'react-icons/fa';
 import { formatHours } from '@/lib/dates';
+import { formatDateTime } from '@/lib/formatDate';
 
 interface HourRequest {
   id: string;
@@ -181,8 +182,8 @@ export default function HourRequestDetailModal({ request, onClose }: HourRequest
                 <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
                 <div>
                   <div className="font-medium text-gray-800">Request Created</div>
-                  <div className="text-sm text-gray-600">
-                    {new Date(request.createdAt).toLocaleString()} by {request.requester.name || request.requester.email}
+                    <div className="text-sm text-gray-600">
+                    {formatDateTime(request.createdAt)} by {request.requester.name || request.requester.email}
                   </div>
                 </div>
               </div>
@@ -197,7 +198,7 @@ export default function HourRequestDetailModal({ request, onClose }: HourRequest
                       Request {request.status === 'APPROVED' ? 'Approved' : 'Rejected'}
                     </div>
                     <div className="text-sm text-gray-600">
-                      {new Date(request.updatedAt).toLocaleString()}
+                      {formatDateTime(request.updatedAt)}
                       {request.approver && ` by ${request.approver.name || request.approver.email}`}
                     </div>
                   </div>

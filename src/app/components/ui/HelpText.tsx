@@ -2,7 +2,7 @@
 
 import { FaQuestionCircle, FaInfoCircle } from 'react-icons/fa';
 import { useTheme } from '@/app/contexts/ThemeContext';
-import Tooltip from './Tooltip';
+import Tooltip from './tooltip';
 
 interface HelpTextProps {
   content: string;

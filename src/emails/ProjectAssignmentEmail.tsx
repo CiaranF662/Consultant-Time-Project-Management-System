@@ -10,6 +10,7 @@ import {
   Text,
 } from '@react-email/components';
 import * as React from 'react';
+import formatDate from '@/lib/formatDate';
 
 interface ProjectAssignmentEmailProps {
   consultantName: string;
@@ -64,12 +65,12 @@ export const ProjectAssignmentEmail = ({
             )}
             
             <Text style={text}>
-              <strong>Start Date:</strong> {new Date(projectStartDate).toLocaleDateString()}
+              <strong>Start Date:</strong> {formatDate(projectStartDate)}
             </Text>
             
             {projectEndDate && (
               <Text style={text}>
-                <strong>End Date:</strong> {new Date(projectEndDate).toLocaleDateString()}
+                <strong>End Date:</strong> {formatDate(projectEndDate)}
               </Text>
             )}
             

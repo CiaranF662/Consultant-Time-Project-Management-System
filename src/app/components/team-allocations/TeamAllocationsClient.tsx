@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronDownIcon, ChevronRightIcon } from 'lucide-react';
+import formatDate from '@/lib/formatDate';
 
 type ProjectWithAllocations = {
   id: string;
@@ -149,8 +150,8 @@ export default function TeamAllocationsClient({ projects }: TeamAllocationsClien
                     </div>
                   </div>
                   <div className="text-sm text-gray-400">
-                    {new Date(project.startDate).toLocaleDateString()} - {' '}
-                    {project.endDate ? new Date(project.endDate).toLocaleDateString() : 'Ongoing'}
+                    {formatDate(project.startDate)} - {' '}
+                    {project.endDate ? formatDate(project.endDate) : 'Ongoing'}
                   </div>
                 </button>
 
@@ -174,7 +175,7 @@ export default function TeamAllocationsClient({ projects }: TeamAllocationsClien
                               <div>
                                 <h4 className="font-medium text-gray-900">{phase.name}</h4>
                                 <p className="text-sm text-gray-500">
-                                  {new Date(phase.startDate).toLocaleDateString()} - {new Date(phase.endDate).toLocaleDateString()}
+                                  {formatDate(phase.startDate)} - {formatDate(phase.endDate)}
                                 </p>
                               </div>
                               <div className="text-sm text-gray-500">

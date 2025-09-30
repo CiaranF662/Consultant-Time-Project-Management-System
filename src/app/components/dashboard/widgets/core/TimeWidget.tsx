@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
+import formatDate from '@/lib/formatDate';
 import { WidgetProps } from '../../types';
 
 // #region Time Widget Component
@@ -35,7 +36,7 @@ export default function TimeWidget({ size, config }: WidgetProps) {
         </div>
         {showDate && (
           <div className="text-sm opacity-80 mt-1">
-            {time.toLocaleDateString()}
+            {formatDate(time)}
           </div>
         )}
       </div>

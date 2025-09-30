@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import formatDate from '@/lib/formatDate'
 import axios from 'axios';
 import { 
   getWeeksBetween, 
@@ -759,7 +760,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                                             Sprint {sprint.sprintNumber}
                                           </h5>
                                           <p className="text-xs text-gray-500">
-                                            {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}
+                                            {formatDate(sprint.startDate)} - {formatDate(sprint.endDate)}
                                           </p>
                                         </div>
                                         <div className="text-right">

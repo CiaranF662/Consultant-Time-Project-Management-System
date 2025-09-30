@@ -6,6 +6,7 @@ import { Gantt, Task, ViewMode } from 'gantt-task-react';
 import 'gantt-task-react/dist/index.css';
 import { FaCalendarAlt, FaCalendarWeek, FaCalendar, FaSearchPlus, FaSearchMinus } from 'react-icons/fa';
 import { useTheme } from '@/app/contexts/ThemeContext';
+import formatDate from '@/lib/formatDate';
 
 // Use any to avoid type conflicts for now - we'll cast the data as needed
 interface GrowthTeamGanttChartProps {
@@ -143,14 +144,8 @@ export default function GrowthTeamGanttChart({ projects }: GrowthTeamGanttChartP
     return Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
   };
 
-  // Format date for display
-  const formatDate = (date: Date): string => {
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+  // use centralized formatter
+  const formatDateForUI = (d: Date | string | undefined) => formatDate(d as any);
 
   const tasks = transformProjectsToTasks;
 

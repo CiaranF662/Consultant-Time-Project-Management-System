@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import formatDate from '@/lib/formatDate'
 import { FaPlus, FaClock, FaExchangeAlt, FaEye } from 'react-icons/fa';
 import { formatHours } from '@/lib/dates';
 import CreateHourRequestModal from './CreateHourRequestModal';
@@ -177,7 +178,7 @@ export default function HourRequestsManager({ data, userId, userName }: HourRequ
                         {getChangeDescription(request)}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
-                        Created {new Date(request.createdAt).toLocaleDateString()}
+                        Created {formatDate(request.createdAt)}
                       </div>
                     </div>
                   </div>
@@ -232,7 +233,7 @@ export default function HourRequestsManager({ data, userId, userName }: HourRequ
                         {getChangeDescription(request)}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
-                        {new Date(request.createdAt).toLocaleDateString()} • 
+                        {formatDate(request.createdAt)} • 
                         {request.approver && ` Reviewed by ${request.approver.name || request.approver.email}`}
                       </div>
                     </div>

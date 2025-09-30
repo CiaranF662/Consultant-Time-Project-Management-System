@@ -59,11 +59,7 @@ interface ProjectWithDetails extends Project {
   budgetedHours: number;
 }
 
-function formatDate(date: Date) {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric',
-  }).format(new Date(date));
-}
+import formatDate from '@/lib/formatDate';
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { data: session, status } = useSession();

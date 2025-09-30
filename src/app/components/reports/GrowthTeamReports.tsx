@@ -401,7 +401,7 @@ export default function ProjectManagerReports() {
                           {project.status}
                         </Badge>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Due: {format(new Date(project.deadline), 'MMM d, yyyy')}
+                          Due: {format(new Date(project.deadline), 'dd/MM/yyyy')}
                         </p>
                       </div>
                     </div>

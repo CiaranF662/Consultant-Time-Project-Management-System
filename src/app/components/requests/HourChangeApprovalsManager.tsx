@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { FaArrowLeft, FaClock, FaExchangeAlt, FaCheck, FaTimes, FaEye, FaCheckCircle } from 'react-icons/fa';
 import { formatHours } from '@/lib/dates';
+import formatDate from '@/lib/formatDate';
 import axios from 'axios';
 
 interface HourRequest {
@@ -196,7 +197,7 @@ export default function HourChangeApprovalsManager({ requests, userId }: HourCha
                           )}
                           
                           <div>
-                            <strong>Submitted:</strong> {new Date(request.createdAt).toLocaleDateString()}
+                            <strong>Submitted:</strong> {formatDate(request.createdAt)}
                           </div>
                         </div>
                         

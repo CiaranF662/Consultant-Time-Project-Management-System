@@ -8,41 +8,45 @@ datasource db {
 }
 
 model User {
-  id                 String                  @id @default(cuid())
-  name               String?
-  email              String?                 @unique
-  emailVerified      DateTime?
-  image              String?
-  password           String?
-  role               UserRole                @default(CONSULTANT)
-  status             UserStatus              @default(APPROVED)
-  createdAt          DateTime                @default(now())
-  updatedAt          DateTime                @updatedAt
-  accounts           Account[]
-  projectAssignments ConsultantsOnProjects[]
-  approvedChanges    HourChangeRequest[]     @relation("ChangeRequestApprover")
-  changeRequests     HourChangeRequest[]     @relation("ChangeRequestRequester")
-  notifications      Notification[]
-  phaseAllocations   PhaseAllocation[]
-  managedProjects    Project[]               @relation("ProductManager")
-  sessions           Session[]
-  weeklyAllocations  WeeklyAllocation[]
+  id                    String                  @id @default(cuid())
+  name                  String?
+  email                 String?                 @unique
+  emailVerified         DateTime?
+  image                 String?
+  password              String?
+  role                  UserRole                @default(CONSULTANT)
+  status                UserStatus              @default(APPROVED)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  accounts              Account[]
+  projectAssignments    ConsultantsOnProjects[]
+  approvedChanges       HourChangeRequest[]     @relation("ChangeRequestApprover")
+  changeRequests        HourChangeRequest[]     @relation("ChangeRequestRequester")
+  notifications         Notification[]
+  phaseAllocations      PhaseAllocation[]
+  managedProjects       Project[]               @relation("ProductManager")
+  sessions              Session[]
+  weeklyAllocations     WeeklyAllocation[]
+  timeEntries           TimeEntry[]
+  consultantSprintHours ConsultantSprintHours[]
 }
 
 model Project {
-  id               String                  @id @default(cuid())
-  title            String
-  description      String?
-  startDate        DateTime
-  endDate          DateTime?
-  budgetedHours    Int                     @default(0)
-  productManagerId String?
-  createdAt        DateTime                @default(now())
-  updatedAt        DateTime                @updatedAt
-  consultants      ConsultantsOnProjects[]
-  phases           Phase[]
-  productManager   User?                   @relation("ProductManager", fields: [productManagerId], references: [id])
-  sprints          Sprint[]
+  id                    String                  @id @default(cuid())
+  title                 String
+  description           String?
+  startDate             DateTime
+  endDate               DateTime?
+  budgetedHours         Int                     @default(0)
+  productManagerId      String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  consultants           ConsultantsOnProjects[]
+  phases                Phase[]
+  productManager        User?                   @relation("ProductManager", fields: [productManagerId], references: [id])
+  sprints               Sprint[]
+  timeEntries           TimeEntry[]
+  consultantSprintHours ConsultantSprintHours[]
 }
 
 model ConsultantsOnProjects {
@@ -71,18 +75,37 @@ model Phase {
 }
 
 model Sprint {
-  id           String   @id @default(cuid())
-  sprintNumber Int
-  startDate    DateTime
-  endDate      DateTime
-  projectId    String
-  phaseId      String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  phase        Phase?   @relation(fields: [phaseId], references: [id])
-  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id                    String                  @id @default(cuid())
+  sprintNumber          Int
+  startDate             DateTime
+  endDate               DateTime
+  projectId             String
+  phaseId               String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  phase                 Phase?                  @relation(fields: [phaseId], references: [id])
+  project               Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  consultantSprintHours ConsultantSprintHours[]
 
   @@unique([projectId, sprintNumber])
+}
+
+model ConsultantSprintHours {
+  id           String   @id @default(cuid())
+  hours        Float
+  weekNumber   Int
+  consultantId String
+  sprintId     String
+  projectId    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  consultant User    @relation(fields: [consultantId], references: [id])
+  sprint     Sprint  @relation(fields: [sprintId], references: [id])
+  project    Project @relation(fields: [projectId], references: [id])
+
+  @@unique([consultantId, sprintId, projectId, weekNumber])
+  @@index([consultantId, sprintId, projectId, weekNumber])
 }
 
 model PhaseAllocation {
@@ -200,6 +223,32 @@ enum NotificationType {
   PHASE_DEADLINE_WARNING
   USER_APPROVAL_NEEDED
   OVERDUE_APPROVAL_ALERT
+}
+
+model TimeEntry {
+  id               String    @id @default(cuid())
+  userId           String
+  projectId        String?
+  issueKey         String?
+  issueSummary     String?
+  timeSpentSeconds Int
+  startedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([projectId])
+}
+
+model IntegrationSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum UserRole {

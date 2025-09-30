@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import formatDate from '@/lib/formatDate'
 import { FaTimes, FaSave, FaLayerGroup, FaCalendarAlt, FaClock, FaInfoCircle, FaUser, FaUsers, FaBriefcase, FaSearch } from 'react-icons/fa';
 import axios from 'axios';
 
@@ -288,8 +289,8 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
     const endDate = new Date(selectedSprints[selectedSprints.length - 1].endDate);
     
     return {
-      startDate: startDate.toLocaleDateString(),
-      endDate: endDate.toLocaleDateString(),
+  startDate: formatDate(startDate),
+  endDate: formatDate(endDate),
       sprintRange: `Sprint ${selectedSprints[0].sprintNumber} - Sprint ${selectedSprints[selectedSprints.length - 1].sprintNumber}`
     };
   };
@@ -423,7 +424,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                               )}
                             </div>
                             <div className={`text-xs ${!isAvailable ? 'text-gray-400' : 'text-gray-600'}`}>
-                              {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}
+                              {formatDate(sprint.startDate)} - {formatDate(sprint.endDate)}
                             </div>
                             {!isAvailable && (
                               <div className="text-xs text-red-500 mt-1">

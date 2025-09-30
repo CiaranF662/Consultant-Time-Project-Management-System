@@ -10,6 +10,7 @@ import {
   Text,
 } from '@react-email/components';
 import * as React from 'react';
+import formatDate from '@/lib/formatDate'
 
 interface PhaseEndDateAlertEmailProps {
   recipientName: string;
@@ -38,7 +39,7 @@ export const PhaseEndDateAlertEmail = ({
   return (
     <Html>
       <Head />
-      <Preview>{totalAlerts} phase deadline alerts for your projects</Preview>
+      <Preview>{`${totalAlerts} phase deadline alerts for your projects`}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Heading style={heading}>
@@ -63,7 +64,7 @@ export const PhaseEndDateAlertEmail = ({
               
               {endingPhases.map((phase, index) => (
                 <Text key={index} style={text}>
-                  • <strong>{phase.phaseName}</strong> in {phase.projectName} ends on {new Date(phase.endDate).toLocaleDateString()}
+                  • <strong>{phase.phaseName}</strong> in {phase.projectName} ends on {formatDate(phase.endDate)}
                 </Text>
               ))}
               
@@ -81,7 +82,7 @@ export const PhaseEndDateAlertEmail = ({
               
               {upcomingPhases.map((phase, index) => (
                 <Text key={index} style={text}>
-                  • <strong>{phase.phaseName}</strong> in {phase.projectName} ends in <strong>{phase.daysUntilEnd} day{phase.daysUntilEnd !== 1 ? 's' : ''}</strong> ({new Date(phase.endDate).toLocaleDateString()})
+                  • <strong>{phase.phaseName}</strong> in {phase.projectName} ends in <strong>{phase.daysUntilEnd} day{phase.daysUntilEnd !== 1 ? 's' : ''}</strong> ({formatDate(phase.endDate)})
                 </Text>
               ))}
               

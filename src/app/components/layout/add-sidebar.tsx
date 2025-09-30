@@ -14,6 +14,7 @@ import {
   FaBars,
   FaTimes,
   FaUserPlus,
+  FaPlug,
   FaChevronLeft,
   FaChevronRight,
   FaSignOutAlt,
@@ -126,6 +127,12 @@ const toggleCollapse = () => {
           label: 'Gantt Chart',
           href: '/gantt',
           icon: FaClipboardList,
+          roles: [UserRole.GROWTH_TEAM]
+        },
+        {
+          label: 'Integrations',
+          href: '/integrations',
+          icon: FaPlug,
           roles: [UserRole.GROWTH_TEAM]
         },
         {

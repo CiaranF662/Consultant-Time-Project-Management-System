@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import formatDate from '@/lib/formatDate';
 import { FaCheckCircle, FaExclamationTriangle, FaClock, FaChartPie, FaPlay, FaEdit } from 'react-icons/fa';
 import { getPhaseStatus, getStatusColorClasses, getProgressBarColor, formatHours } from '@/lib/phase-status';
 import { generateColorFromString } from '@/lib/colors';
@@ -128,7 +129,7 @@ export default function PhaseStatusCard({
           <div className="flex-1">
             <h3 className="font-semibold text-lg text-gray-900">{phase.name}</h3>
             <p className="text-sm text-gray-500 mt-1">
-              {new Date(phase.startDate).toLocaleDateString()} - {new Date(phase.endDate).toLocaleDateString()}
+              {formatDate(phase.startDate)} - {formatDate(phase.endDate)}
             </p>
             {phase.description && (
               <p className="text-sm text-gray-600 mt-2">{phase.description}</p>

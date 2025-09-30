@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf'
+import { formatDateTime } from '@/lib/formatDate';
 
 export interface ReportData {
   title: string
@@ -104,7 +105,7 @@ export const generatePDFReport = (reportData: ReportData): void => {
     doc.setPage(i)
     doc.setFontSize(8)
     doc.setTextColor(128, 128, 128)
-    doc.text(`Generated on ${new Date().toLocaleDateString()} - Page ${i} of ${pageCount}`, 20, 285)
+  doc.text(`Generated on ${formatDateTime(new Date())} - Page ${i} of ${pageCount}`, 20, 285)
     doc.text('Jira Insight - Resource Strategy Platform', 150, 285)
   }
   
@@ -125,7 +126,7 @@ export const generateAllocationPDF = (allocations: any[], consultants: any[], pr
   yPosition += 10
   doc.setFontSize(12)
   doc.setTextColor(128, 128, 128)
-  doc.text(`Generated on ${new Date().toLocaleDateString()}`, 20, yPosition)
+  doc.text(`Generated on ${formatDateTime(new Date())}`, 20, yPosition)
   
   yPosition += 20
   

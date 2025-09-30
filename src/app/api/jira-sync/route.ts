@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient, UserRole } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+import syncFromJira from '@/lib/jiraSync';
 
 const prisma = new PrismaClient();
 
@@ -39,19 +42,27 @@ interface JiraProject {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== UserRole.GROWTH_TEAM) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
+    }
+
     const { action } = await req.json();
     
-    const jiraToken = process.env.JIRA_API_TOKEN;
     const jiraBaseUrl = process.env.JIRA_BASE_URL;
-    
-    if (!jiraToken || !jiraBaseUrl) {
+    const jiraEmail = process.env.JIRA_EMAIL;
+    const jiraApiToken = process.env.JIRA_API_TOKEN;
+
+    if (!jiraBaseUrl || (!jiraApiToken && !jiraEmail)) {
       return NextResponse.json(
-        { error: 'Jira credentials not configured. Please add JIRA_API_TOKEN and JIRA_BASE_URL to your environment variables.' },
+        { error: 'Jira credentials not configured. Please add JIRA_BASE_URL and either JIRA_API_TOKEN (legacy: email:token) or JIRA_EMAIL+JIRA_API_TOKEN to your environment variables.' },
         { status: 400 }
       );
     }
 
-    const jiraAuth = Buffer.from(`${jiraToken}`).toString('base64');
+    // Build Basic auth value. Prefer separate email+token envs for clarity, fall back to legacy combined JIRA_API_TOKEN
+    const jiraAuthRaw = jiraEmail && jiraApiToken ? `${jiraEmail}:${jiraApiToken}` : jiraApiToken || '';
+    const jiraAuth = Buffer.from(jiraAuthRaw).toString('base64');
 
     switch (action) {
       case 'test-connection':
@@ -115,108 +126,49 @@ export async function POST(req: NextRequest) {
 
       case 'sync-data':
         try {
-          const projectsResponse = await fetch(`${jiraBaseUrl}/rest/api/2/project`, {
-            headers: {
-              'Authorization': `Basic ${jiraAuth}`,
-              'Accept': 'application/json'
-            }
-          });
-          
-          if (!projectsResponse.ok) {
-            throw new Error('Failed to fetch Jira projects');
-          }
-          
-          const jiraProjects: JiraProject[] = await projectsResponse.json();
-          const syncResults = {
-            projectsProcessed: 0,
-            issuesProcessed: 0,
-            timeEntriesCreated: 0,
-            errors: [] as string[]
-          };
-          
-          for (const project of jiraProjects) {
-            try {
-              const thirtyDaysAgo = new Date();
-              thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-              
-              const jql = `project = "${project.key}" AND updated >= "${thirtyDaysAgo.toISOString().split('T')[0]}" ORDER BY updated DESC`;
-              
-              const issuesResponse = await fetch(
-                `${jiraBaseUrl}/rest/api/2/search?jql=${encodeURIComponent(jql)}&fields=summary,status,assignee,project,timetracking,created,updated&maxResults=100`,
-                {
-                  headers: {
-                    'Authorization': `Basic ${jiraAuth}`,
-                    'Accept': 'application/json'
-                  }
-                }
-              );
-              
-              if (issuesResponse.ok) {
-                const issuesData = await issuesResponse.json();
-                const issues: JiraIssue[] = issuesData.issues;
-                
-                syncResults.projectsProcessed++;
-                syncResults.issuesProcessed += issues.length;
-                
-                for (const issue of issues) {
-                  if (issue.fields.timetracking?.timeSpentSeconds && issue.fields.assignee?.emailAddress) {
-                    try {
-                      // Find or create user
-                      let user = await prisma.user.findUnique({
-                        where: { email: issue.fields.assignee.emailAddress }
-                      });
-                      
-                      if (!user) {
-                        user = await prisma.user.create({
-                          data: {
-                            email: issue.fields.assignee.emailAddress,
-                            name: issue.fields.assignee.displayName,
-                            role: UserRole.CONSULTANT
-                          }
-                        });
-                      }
-                      
-                      // Find or create project
-                      let dbProject = await prisma.project.findFirst({
-                        where: { title: `${project.name} (Jira Sync)` }
-                      });
-                      
-                      if (!dbProject) {
-                        dbProject = await prisma.project.create({
-                          data: {
-                            title: `${project.name} (Jira Sync)`,
-                            description: `Synced from Jira project ${project.key}`,
-                            startDate: new Date(),
-                            budgetedHours: 1000
-                          }
-                        });
-                      }
-                      
-                      syncResults.timeEntriesCreated++;
-                      
-                    } catch (error: any) {
-                      syncResults.errors.push(`Error processing issue ${issue.key}: ${error.message}`);
-                    }
-                  }
-                }
+          const res = await syncFromJira({ jiraBaseUrl, jiraAuth, days: 30 });
+
+          // send slack blocks with details and errors if configured
+          try {
+            const slackSetting = await prisma.integrationSetting.findUnique({ where: { key: 'slack' } });
+            const slackConfig = slackSetting?.value as any;
+            if (slackConfig?.enabled) {
+              const blocks: any[] = [
+                { type: 'section', text: { type: 'mrkdwn', text: '*Jira Sync completed*' } },
+                { type: 'section', fields: [
+                  { type: 'mrkdwn', text: `*Projects processed:*
+${res.projectsProcessed}` },
+                  { type: 'mrkdwn', text: `*Issues processed:*
+${res.issuesProcessed}` },
+                  { type: 'mrkdwn', text: `*Time entries created:*
+${res.timeEntriesCreated}` },
+                  { type: 'mrkdwn', text: `*Duplicates skipped:*
+${res.skippedDuplicates}` },
+                ] },
+              ];
+
+              if (res.errors && res.errors.length) {
+                const errorText = res.errors.slice(0, 10).map((e: string, i: number) => `${i+1}. ${e}`).join('\n');
+                blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `*Errors (first ${Math.min(10, res.errors.length)}):*\n${errorText}` } });
               }
-            } catch (error: any) {
-              syncResults.errors.push(`Error processing project ${project.key}: ${error.message}`);
+
+              await fetch(`${process.env.BASE_URL || ''}/api/slack`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ blocks })
+              });
             }
+          } catch (err) {
+            console.error('Slack notification failed:', err);
           }
-          
-          return NextResponse.json({
-            success: true,
-            message: 'Sync completed',
-            results: syncResults
-          });
-          
+
+          return NextResponse.json({ success: true, message: 'Sync completed', results: res });
         } catch (error: any) {
-          return NextResponse.json(
-            { success: false, error: `Sync failed: ${error.message}` },
-            { status: 500 }
-          );
+          return NextResponse.json({ success: false, error: `Sync failed: ${error.message}` }, { status: 500 });
         }
+
+      // After the sync block, attempt to send a Slack notification if integration enabled
+      // (This will run after the switch-case; but place here defensively in case of fall-through)
 
       default:
         return NextResponse.json(

@@ -186,8 +186,8 @@ export default function GrowthTeamReports() {
             <h1>Growth Team Report</h1>
             <div class="header-info">
               <p><strong>Report Type:</strong> ${reportType.charAt(0).toUpperCase() + reportType.slice(1)}</p>
-              <p><strong>Generated:</strong> ${format(new Date(), 'yyyy-MM-dd HH:mm')}</p>
-              <p><strong>Period:</strong> ${format(dateRange.from, 'yyyy-MM-dd')} to ${format(dateRange.to, 'yyyy-MM-dd')}</p>
+              <p><strong>Generated:</strong> ${format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
+              <p><strong>Period:</strong> ${format(dateRange.from, 'dd/MM/yyyy')} to ${format(dateRange.to, 'dd/MM/yyyy')}</p>
             </div>
             
             ${reportType === 'revenue' || reportType === 'comprehensive' ? `

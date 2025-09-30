@@ -12,10 +12,7 @@ interface AssignSprintsModalProps {
   onClose: () => void; // This function will trigger the page refresh
 }
 
-// A simple date formatting utility
-function formatDate(date: string | Date) {
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(date));
-}
+import formatDate from '@/lib/formatDate';
 
 export default function AssignSprintsModal({
   phaseId,
@@ -82,9 +79,9 @@ export default function AssignSprintsModal({
                 <div className="flex justify-between w-full">
                     <span className="font-medium text-gray-700">Sprint {sprint.sprintNumber}</span>
                     {/* --- NEW: Display Sprint Dates --- */}
-                    <span className="text-sm text-gray-500">
-                        {formatDate(sprint.startDate)} - {formatDate(sprint.endDate)}
-                    </span>
+          <span className="text-sm text-gray-500">
+            {formatDate(sprint.startDate)} - {formatDate(sprint.endDate)}
+          </span>
                 </div>
               </label>
             ))

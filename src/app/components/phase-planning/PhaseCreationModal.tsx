@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import formatDate from '@/lib/formatDate'
 import { FaTimes, FaSave, FaLayerGroup, FaCalendarAlt, FaClock, FaInfoCircle, FaUser, FaUsers, FaBriefcase, FaSearch } from 'react-icons/fa';
 import axios from 'axios';
 
@@ -265,8 +266,8 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
     const endDate = new Date(selectedSprints[selectedSprints.length - 1].endDate);
     
     return {
-      startDate: startDate.toLocaleDateString(),
-      endDate: endDate.toLocaleDateString(),
+  startDate: formatDate(startDate),
+  endDate: formatDate(endDate),
       sprintRange: `Sprint ${selectedSprints[0].sprintNumber} - Sprint ${selectedSprints[selectedSprints.length - 1].sprintNumber}`
     };
   };
@@ -314,7 +315,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="phaseName" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <label htmlFor="phaseName" className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                     <FaLayerGroup className="w-3 h-3 text-purple-600" />
                     Phase Name *
                   </label>
@@ -357,7 +358,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
               </div>
               
               <div className="mb-4">
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                   <FaCalendarAlt className="w-3 h-3 text-blue-600" />
                   Select Sprints *
                 </label>
@@ -386,7 +387,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                             Sprint {sprint.sprintNumber}
                           </div>
                           <div className="text-xs text-gray-600">
-                            {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}
+                            {formatDate(sprint.startDate)} - {formatDate(sprint.endDate)}
                           </div>
                         </div>
                       </label>
@@ -435,7 +436,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
               </div>
               
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                   <FaUsers className="w-3 h-3 text-green-600" />
                   Phase Team Members
                 </label>

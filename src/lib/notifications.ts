@@ -19,8 +19,8 @@ export async function createNotification(params: CreateNotificationParams) {
         type: params.type,
         title: params.title,
         message: params.message,
-        actionUrl: params.actionUrl || null,
-        metadata: params.metadata || null,
+  actionUrl: params.actionUrl || null,
+  metadata: params.metadata ?? undefined,
       },
     });
 
@@ -39,8 +39,8 @@ export async function createMultipleNotifications(notifications: CreateNotificat
         type: notif.type,
         title: notif.title,
         message: notif.message,
-        actionUrl: notif.actionUrl || null,
-        metadata: notif.metadata || null,
+  actionUrl: notif.actionUrl || null,
+  metadata: notif.metadata ?? undefined,
       }))
     });
 

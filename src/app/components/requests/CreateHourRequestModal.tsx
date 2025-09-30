@@ -70,7 +70,7 @@ export default function CreateHourRequestModal({
   
   // Get other consultants from the selected project
   const otherConsultants = selectedProject?.project.consultants.filter(
-    consultant => consultant.userId !== userId
+    (consultant: { userId: string }) => consultant.userId !== userId
   ) || [];
 
   // Reset phase selection when project changes
@@ -346,11 +346,11 @@ export default function CreateHourRequestModal({
                     <div className="mt-3 pt-3 border-t border-blue-200">
                       <span className="text-gray-600 text-sm block mb-1">Team Members:</span>
                       <div className="flex flex-wrap gap-2">
-                        {otherConsultants.map((consultant) => (
-                          <span key={consultant.userId} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                            {consultant.user.name || consultant.user.email}
-                          </span>
-                        ))}
+                          {otherConsultants.map((consultant: { userId: string; user: { name: string | null; email: string | null } }) => (
+                            <span key={consultant.userId} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                              {consultant.user.name || consultant.user.email}
+                            </span>
+                          ))}
                       </div>
                     </div>
                   )}
@@ -444,7 +444,7 @@ export default function CreateHourRequestModal({
                       required
                     >
                       <option value="">Select team member...</option>
-                      {otherConsultants.map((consultant) => (
+                      {otherConsultants.map((consultant: { userId: string; user: { name: string | null; email: string | null } }) => (
                         <option key={consultant.userId} value={consultant.userId}>
                           {consultant.user.name || consultant.user.email}
                         </option>

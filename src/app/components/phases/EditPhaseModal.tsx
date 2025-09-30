@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import formatDate from '@/lib/formatDate'
 import type { Phase, Sprint } from '@prisma/client';
 import axios from 'axios';
 import { FaTimes, FaTrash, FaSave } from 'react-icons/fa';
@@ -84,8 +85,8 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
     const endDate = new Date(selectedSprints[selectedSprints.length - 1].endDate);
     
     return {
-      startDate: startDate.toLocaleDateString(),
-      endDate: endDate.toLocaleDateString(),
+  startDate: formatDate(startDate),
+  endDate: formatDate(endDate),
       sprintRange: `Sprint ${selectedSprints[0].sprintNumber} - Sprint ${selectedSprints[selectedSprints.length - 1].sprintNumber}`
     };
   };
@@ -228,7 +229,7 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
                         Sprint {sprint.sprintNumber}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}
+                        {formatDate(sprint.startDate)} - {formatDate(sprint.endDate)}
                       </div>
                     </div>
                   </label>

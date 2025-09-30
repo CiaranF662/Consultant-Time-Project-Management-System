@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { formatDateTime } from '@/lib/formatDate';
 import Link from 'next/link';
 import { FaBell, FaCheck, FaTrash, FaExternalLinkAlt } from 'react-icons/fa';
 
@@ -82,7 +83,7 @@ export default function NotificationCard({
   const [isLoading, setIsLoading] = useState(false);
   
   const config = notificationTypeConfig[notification.type];
-  const timeAgo = new Date(notification.createdAt).toLocaleString();
+  const timeAgo = formatDateTime(notification.createdAt);
 
   const handleMarkAsRead = async () => {
     if (isLoading) return;

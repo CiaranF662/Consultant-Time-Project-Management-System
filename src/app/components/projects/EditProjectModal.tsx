@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { FaTimes, FaTrash, FaBriefcase, FaUsers, FaUser, FaPlus, FaCheck, FaCalendar } from 'react-icons/fa';
+import formatDate from '@/lib/formatDate';
 
 interface User {
   id: string;
@@ -216,7 +217,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                 {/* Left Column */}
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <label htmlFor="title" className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                       <FaBriefcase className="w-3 h-3 text-blue-600" />
                       Project Title *
                     </label>
@@ -249,7 +250,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                 {/* Right Column */}
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="budgetedHours" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <label htmlFor="budgetedHours" className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                       <FaCalendar className="w-3 h-3 text-blue-600" />
                       Budget Hours *
                     </label>
@@ -273,11 +274,11 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                   {/* Project dates info (read-only) */}
                   <div className="space-y-2">
                     <div className="text-sm text-gray-600">
-                      <span className="font-medium">Start Date:</span> {new Date(project.startDate).toLocaleDateString()}
+                      <span className="font-medium">Start Date:</span> {project.startDate ? formatDate(project.startDate) : 'N/A'}
                     </div>
                     {project.endDate && (
                       <div className="text-sm text-gray-600">
-                        <span className="font-medium">End Date:</span> {new Date(project.endDate).toLocaleDateString()}
+                        <span className="font-medium">End Date:</span> {project.endDate ? formatDate(project.endDate) : 'Ongoing'}
                       </div>
                     )}
                   </div>
@@ -297,7 +298,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
               <div className="space-y-6">
                 {/* Product Manager Selection */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                     <FaUser className="w-3 h-3 text-purple-600" />
                     Product Manager *
                   </label>
@@ -365,7 +366,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
 
                 {/* Team Members Selection */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                     <FaUsers className="w-3 h-3 text-purple-600" />
                     Team Members
                   </label>

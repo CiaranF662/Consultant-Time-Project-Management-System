@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import formatDate from '@/lib/formatDate'
 import { useTheme } from '@/app/contexts/ThemeContext';
 import Tooltip from '@/app/components/ui/tooltip';
 import HelpText from '@/app/components/ui/HelpText';
@@ -151,6 +152,12 @@ export default function AllocationsDashboard({ data, userId, userName }: Allocat
 
   const nextWeekAllocations = data.upcomingAllocations?.slice(0, 7) || []; // Next 7 weeks
 
+  const viewTabs = [
+    { key: 'overview', label: 'Overview', icon: FaChartPie },
+    { key: 'planner', label: 'Weekly Planner', icon: FaCalendarWeek },
+    { key: 'calendar', label: 'Calendar View', icon: FaClock }
+  ] as const;
+
   return (
     <div className="px-4 py-6 md:px-8 md:py-8 min-h-screen">
       {/* Header */}
@@ -163,14 +170,10 @@ export default function AllocationsDashboard({ data, userId, userName }: Allocat
       <div className="mb-6">
         <div className={`border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
           <nav className="-mb-px flex space-x-8">
-            {[
-              { key: 'overview', label: 'Overview', icon: FaChartPie },
-              { key: 'planner', label: 'Weekly Planner', icon: FaCalendarWeek },
-              { key: 'calendar', label: 'Calendar View', icon: FaClock }
-            ].map(({ key, label, icon: Icon }) => (
+            {viewTabs.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
-                onClick={() => setActiveView(key as any)}
+                onClick={() => setActiveView(key)}
                 className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
                   activeView === key
                     ? 'border-blue-500 text-blue-600'
@@ -332,7 +335,7 @@ export default function AllocationsDashboard({ data, userId, userName }: Allocat
                           {/* Phase Timeline Info */}
                           <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} flex justify-between`}>
                             <span>
-                              {new Date(allocation.phase.startDate).toLocaleDateString()} - {new Date(allocation.phase.endDate).toLocaleDateString()}
+                              {formatDate(allocation.phase.startDate)} - {formatDate(allocation.phase.endDate)}
                             </span>
                             <span className={`font-medium ${
                               enhancedPhaseStatus.details.overall.riskLevel === 'high' ? 'text-red-600' :
@@ -372,7 +375,7 @@ export default function AllocationsDashboard({ data, userId, userName }: Allocat
                         {allocation.phaseAllocation.phase.project.title} - {allocation.phaseAllocation.phase.name}
                       </div>
                       <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
-                        {new Date(allocation.weekStartDate).toLocaleDateString()} - {new Date(allocation.weekEndDate).toLocaleDateString()}
+                        {formatDate(allocation.weekStartDate)} - {formatDate(allocation.weekEndDate)}
                       </div>
                     </div>
                   ))

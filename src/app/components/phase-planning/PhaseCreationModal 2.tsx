@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FaTimes, FaSave } from 'react-icons/fa';
 import axios from 'axios';
+import formatDate from '@/lib/formatDate';
 
 interface Sprint {
   id: string;
@@ -138,8 +139,8 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
     const endDate = new Date(selectedSprints[selectedSprints.length - 1].endDate);
     
     return {
-      startDate: startDate.toLocaleDateString(),
-      endDate: endDate.toLocaleDateString(),
+  startDate: formatDate(startDate),
+  endDate: formatDate(endDate),
       sprintRange: `Sprint ${selectedSprints[0].sprintNumber} - Sprint ${selectedSprints[selectedSprints.length - 1].sprintNumber}`
     };
   };
@@ -230,7 +231,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                       Sprint {sprint.sprintNumber}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}
+                      {formatDate(sprint.startDate)} - {formatDate(sprint.endDate)}
                     </div>
                   </div>
                 </label>

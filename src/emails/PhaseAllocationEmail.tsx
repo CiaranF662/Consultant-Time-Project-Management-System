@@ -10,6 +10,7 @@ import {
   Text,
 } from '@react-email/components';
 import * as React from 'react';
+import formatDate from '@/lib/formatDate'
 
 interface PhaseAllocationEmailProps {
   type: 'allocated' | 'planned';
@@ -81,7 +82,7 @@ export const PhaseAllocationEmail = ({
             )}
             
             <Text style={text}>
-              <strong>Phase Duration:</strong> {new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}
+              <strong>Phase Duration:</strong> {formatDate(startDate)} - {formatDate(endDate)}
             </Text>
             
             <Text style={text}>
