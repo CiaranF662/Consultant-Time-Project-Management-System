@@ -11,13 +11,13 @@ interface PhaseAllocation {
   createdAt: Date;
   consultant: {
     id: string;
-    name: string | null;
-    email: string | null;
+    name: string;
+    email: string;
   };
   phase: {
     id: string;
     name: string;
-    description?: string | null;
+    description?: string;
     startDate: Date;
     endDate: Date;
     project: {
@@ -109,7 +109,7 @@ export default function PhaseAllocationApproval({
 
   // Get unique consultants and projects for filter dropdowns
   const getFilterOptions = () => {
-    const consultants = Array.from(new Set(phaseAllocations.map(a => a.consultant.name || a.consultant.email || 'Unknown'))).filter(Boolean);
+    const consultants = Array.from(new Set(phaseAllocations.map(a => a.consultant.name || a.consultant.email))).filter(Boolean);
     const projects = Array.from(new Set(phaseAllocations.map(a => a.phase.project.title))).filter(Boolean);
     return { consultants, projects };
   };

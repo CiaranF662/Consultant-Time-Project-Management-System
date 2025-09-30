@@ -83,23 +83,6 @@ export default function ProjectHealthView({
 
   return (
     <div className="space-y-6">
-      {/* Overview Description */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <FaProjectDiagram className="w-5 h-5 text-blue-600" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-blue-900 mb-1">Project Portfolio Overview</h3>
-            <p className="text-sm text-blue-700 leading-relaxed">
-              This view shows all projects where you serve as the <strong>Product Manager</strong>.
-              Track progress by phases completed, manage team allocations, and monitor overall project health.
-              Use the toggle to switch between a quick overview and detailed project information.
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Portfolio Summary Stats */}
       <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">

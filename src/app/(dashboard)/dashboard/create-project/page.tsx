@@ -7,7 +7,7 @@ import Link from 'next/link';
 import axios from 'axios';
 import { User } from '@prisma/client';
 import DashboardLayout from '@/app/components/DashboardLayout';
-import { FaInfoCircle } from 'react-icons/fa';
+import { FaInfoCircle, FaClock, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
 
 // Helper function to get today's date in YYYY-MM-DD format
 const getTodayString = () => {
@@ -50,6 +50,10 @@ export default function CreateProjectPage() {
   const [selectedConsultantIds, setSelectedConsultantIds] = useState<string[]>([]);
   const [consultantAllocations, setConsultantAllocations] = useState<Record<string, number>>({});
 
+  // Consultant availability state
+  const [consultantAvailability, setConsultantAvailability] = useState<Record<string, any>>({});
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -66,29 +70,46 @@ export default function CreateProjectPage() {
     fetchConsultants();
   }, []);
 
-  const handleConsultantChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-    setSelectedConsultantIds(selectedOptions);
-
-    // Initialize allocations for new consultants, remove for unselected ones
-    const newAllocations = { ...consultantAllocations };
-
-    // Remove allocations for unselected consultants
-    Object.keys(newAllocations).forEach(consultantId => {
-      if (!selectedOptions.includes(consultantId)) {
-        delete newAllocations[consultantId];
+  // Fetch consultant availability when start date or duration changes
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      if (!startDate || !durationInWeeks || parseInt(durationInWeeks) <= 0) {
+        setConsultantAvailability({});
+        return;
       }
-    });
 
-    // Initialize allocations for newly selected consultants
-    selectedOptions.forEach(consultantId => {
-      if (!(consultantId in newAllocations)) {
-        newAllocations[consultantId] = 0;
+      setLoadingAvailability(true);
+      try {
+        const start = new Date(startDate);
+        const end = new Date(start);
+        end.setDate(start.getDate() + (parseInt(durationInWeeks) * 7) - 1);
+
+        const response = await axios.get('/api/consultants/availability', {
+          params: {
+            startDate: start.toISOString(),
+            endDate: end.toISOString()
+          }
+        });
+
+        // Convert array to object keyed by consultant ID
+        const availabilityMap = response.data.reduce((acc: any, item: any) => {
+          acc[item.consultant.id] = item;
+          return acc;
+        }, {});
+
+        setConsultantAvailability(availabilityMap);
+      } catch (err) {
+        console.error('Failed to fetch consultant availability:', err);
+        setConsultantAvailability({});
+      } finally {
+        setLoadingAvailability(false);
       }
-    });
+    };
 
-    setConsultantAllocations(newAllocations);
-  };
+    const timeoutId = setTimeout(fetchAvailability, 300); // Debounce API calls
+    return () => clearTimeout(timeoutId);
+  }, [startDate, durationInWeeks]);
+
 
   const handleAllocationChange = (consultantId: string, hours: number) => {
     setConsultantAllocations(prev => ({
@@ -358,23 +379,129 @@ export default function CreateProjectPage() {
                       <label htmlFor="consultants" className="block text-sm font-medium text-gray-700">
                         Team Consultants *
                       </label>
-                      <select
-                        id="consultants"
-                        multiple
-                        value={selectedConsultantIds}
-                        onChange={handleConsultantChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 h-32"
-                        required
-                      >
-                        {consultants.map(consultant => (
-                          <option key={consultant.id} value={consultant.id}>
-                            {consultant.name} ({consultant.email})
-                          </option>
-                        ))}
-                      </select>
+                      <div className="mt-1 space-y-2">
+                        {consultants.map(consultant => {
+                          const availability = consultantAvailability[consultant.id];
+                          const isSelected = selectedConsultantIds.includes(consultant.id);
+
+                          return (
+                            <div key={consultant.id} className={`relative p-3 border rounded-lg cursor-pointer transition-all ${
+                              isSelected
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                            }`}
+                            onClick={() => {
+                              const isCurrentlySelected = selectedConsultantIds.includes(consultant.id);
+                              if (isCurrentlySelected) {
+                                setSelectedConsultantIds(prev => prev.filter(id => id !== consultant.id));
+                                setConsultantAllocations(prev => {
+                                  const newAllocations = { ...prev };
+                                  delete newAllocations[consultant.id];
+                                  return newAllocations;
+                                });
+                              } else {
+                                setSelectedConsultantIds(prev => [...prev, consultant.id]);
+                                setConsultantAllocations(prev => ({
+                                  ...prev,
+                                  [consultant.id]: 0
+                                }));
+                              }
+                            }}>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-5 h-5 border-2 rounded flex items-center justify-center ${
+                                    isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                                  }`}>
+                                    {isSelected && (
+                                      <FaCheckCircle className="w-3 h-3 text-white" />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-gray-900">{consultant.name}</p>
+                                    <p className="text-xs text-gray-500">{consultant.email}</p>
+                                  </div>
+                                </div>
+
+                                {/* Availability Indicator */}
+                                <div className="flex items-center gap-2">
+                                  {loadingAvailability ? (
+                                    <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                                      <FaClock className="w-3 h-3 animate-spin" />
+                                      <span className="text-xs">Loading...</span>
+                                    </div>
+                                  ) : availability ? (
+                                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                      availability.availabilityColor
+                                    }`}>
+                                      {availability.availabilityStatus === 'available' && (
+                                        <FaCheckCircle className="w-3 h-3" />
+                                      )}
+                                      {availability.availabilityStatus === 'partially-busy' && (
+                                        <FaClock className="w-3 h-3" />
+                                      )}
+                                      {(availability.availabilityStatus === 'busy' || availability.availabilityStatus === 'overloaded') && (
+                                        <FaExclamationTriangle className="w-3 h-3" />
+                                      )}
+                                      <span>{availability.availabilityLabel}</span>
+                                      <span className="ml-1">({availability.averageHoursPerWeek}h/wk)</span>
+                                    </div>
+                                  ) : startDate && durationInWeeks ? (
+                                    <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
+                                      <FaCheckCircle className="w-3 h-3" />
+                                      <span>Available (0h/wk)</span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-gray-400">Set project dates</span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Availability Details */}
+                              {availability && availability.projectAllocations && Object.keys(availability.projectAllocations).length > 0 && (
+                                <div className="mt-2 pt-2 border-t border-gray-200">
+                                  <p className="text-xs text-gray-600 mb-1">Current allocations:</p>
+                                  <div className="space-y-1">
+                                    {Object.entries(availability.projectAllocations).map(([projectTitle, hours]: [string, any]) => (
+                                      <div key={projectTitle} className="text-xs text-gray-500 flex justify-between">
+                                        <span className="truncate">{projectTitle}</span>
+                                        <span>{hours}h</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                       <p className="mt-1 text-xs text-gray-500">
-                        Hold Command (Mac) or Ctrl (Windows) to select multiple consultants.
+                        Click consultants to select them for the project. Availability shows their current workload during the project period.
                       </p>
+
+                      {/* Availability Legend */}
+                      {startDate && durationInWeeks && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                          <p className="text-xs font-medium text-gray-700 mb-2">Availability Legend:</p>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex items-center gap-1">
+                              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                              <span>Available (≤15h/week)</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                              <span>Partially Busy (16-30h/week)</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                              <span>Busy (31-40h/week)</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                              <span>Overloaded (40h+/week)</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Hour Allocation Section */}

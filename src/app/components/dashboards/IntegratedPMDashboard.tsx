@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FaUserTie, FaUser } from 'react-icons/fa';
 import ProductManagerDashboard from './ProductManagerDashboard';
-import ConsultantDashboard from '@/app/components/consultant/dashboard/ConsultantDashboard';
+import ConsultantDashboard from './ConsultantDashboard';
 
 interface IntegratedPMDashboardProps {
   userId: string;
@@ -40,43 +40,40 @@ export default function IntegratedPMDashboard({ userId, userName }: IntegratedPM
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top-level Role Switcher - Inline with Sidebar Header */}
+      {/* Top-level Role Switcher */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="flex items-center justify-between h-16 px-4">
-          {/* Role Toggle Buttons - Compact and Inline */}
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setActiveRole('pm')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                activeRole === 'pm'
-                  ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 border border-transparent'
-              }`}
-            >
-              <FaUserTie className="w-3.5 h-3.5" />
-              Product Manager Mode
-            </button>
-            <button
-              onClick={() => setActiveRole('consultant')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                activeRole === 'consultant'
-                  ? 'bg-green-100 text-green-700 border border-green-300'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 border border-transparent'
-              }`}
-            >
-              <FaUser className="w-3.5 h-3.5" />
-              Consultant Mode
-            </button>
-          </div>
-
-          {/* User Info - Compact */}
-          <div className="flex items-center gap-4">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => setActiveRole('pm')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                  activeRole === 'pm'
+                    ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 border-2 border-transparent'
+                }`}
+              >
+                <FaUserTie className="w-4 h-4" />
+                Product Manager Mode
+              </button>
+              <button
+                onClick={() => setActiveRole('consultant')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                  activeRole === 'consultant'
+                    ? 'bg-green-100 text-green-700 border-2 border-green-300'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 border-2 border-transparent'
+                }`}
+              >
+                <FaUser className="w-4 h-4" />
+                Consultant Mode
+              </button>
+            </div>
             <div className="text-right">
-              <p className="text-xs text-gray-500">
+              <p className="text-sm text-gray-500">
                 {activeRole === 'pm' ? 'Managing projects and teams' : 'Personal allocations and planning'}
               </p>
+              <p className="text-lg font-semibold text-gray-800">{userName}</p>
             </div>
-            <p className="text-sm font-semibold text-gray-800">{userName}</p>
           </div>
         </div>
       </div>

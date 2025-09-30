@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, ProjectRole } from '@prisma/client';
-import { sendEmail, renderEmailTemplate } from '@/lib/email';
-import PhaseAllocationEmail from '@/emails/PhaseAllocationEmail';
+import { PrismaClient, ProjectRole, NotificationType } from '@prisma/client';
+import { getGrowthTeamMemberIds, createNotificationsForUsers, NotificationTemplates } from '@/lib/notifications';
 
 const prisma = new PrismaClient();
 
@@ -131,9 +130,10 @@ export async function POST(
 
       // Update existing allocation - requires Growth Team approval if hours changed
       const dataToUpdate: any = { totalHours };
+      const hoursChanged = existing.totalHours !== totalHours;
 
       // If hours changed, reset to PENDING approval status
-      if (existing.totalHours !== totalHours) {
+      if (hoursChanged) {
         dataToUpdate.approvalStatus = 'PENDING';
         dataToUpdate.approvedBy = null;
         dataToUpdate.approvedAt = null;
@@ -143,8 +143,82 @@ export async function POST(
       allocation = await prisma.phaseAllocation.update({
         where: { id: existing.id },
         data: dataToUpdate,
-        include: { consultant: true }
+        include: {
+          consultant: true,
+          phase: {
+            include: {
+              project: {
+                include: {
+                  consultants: {
+                    where: { role: ProjectRole.PRODUCT_MANAGER },
+                    include: { user: true }
+                  }
+                }
+              }
+            }
+          }
+        }
       });
+
+      // Send notifications if hours changed (requires new approval)
+      if (hoursChanged) {
+        try {
+          const growthTeamIds = await getGrowthTeamMemberIds();
+          const productManagerId = session.user.id;
+          const consultantName = allocation.consultant.name || allocation.consultant.email || 'Consultant';
+          const pmName = allocation.phase.project.consultants[0]?.user.name || 'Product Manager';
+
+          // Notify Growth Team about updated allocation
+          if (growthTeamIds.length > 0) {
+            const growthTemplate = NotificationTemplates.PHASE_ALLOCATION_PENDING_FOR_GROWTH(
+              consultantName,
+              allocation.phase.name,
+              allocation.phase.project.title,
+              allocation.totalHours,
+              pmName
+            );
+
+            await createNotificationsForUsers(
+              growthTeamIds,
+              NotificationType.PHASE_ALLOCATION_PENDING,
+              growthTemplate.title,
+              growthTemplate.message,
+              `/dashboard/hour-approvals`,
+              {
+                projectId: allocation.phase.project.id,
+                phaseId: allocation.phase.id,
+                allocationId: allocation.id,
+                updated: true
+              }
+            );
+          }
+
+          // Notify Product Manager about resubmission (only if different from consultant to avoid duplicates)
+          if (productManagerId !== session.user.id) {
+            const pmTemplate = NotificationTemplates.PHASE_ALLOCATION_PENDING_FOR_PM(
+              consultantName,
+              allocation.phase.name,
+              allocation.totalHours
+            );
+
+            await createNotificationsForUsers(
+              [productManagerId],
+              NotificationType.PHASE_ALLOCATION_PENDING,
+              pmTemplate.title,
+              pmTemplate.message,
+              `/dashboard/projects/${allocation.phase.project.id}`,
+              {
+                projectId: allocation.phase.project.id,
+                phaseId: allocation.phase.id,
+                allocationId: allocation.id,
+                updated: true
+              }
+            );
+          }
+        } catch (error) {
+          console.error('Failed to send update notifications:', error);
+        }
+      }
     } else {
       // Create new allocation (requires Growth Team approval)
       allocation = await prisma.phaseAllocation.create({
@@ -171,31 +245,72 @@ export async function POST(
         }
       });
       
-      // Send email notification for new allocation
+      // Send notifications for new allocation
       try {
-        const emailTemplate = PhaseAllocationEmail({
-          type: "allocated",
-          consultantName: allocation.consultant.name || allocation.consultant.email || 'Consultant',
-          projectName: allocation.phase.project.title,
-          phaseName: allocation.phase.name,
-          phaseDescription: allocation.phase.description || undefined,
-          totalHours: allocation.totalHours,
-          productManagerName: allocation.phase.project.consultants[0]?.user.name || undefined,
-          startDate: allocation.phase.startDate.toISOString(),
-          endDate: allocation.phase.endDate.toISOString()
-        });
-        
-        const { html, text } = await renderEmailTemplate(emailTemplate);
-        
-        await sendEmail({
-          to: allocation.consultant.email!,
-          subject: `New Phase Allocation: ${allocation.phase.name}`,
-          html,
-          text
-        });
-      } catch (emailError) {
-        console.error('Failed to send phase allocation email:', emailError);
-        // Don't fail the allocation creation if email fails
+        const growthTeamIds = await getGrowthTeamMemberIds();
+        const productManagerId = session.user.id;
+        const consultantName = allocation.consultant.name || allocation.consultant.email || 'Consultant';
+        const pmName = allocation.phase.project.consultants[0]?.user.name || 'Product Manager';
+
+        // Notify Growth Team about pending allocation
+        console.log('Growth Team IDs found:', growthTeamIds);
+        if (growthTeamIds.length > 0) {
+          const growthTemplate = NotificationTemplates.PHASE_ALLOCATION_PENDING_FOR_GROWTH(
+            consultantName,
+            allocation.phase.name,
+            allocation.phase.project.title,
+            allocation.totalHours,
+            pmName
+          );
+
+          console.log('Sending notifications to Growth Team:', {
+            recipients: growthTeamIds,
+            template: growthTemplate,
+            type: NotificationType.PHASE_ALLOCATION_PENDING
+          });
+
+          await createNotificationsForUsers(
+            growthTeamIds,
+            NotificationType.PHASE_ALLOCATION_PENDING,
+            growthTemplate.title,
+            growthTemplate.message,
+            `/dashboard/hour-approvals`,
+            {
+              projectId: allocation.phase.project.id,
+              phaseId: allocation.phase.id,
+              allocationId: allocation.id
+            }
+          );
+        } else {
+          console.log('No Growth Team members found for notifications');
+        }
+
+        // Notify Product Manager about submission (only if different from consultant to avoid duplicates)
+        if (productManagerId !== consultantId) {
+          const pmTemplate = NotificationTemplates.PHASE_ALLOCATION_PENDING_FOR_PM(
+            consultantName,
+            allocation.phase.name,
+            allocation.totalHours
+          );
+
+          await createNotificationsForUsers(
+            [productManagerId],
+            NotificationType.PHASE_ALLOCATION_PENDING,
+            pmTemplate.title,
+            pmTemplate.message,
+            `/dashboard/projects/${allocation.phase.project.id}`,
+            {
+              projectId: allocation.phase.project.id,
+              phaseId: allocation.phase.id,
+              allocationId: allocation.id
+            }
+          );
+        }
+
+        // Note: Email notifications are sent only when allocation is approved, not when pending
+      } catch (error) {
+        console.error('Failed to send notifications/email:', error);
+        // Don't fail the allocation creation if notifications fail
       }
     }
 
@@ -377,46 +492,7 @@ export async function PUT(
       }
     });
     
-    // Send email notifications only for newly added consultants
-    if (updatedPhase && allocations.length > 0) {
-      const productManagerName = updatedPhase.project.consultants[0]?.user.name || undefined;
-
-      // Identify new consultants (those not in existingApprovalMap)
-      const existingConsultantIds = new Set(existingAllocations.map(alloc => alloc.consultantId));
-      const newAllocations = updatedPhase.allocations.filter(
-        allocation => !existingConsultantIds.has(allocation.consultantId)
-      );
-
-      // Send emails in parallel only to new consultants
-      await Promise.allSettled(
-        newAllocations.map(async (allocation) => {
-          try {
-            const emailTemplate = PhaseAllocationEmail({
-              type: "allocated",
-              consultantName: allocation.consultant.name || allocation.consultant.email || 'Consultant',
-              projectName: updatedPhase.project.title,
-              phaseName: updatedPhase.name,
-              phaseDescription: updatedPhase.description || undefined,
-              totalHours: allocation.totalHours,
-              productManagerName: productManagerName,
-              startDate: updatedPhase.startDate.toISOString(),
-              endDate: updatedPhase.endDate.toISOString()
-            });
-            
-            const { html, text } = await renderEmailTemplate(emailTemplate);
-            
-            await sendEmail({
-              to: allocation.consultant.email!,
-              subject: `New Phase Allocation: ${updatedPhase.name}`,
-              html,
-              text
-            });
-          } catch (emailError) {
-            console.error(`Failed to send phase allocation email to ${allocation.consultant.email}:`, emailError);
-          }
-        })
-      );
-    }
+    // Note: Email notifications are sent only when allocations are approved, not when pending
 
     return NextResponse.json(updatedPhase);
 

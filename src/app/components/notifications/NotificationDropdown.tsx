@@ -6,14 +6,22 @@ import axios from 'axios';
 import { useSession } from 'next-auth/react';
 import { FaBell, FaSpinner, FaExternalLinkAlt, FaCheck } from 'react-icons/fa';
 
-type NotificationType = 
+type NotificationType =
   | 'PROJECT_ASSIGNMENT'
   | 'HOUR_CHANGE_REQUEST'
   | 'HOUR_CHANGE_APPROVED'
   | 'HOUR_CHANGE_REJECTED'
   | 'PHASE_DEADLINE_WARNING'
   | 'USER_APPROVAL_NEEDED'
-  | 'OVERDUE_APPROVAL_ALERT';
+  | 'OVERDUE_APPROVAL_ALERT'
+  | 'PHASE_ALLOCATION_PENDING'
+  | 'PHASE_ALLOCATION_APPROVED'
+  | 'PHASE_ALLOCATION_REJECTED'
+  | 'PHASE_ALLOCATION_MODIFIED'
+  | 'WEEKLY_ALLOCATION_PENDING'
+  | 'WEEKLY_ALLOCATION_APPROVED'
+  | 'WEEKLY_ALLOCATION_MODIFIED'
+  | 'WEEKLY_ALLOCATION_REJECTED';
 
 interface Notification {
   id: string;
@@ -37,7 +45,15 @@ const notificationTypeConfig: Record<NotificationType, { icon: string; color: st
   HOUR_CHANGE_REJECTED: { icon: '❌', color: 'text-red-600' },
   PHASE_DEADLINE_WARNING: { icon: '⚠️', color: 'text-orange-600' },
   USER_APPROVAL_NEEDED: { icon: '👤', color: 'text-purple-600' },
-  OVERDUE_APPROVAL_ALERT: { icon: '🚨', color: 'text-red-600' }
+  OVERDUE_APPROVAL_ALERT: { icon: '🚨', color: 'text-red-600' },
+  PHASE_ALLOCATION_PENDING: { icon: '📝', color: 'text-amber-600' },
+  PHASE_ALLOCATION_APPROVED: { icon: '✅', color: 'text-green-600' },
+  PHASE_ALLOCATION_REJECTED: { icon: '❌', color: 'text-red-600' },
+  PHASE_ALLOCATION_MODIFIED: { icon: '✏️', color: 'text-blue-600' },
+  WEEKLY_ALLOCATION_PENDING: { icon: '📅', color: 'text-amber-600' },
+  WEEKLY_ALLOCATION_APPROVED: { icon: '✅', color: 'text-green-600' },
+  WEEKLY_ALLOCATION_MODIFIED: { icon: '✏️', color: 'text-blue-600' },
+  WEEKLY_ALLOCATION_REJECTED: { icon: '❌', color: 'text-red-600' }
 };
 
 export default function NotificationDropdown({ onClose, onNotificationUpdate }: NotificationDropdownProps) {
@@ -49,7 +65,7 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
   // Get role-appropriate action URL for notifications
   const getRoleAwareActionUrl = (notification: Notification): string | null => {
     const userRole = session?.user?.role;
-    
+
     // For Growth Team members, provide admin-focused routes
     if (userRole === 'GROWTH_TEAM') {
       switch (notification.type) {
@@ -64,6 +80,16 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
           return '/dashboard/projects';
         case 'PHASE_DEADLINE_WARNING':
           return '/dashboard/projects';
+        case 'PHASE_ALLOCATION_PENDING':
+        case 'WEEKLY_ALLOCATION_PENDING':
+          // Growth team handles approvals
+          return '/dashboard/hour-approvals';
+        case 'PHASE_ALLOCATION_APPROVED':
+        case 'PHASE_ALLOCATION_REJECTED':
+        case 'PHASE_ALLOCATION_MODIFIED':
+        case 'WEEKLY_ALLOCATION_APPROVED':
+        case 'WEEKLY_ALLOCATION_MODIFIED':
+        case 'WEEKLY_ALLOCATION_REJECTED':
         case 'HOUR_CHANGE_APPROVED':
         case 'HOUR_CHANGE_REJECTED':
           // These are informational for Growth Team - no action needed
@@ -72,7 +98,7 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
           return notification.actionUrl || null;
       }
     }
-    
+
     // For consultants, use the original actionUrl
     return notification.actionUrl || null;
   };
@@ -224,7 +250,7 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
         ) : (
           <div className="divide-y divide-gray-100">
             {notifications.map((notification) => {
-              const config = notificationTypeConfig[notification.type];
+              const config = notificationTypeConfig[notification.type] || { icon: '📋', color: 'text-gray-600' };
               const actionUrl = getRoleAwareActionUrl(notification);
               
               const content = (

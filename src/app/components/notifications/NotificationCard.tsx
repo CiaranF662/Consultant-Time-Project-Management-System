@@ -4,14 +4,22 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { FaBell, FaCheck, FaTrash, FaExternalLinkAlt } from 'react-icons/fa';
 
-type NotificationType = 
+type NotificationType =
   | 'PROJECT_ASSIGNMENT'
   | 'HOUR_CHANGE_REQUEST'
   | 'HOUR_CHANGE_APPROVED'
   | 'HOUR_CHANGE_REJECTED'
   | 'PHASE_DEADLINE_WARNING'
   | 'USER_APPROVAL_NEEDED'
-  | 'OVERDUE_APPROVAL_ALERT';
+  | 'OVERDUE_APPROVAL_ALERT'
+  | 'PHASE_ALLOCATION_PENDING'
+  | 'PHASE_ALLOCATION_APPROVED'
+  | 'PHASE_ALLOCATION_REJECTED'
+  | 'PHASE_ALLOCATION_MODIFIED'
+  | 'WEEKLY_ALLOCATION_PENDING'
+  | 'WEEKLY_ALLOCATION_APPROVED'
+  | 'WEEKLY_ALLOCATION_MODIFIED'
+  | 'WEEKLY_ALLOCATION_REJECTED';
 
 interface NotificationCardProps {
   notification: {
@@ -70,6 +78,54 @@ const notificationTypeConfig = {
     color: 'red',
     bgColor: 'bg-red-50 border-red-200',
     iconColor: 'text-red-600'
+  },
+  PHASE_ALLOCATION_PENDING: {
+    icon: '📝',
+    color: 'amber',
+    bgColor: 'bg-amber-50 border-amber-200',
+    iconColor: 'text-amber-600'
+  },
+  PHASE_ALLOCATION_APPROVED: {
+    icon: '✅',
+    color: 'green',
+    bgColor: 'bg-green-50 border-green-200',
+    iconColor: 'text-green-600'
+  },
+  PHASE_ALLOCATION_REJECTED: {
+    icon: '❌',
+    color: 'red',
+    bgColor: 'bg-red-50 border-red-200',
+    iconColor: 'text-red-600'
+  },
+  PHASE_ALLOCATION_MODIFIED: {
+    icon: '✏️',
+    color: 'blue',
+    bgColor: 'bg-blue-50 border-blue-200',
+    iconColor: 'text-blue-600'
+  },
+  WEEKLY_ALLOCATION_PENDING: {
+    icon: '📅',
+    color: 'amber',
+    bgColor: 'bg-amber-50 border-amber-200',
+    iconColor: 'text-amber-600'
+  },
+  WEEKLY_ALLOCATION_APPROVED: {
+    icon: '✅',
+    color: 'green',
+    bgColor: 'bg-green-50 border-green-200',
+    iconColor: 'text-green-600'
+  },
+  WEEKLY_ALLOCATION_MODIFIED: {
+    icon: '✏️',
+    color: 'blue',
+    bgColor: 'bg-blue-50 border-blue-200',
+    iconColor: 'text-blue-600'
+  },
+  WEEKLY_ALLOCATION_REJECTED: {
+    icon: '❌',
+    color: 'red',
+    bgColor: 'bg-red-50 border-red-200',
+    iconColor: 'text-red-600'
   }
 };
 
@@ -81,7 +137,12 @@ export default function NotificationCard({
 }: NotificationCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   
-  const config = notificationTypeConfig[notification.type];
+  const config = notificationTypeConfig[notification.type] || {
+    icon: '📋',
+    color: 'gray',
+    bgColor: 'bg-gray-50 border-gray-200',
+    iconColor: 'text-gray-600'
+  };
   const timeAgo = new Date(notification.createdAt).toLocaleString();
 
   const handleMarkAsRead = async () => {

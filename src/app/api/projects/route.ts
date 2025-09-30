@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, ProjectRole } from '@prisma/client';
+import { PrismaClient, UserRole, ProjectRole, NotificationType } from '@prisma/client';
 import { sendEmail, renderEmailTemplate } from '@/lib/email';
-import { createNotification, NotificationTemplates } from '@/lib/notifications';
+import { createNotification, createNotificationsForUsers, NotificationTemplates } from '@/lib/notifications';
 import ProjectAssignmentEmail from '@/emails/ProjectAssignmentEmail';
 
 const prisma = new PrismaClient();

@@ -9,9 +9,9 @@ import {
   FaChartPie
 } from 'react-icons/fa';
 import { formatHours } from '@/lib/dates';
-import ProjectHealthView from '../dashboard-views/ProjectHealthView';
-import PendingRequestsView from '../dashboard-views/PendingRequestsView';
-import CrossProjectManagementView from '../dashboard-views/CrossProjectManagementView';
+import ProjectHealthView from '@/app/components/pm/ProjectHealthView';
+import PendingRequestsView from '@/app/components/pm/PendingRequestsView';
+import CrossProjectManagementView from '@/app/components/pm/CrossProjectManagementView';
 
 interface Project {
   id: string;
@@ -390,14 +390,14 @@ export default function ProductManagerDashboard() {
         <div className="xl:col-span-2 space-y-6">
           {/* Main Content Area with Toggle */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="bg-blue-600 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-xl font-semibold text-white">
+                <h2 className="text-xl font-semibold text-gray-900">
                   {activeView === 'management' ? 'Cross-Project Management Center' :
                    activeView === 'projects' ? 'Project Health Overview' :
                    'Pending Requests & Approvals'}
                 </h2>
-                <p className="text-sm text-blue-100">
+                <p className="text-sm text-gray-600">
                   {activeView === 'management'
                     ? 'Unified workspace for managing all your projects'
                     : activeView === 'projects'

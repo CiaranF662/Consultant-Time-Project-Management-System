@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { User } from '@prisma/client';
-import { FaInfoCircle, FaSearch, FaTimes, FaUser, FaUsers, FaCalendarAlt, FaBriefcase, FaClock } from 'react-icons/fa';
+import { FaInfoCircle, FaSearch, FaTimes, FaUser, FaUsers, FaCalendarAlt, FaBriefcase, FaClock, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
 
 // Helper function to get today's date in YYYY-MM-DD format
 const getTodayString = () => {
@@ -36,6 +36,10 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
   const [consultantSearchQuery, setConsultantSearchQuery] = useState('');
   const [showPmDropdown, setShowPmDropdown] = useState(false);
   const [showConsultantDropdown, setShowConsultantDropdown] = useState(false);
+
+  // Consultant availability state
+  const [consultantAvailability, setConsultantAvailability] = useState<Record<string, any>>({});
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
   
   // Refs for click-outside functionality
   const pmDropdownRef = useRef<HTMLDivElement>(null);
@@ -80,6 +84,48 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
       fetchConsultants();
     }
   }, [isOpen]);
+
+  // Fetch consultant availability when start date or duration changes
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const fetchAvailability = async () => {
+      if (!startDate || !durationInWeeks || parseInt(durationInWeeks) <= 0) {
+        setConsultantAvailability({});
+        return;
+      }
+
+      setLoadingAvailability(true);
+      try {
+        const start = new Date(startDate);
+        const end = new Date(start);
+        end.setDate(start.getDate() + (parseInt(durationInWeeks) * 7) - 1);
+
+        const response = await axios.get('/api/consultants/availability', {
+          params: {
+            startDate: start.toISOString(),
+            endDate: end.toISOString()
+          }
+        });
+
+        // Convert array to object keyed by consultant ID
+        const availabilityMap = response.data.reduce((acc: any, item: any) => {
+          acc[item.consultant.id] = item;
+          return acc;
+        }, {});
+
+        setConsultantAvailability(availabilityMap);
+      } catch (err) {
+        console.error('Failed to fetch consultant availability:', err);
+        setConsultantAvailability({});
+      } finally {
+        setLoadingAvailability(false);
+      }
+    };
+
+    const timeoutId = setTimeout(fetchAvailability, 300); // Debounce API calls
+    return () => clearTimeout(timeoutId);
+  }, [isOpen, startDate, durationInWeeks]);
 
   // Click outside handler for dropdowns and modal
   useEffect(() => {
@@ -521,21 +567,61 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                     </div>
                     
                     {showPmDropdown && (
-                      <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                      <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                         {getFilteredConsultants(pmSearchQuery, selectedConsultantIds).length === 0 ? (
                           <div className="px-3 py-2 text-gray-500 text-sm">No consultants found</div>
                         ) : (
-                          getFilteredConsultants(pmSearchQuery, selectedConsultantIds).map((consultant) => (
-                            <button
-                              key={consultant.id}
-                              type="button"
-                              onClick={() => handleProductManagerSelect(consultant.id)}
-                              className="w-full text-left px-3 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none border-b border-gray-100 last:border-b-0"
-                            >
-                              <div className="font-medium text-gray-800 text-sm">{consultant.name}</div>
-                              <div className="text-xs text-gray-600">{consultant.email}</div>
-                            </button>
-                          ))
+                          getFilteredConsultants(pmSearchQuery, selectedConsultantIds).map((consultant) => {
+                            const availability = consultantAvailability[consultant.id];
+
+                            return (
+                              <button
+                                key={consultant.id}
+                                type="button"
+                                onClick={() => handleProductManagerSelect(consultant.id)}
+                                className="w-full text-left px-3 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none border-b border-gray-100 last:border-b-0"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="font-medium text-gray-800 text-sm">{consultant.name}</div>
+                                    <div className="text-xs text-gray-600">{consultant.email}</div>
+                                  </div>
+
+                                  {/* Availability Indicator */}
+                                  <div className="ml-2">
+                                    {loadingAvailability ? (
+                                      <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                                        <FaClock className="w-2 h-2 animate-spin" />
+                                        <span className="text-xs">Loading...</span>
+                                      </div>
+                                    ) : availability ? (
+                                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                        availability.availabilityColor
+                                      }`}>
+                                        {availability.availabilityStatus === 'available' && (
+                                          <FaCheckCircle className="w-2 h-2" />
+                                        )}
+                                        {availability.availabilityStatus === 'partially-busy' && (
+                                          <FaClock className="w-2 h-2" />
+                                        )}
+                                        {(availability.availabilityStatus === 'busy' || availability.availabilityStatus === 'overloaded') && (
+                                          <FaExclamationTriangle className="w-2 h-2" />
+                                        )}
+                                        <span>{availability.averageHoursPerWeek}h/wk</span>
+                                      </div>
+                                    ) : startDate && durationInWeeks ? (
+                                      <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
+                                        <FaCheckCircle className="w-2 h-2" />
+                                        <span>0h/wk</span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-xs text-gray-400">Set dates</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })
                         )}
                       </div>
                     )}
@@ -555,9 +641,21 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                       <div className="flex flex-wrap gap-2">
                         {selectedConsultantIds.map((consultantId) => {
                           const consultant = consultants.find(c => c.id === consultantId);
+                          const availability = consultantAvailability[consultantId];
+
                           return (
                             <div key={consultantId} className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
                               <span>{consultant?.name}</span>
+                              {availability && (
+                                <span className={`px-1 py-0.5 rounded text-xs ${
+                                  availability.availabilityStatus === 'available' ? 'bg-green-200 text-green-800' :
+                                  availability.availabilityStatus === 'partially-busy' ? 'bg-yellow-200 text-yellow-800' :
+                                  availability.availabilityStatus === 'busy' ? 'bg-orange-200 text-orange-800' :
+                                  'bg-red-200 text-red-800'
+                                }`}>
+                                  {availability.averageHoursPerWeek}h/wk
+                                </span>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => removeConsultant(consultantId)}
@@ -572,6 +670,31 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                     </div>
                   )}
                   
+                  {/* Availability Legend */}
+                  {startDate && durationInWeeks && (
+                    <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                      <p className="text-xs font-medium text-gray-700 mb-2">Availability Legend for Project Period:</p>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                          <span>Available (≤15h/week)</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                          <span>Partially Busy (16-30h)</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                          <span>Busy (31-40h)</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                          <span>Overloaded (40h+)</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="relative" ref={consultantDropdownRef}>
                     <div className="relative">
                       <input
@@ -589,24 +712,82 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                     </div>
                     
                     {showConsultantDropdown && (
-                      <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                      <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                         {getFilteredConsultants(consultantSearchQuery, [selectedProductManagerId, ...selectedConsultantIds]).length === 0 ? (
                           <div className="px-3 py-2 text-gray-500 text-sm">No available consultants found</div>
                         ) : (
-                          getFilteredConsultants(consultantSearchQuery, [selectedProductManagerId, ...selectedConsultantIds]).map((consultant) => (
-                            <button
-                              key={consultant.id}
-                              type="button"
-                              onClick={() => {
-                                handleConsultantToggle(consultant.id);
-                                setConsultantSearchQuery('');
-                              }}
-                              className="w-full text-left px-3 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none border-b border-gray-100 last:border-b-0"
-                            >
-                              <div className="font-medium text-gray-800 text-sm">{consultant.name}</div>
-                              <div className="text-xs text-gray-600">{consultant.email}</div>
-                            </button>
-                          ))
+                          getFilteredConsultants(consultantSearchQuery, [selectedProductManagerId, ...selectedConsultantIds]).map((consultant) => {
+                            const availability = consultantAvailability[consultant.id];
+
+                            return (
+                              <button
+                                key={consultant.id}
+                                type="button"
+                                onClick={() => {
+                                  handleConsultantToggle(consultant.id);
+                                  setConsultantSearchQuery('');
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none border-b border-gray-100 last:border-b-0"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="font-medium text-gray-800 text-sm">{consultant.name}</div>
+                                    <div className="text-xs text-gray-600">{consultant.email}</div>
+                                  </div>
+
+                                  {/* Availability Indicator */}
+                                  <div className="ml-2">
+                                    {loadingAvailability ? (
+                                      <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                                        <FaClock className="w-2 h-2 animate-spin" />
+                                        <span className="text-xs">Loading...</span>
+                                      </div>
+                                    ) : availability ? (
+                                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                        availability.availabilityColor
+                                      }`}>
+                                        {availability.availabilityStatus === 'available' && (
+                                          <FaCheckCircle className="w-2 h-2" />
+                                        )}
+                                        {availability.availabilityStatus === 'partially-busy' && (
+                                          <FaClock className="w-2 h-2" />
+                                        )}
+                                        {(availability.availabilityStatus === 'busy' || availability.availabilityStatus === 'overloaded') && (
+                                          <FaExclamationTriangle className="w-2 h-2" />
+                                        )}
+                                        <span>{availability.averageHoursPerWeek}h/wk</span>
+                                      </div>
+                                    ) : startDate && durationInWeeks ? (
+                                      <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
+                                        <FaCheckCircle className="w-2 h-2" />
+                                        <span>0h/wk</span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-xs text-gray-400">Set dates</span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Detailed availability info */}
+                                {availability && availability.projectAllocations && Object.keys(availability.projectAllocations).length > 0 && (
+                                  <div className="mt-2 pt-2 border-t border-gray-100">
+                                    <p className="text-xs text-gray-600 mb-1">Current projects:</p>
+                                    <div className="space-y-1">
+                                      {Object.entries(availability.projectAllocations).slice(0, 2).map(([projectTitle, hours]: [string, any]) => (
+                                        <div key={projectTitle} className="text-xs text-gray-500 flex justify-between">
+                                          <span className="truncate max-w-[120px]">{projectTitle}</span>
+                                          <span>{hours}h</span>
+                                        </div>
+                                      ))}
+                                      {Object.keys(availability.projectAllocations).length > 2 && (
+                                        <div className="text-xs text-gray-400">+{Object.keys(availability.projectAllocations).length - 2} more projects</div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })
                         )}
                       </div>
                     )}

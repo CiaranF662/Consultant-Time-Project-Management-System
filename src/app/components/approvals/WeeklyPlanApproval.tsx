@@ -7,7 +7,7 @@ import { generateColorFromString } from '@/lib/colors';
 
 interface WeeklyAllocation {
   id: string;
-  proposedHours: number | null;
+  proposedHours: number;
   weekNumber: number;
   year: number;
   weekStartDate: Date;
@@ -16,8 +16,8 @@ interface WeeklyAllocation {
   consultantId: string;
   consultant: {
     id: string;
-    name: string | null;
-    email: string | null;
+    name: string;
+    email: string;
   };
   phaseAllocation: {
     id: string;
@@ -37,8 +37,8 @@ interface GroupedWeeklyAllocations {
     [consultantId: string]: {
       consultant: {
         id: string;
-        name: string | null;
-        email: string | null;
+        name: string;
+        email: string;
       };
       totalProposed: number;
       allocations: WeeklyAllocation[];
@@ -111,8 +111,8 @@ export default function WeeklyPlanApproval({
 
       // Hours range filter
       const hoursMatch = !weeklyFilterBy.hoursRange ||
-        ((allocation.proposedHours || 0) >= weeklyFilterBy.hoursRange.min &&
-         (allocation.proposedHours || 0) <= weeklyFilterBy.hoursRange.max);
+        (allocation.proposedHours >= weeklyFilterBy.hoursRange.min &&
+         allocation.proposedHours <= weeklyFilterBy.hoursRange.max);
 
       // Time range filter
       let timeMatch = true;
@@ -144,9 +144,9 @@ export default function WeeklyPlanApproval({
         case 'oldest':
           return new Date(a.weekStartDate).getTime() - new Date(b.weekStartDate).getTime();
         case 'hours-high':
-          return (b.proposedHours || 0) - (a.proposedHours || 0);
+          return b.proposedHours - a.proposedHours;
         case 'hours-low':
-          return (a.proposedHours || 0) - (b.proposedHours || 0);
+          return a.proposedHours - b.proposedHours;
         case 'consultant':
           return (a.consultant.name || a.consultant.email || '').localeCompare(b.consultant.name || b.consultant.email || '');
         case 'project':
@@ -192,7 +192,7 @@ export default function WeeklyPlanApproval({
           consultant: allocations[0].consultant,
           submissionTime: new Date(allocations[0].createdAt || allocations[0].weekStartDate),
           allocations: allocations.sort((a, b) => new Date(a.weekStartDate).getTime() - new Date(b.weekStartDate).getTime()),
-          totalHours: allocations.reduce((sum, alloc) => sum + (alloc.proposedHours || 0), 0)
+          totalHours: allocations.reduce((sum, alloc) => sum + alloc.proposedHours, 0)
         };
       })
       .sort((a, b) => b.submissionTime.getTime() - a.submissionTime.getTime());
@@ -200,7 +200,7 @@ export default function WeeklyPlanApproval({
 
   // Get unique consultants and projects for weekly filter dropdowns
   const getWeeklyFilterOptions = () => {
-    const consultants = Array.from(new Set(weeklyAllocations.raw.map(a => a.consultant.name || a.consultant.email || 'Unknown'))).filter(Boolean);
+    const consultants = Array.from(new Set(weeklyAllocations.raw.map(a => a.consultant.name || a.consultant.email))).filter(Boolean);
     const projects = Array.from(new Set(weeklyAllocations.raw.map(a => a.phaseAllocation.phase.project.title))).filter(Boolean);
     return { consultants, projects };
   };
@@ -456,7 +456,7 @@ export default function WeeklyPlanApproval({
                     <button
                       onClick={() => {
                         group.allocations.forEach(allocation => {
-                          onApproval(allocation.id, 'approve', { approvedHours: allocation.proposedHours || 0 });
+                          onApproval(allocation.id, 'approve', { approvedHours: allocation.proposedHours });
                         });
                       }}
                       className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
@@ -487,7 +487,7 @@ export default function WeeklyPlanApproval({
                             </div>
                             <div className="text-right ml-4">
                               <div className="text-xl font-bold text-blue-600">
-                                {formatHoursForApproval(allocation.proposedHours || 0)}
+                                {formatHoursForApproval(allocation.proposedHours)}
                               </div>
                               <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">
                                 Hours
@@ -511,7 +511,7 @@ export default function WeeklyPlanApproval({
 
                                 <button
                                   onClick={() => {
-                                    const approvedHours = prompt('Enter approved hours:', (allocation.proposedHours || 0).toString());
+                                    const approvedHours = prompt('Enter approved hours:', allocation.proposedHours.toString());
                                     if (approvedHours && parseFloat(approvedHours) >= 0) {
                                       onApproval(allocation.id, 'modify', { approvedHours: parseFloat(approvedHours) });
                                     }
@@ -524,7 +524,7 @@ export default function WeeklyPlanApproval({
                                 </button>
 
                                 <button
-                                  onClick={() => onApproval(allocation.id, 'approve', { approvedHours: allocation.proposedHours || 0 })}
+                                  onClick={() => onApproval(allocation.id, 'approve', { approvedHours: allocation.proposedHours })}
                                   disabled={processingIds.has(allocation.id)}
                                   className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-green-600 border border-transparent rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
@@ -565,7 +565,7 @@ export default function WeeklyPlanApproval({
                                         </div>
                                         <div className="mt-1 text-xs text-blue-700">
                                           Week total if approved: <span className="font-bold">
-                                            {formatHoursForApproval(workloadContext.totalApprovedHours + (allocation.proposedHours || 0))}
+                                            {formatHoursForApproval(workloadContext.totalApprovedHours + allocation.proposedHours)}
                                           </span>
                                         </div>
                                       </>

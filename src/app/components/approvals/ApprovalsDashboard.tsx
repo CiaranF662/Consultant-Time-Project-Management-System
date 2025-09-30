@@ -13,13 +13,13 @@ interface PhaseAllocation {
   createdAt: Date;
   consultant: {
     id: string;
-    name: string | null;
-    email: string | null;
+    name: string;
+    email: string;
   };
   phase: {
     id: string;
     name: string;
-    description?: string | null;
+    description?: string;
     startDate: Date;
     endDate: Date;
     project: {
@@ -31,7 +31,7 @@ interface PhaseAllocation {
 
 interface WeeklyAllocation {
   id: string;
-  proposedHours: number | null;
+  proposedHours: number;
   weekNumber: number;
   year: number;
   weekStartDate: Date;
@@ -39,8 +39,8 @@ interface WeeklyAllocation {
   consultantId: string;
   consultant: {
     id: string;
-    name: string | null;
-    email: string | null;
+    name: string;
+    email: string;
   };
   phaseAllocation: {
     id: string;
@@ -60,8 +60,8 @@ interface GroupedWeeklyAllocations {
     [consultantId: string]: {
       consultant: {
         id: string;
-        name: string | null;
-        email: string | null;
+        name: string;
+        email: string;
       };
       totalProposed: number;
       allocations: WeeklyAllocation[];
@@ -85,8 +85,8 @@ interface HourChangeRequest {
   createdAt: Date;
   requester: {
     id: string;
-    name: string | null;
-    email: string | null;
+    name: string;
+    email: string;
   };
   phaseAllocation?: {
     id: string;

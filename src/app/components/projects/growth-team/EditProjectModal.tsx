@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import { FaTimes, FaTrash, FaBriefcase, FaUsers, FaUser, FaPlus, FaCheck, FaCalendar, FaClock } from 'react-icons/fa';
+import { FaTimes, FaTrash, FaBriefcase, FaUsers, FaUser, FaPlus, FaCheck, FaCalendar, FaClock, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
 
 interface User {
   id: string;
@@ -91,6 +91,10 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Consultant availability state
+  const [consultantAvailability, setConsultantAvailability] = useState<Record<string, any>>({});
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
+
   // Fetch all consultants when modal opens
   useEffect(() => {
     const fetchConsultants = async () => {
@@ -103,6 +107,45 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
     };
     fetchConsultants();
   }, []);
+
+  // Fetch consultant availability when duration changes
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      if (!durationWeeks || durationWeeks <= 0) {
+        setConsultantAvailability({});
+        return;
+      }
+
+      setLoadingAvailability(true);
+      try {
+        const start = new Date(startDate);
+        const end = new Date(calculateEndDate(durationWeeks));
+
+        const response = await axios.get('/api/consultants/availability', {
+          params: {
+            startDate: start.toISOString(),
+            endDate: end.toISOString()
+          }
+        });
+
+        // Convert array to object keyed by consultant ID
+        const availabilityMap = response.data.reduce((acc: any, item: any) => {
+          acc[item.consultant.id] = item;
+          return acc;
+        }, {});
+
+        setConsultantAvailability(availabilityMap);
+      } catch (err) {
+        console.error('Failed to fetch consultant availability:', err);
+        setConsultantAvailability({});
+      } finally {
+        setLoadingAvailability(false);
+      }
+    };
+
+    const timeoutId = setTimeout(fetchAvailability, 300); // Debounce API calls
+    return () => clearTimeout(timeoutId);
+  }, [durationWeeks, startDate]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -194,7 +237,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
       // Validate duration
       const durationValidation = validateDuration();
       if (!durationValidation.isValid) {
-        throw new Error(durationValidation.error);
+        throw new Error(durationValidation.error || 'Invalid duration');
       }
 
       // Validation for consultant allocations
@@ -278,11 +321,6 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
     }, 0);
   };
 
-  const getBudgetProgress = () => {
-    const budget = parseInt(budgetedHours) || 0;
-    const allocated = getTotalAllocatedHours();
-    return budget > 0 ? (allocated / budget) * 100 : 0;
-  };
 
   const updateConsultantAllocation = (consultantId: string, hours: number) => {
     setConsultantAllocations(prev => ({
@@ -587,24 +625,64 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                     
                     {/* PM Dropdown */}
                     {showPmDropdown && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                        {getAvailableProductManagers().map((consultant) => (
-                          <button
-                            key={consultant.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedProductManagerId(consultant.id);
-                              setPmSearchQuery('');
-                              setShowPmDropdown(false);
-                            }}
-                            className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center justify-between"
-                          >
-                            <span>{consultant.name || consultant.email}</span>
-                            {selectedProductManagerId === consultant.id && (
-                              <FaCheck className="w-3 h-3 text-green-600" />
-                            )}
-                          </button>
-                        ))}
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {getAvailableProductManagers().map((consultant) => {
+                          const availability = consultantAvailability[consultant.id];
+
+                          return (
+                            <button
+                              key={consultant.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedProductManagerId(consultant.id);
+                                setPmSearchQuery('');
+                                setShowPmDropdown(false);
+                              }}
+                              className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center justify-between"
+                            >
+                              <div>
+                                <div className="font-medium text-gray-800 text-sm">{consultant.name || consultant.email}</div>
+                                {consultant.email && consultant.name && (
+                                  <div className="text-xs text-gray-600">{consultant.email}</div>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                {/* Availability Indicator */}
+                                {loadingAvailability ? (
+                                  <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                                    <FaClock className="w-2 h-2 animate-spin" />
+                                    <span className="text-xs">Loading...</span>
+                                  </div>
+                                ) : availability ? (
+                                  <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                    availability.availabilityColor
+                                  }`}>
+                                    {availability.availabilityStatus === 'available' && (
+                                      <FaCheckCircle className="w-2 h-2" />
+                                    )}
+                                    {availability.availabilityStatus === 'partially-busy' && (
+                                      <FaClock className="w-2 h-2" />
+                                    )}
+                                    {(availability.availabilityStatus === 'busy' || availability.availabilityStatus === 'overloaded') && (
+                                      <FaExclamationTriangle className="w-2 h-2" />
+                                    )}
+                                    <span>{availability.averageHoursPerWeek}h/wk</span>
+                                  </div>
+                                ) : durationWeeks ? (
+                                  <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
+                                    <FaCheckCircle className="w-2 h-2" />
+                                    <span>0h/wk</span>
+                                  </div>
+                                ) : null}
+
+                                {selectedProductManagerId === consultant.id && (
+                                  <FaCheck className="w-3 h-3 text-green-600" />
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
                         {getAvailableProductManagers().length === 0 && (
                           <div className="px-3 py-2 text-gray-500 text-sm">No consultants found</div>
                         )}
@@ -623,24 +701,63 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                   {/* Selected Consultants */}
                   {selectedConsultantIds.length > 0 && (
                     <div className="mb-3 flex flex-wrap gap-2">
-                      {getSelectedConsultants().map((consultant) => (
-                        <div
-                          key={consultant.id}
-                          className="flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
-                        >
-                          <span>{consultant.name || consultant.email}</span>
-                          <button
-                            type="button"
-                            onClick={() => removeConsultant(consultant.id)}
-                            className="hover:text-purple-600"
+                      {getSelectedConsultants().map((consultant) => {
+                        const availability = consultantAvailability[consultant.id];
+
+                        return (
+                          <div
+                            key={consultant.id}
+                            className="flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
                           >
-                            <FaTimes className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
+                            <span>{consultant.name || consultant.email}</span>
+                            {availability && (
+                              <span className={`px-1 py-0.5 rounded text-xs ${
+                                availability.availabilityStatus === 'available' ? 'bg-green-200 text-green-800' :
+                                availability.availabilityStatus === 'partially-busy' ? 'bg-yellow-200 text-yellow-800' :
+                                availability.availabilityStatus === 'busy' ? 'bg-orange-200 text-orange-800' :
+                                'bg-red-200 text-red-800'
+                              }`}>
+                                {availability.averageHoursPerWeek}h/wk
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => removeConsultant(consultant.id)}
+                              className="hover:text-purple-600"
+                            >
+                              <FaTimes className="w-3 h-3" />
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                   
+                  {/* Availability Legend */}
+                  {durationWeeks && (
+                    <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                      <p className="text-xs font-medium text-gray-700 mb-2">Availability Legend for Project Period:</p>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                          <span>Available (≤15h/week)</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                          <span>Partially Busy (16-30h)</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                          <span>Busy (31-40h)</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                          <span>Overloaded (40h+)</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Add Consultant Search */}
                   <div className="relative">
                     <div className="flex">
@@ -666,21 +783,82 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                     
                     {/* Consultant Dropdown */}
                     {showConsultantDropdown && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                        {getAvailableConsultants().map((consultant) => (
-                          <button
-                            key={consultant.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedConsultantIds(prev => [...prev, consultant.id]);
-                              setConsultantSearchQuery('');
-                              setShowConsultantDropdown(false);
-                            }}
-                            className="w-full px-3 py-2 text-left hover:bg-gray-50"
-                          >
-                            {consultant.name || consultant.email}
-                          </button>
-                        ))}
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {getAvailableConsultants().map((consultant) => {
+                          const availability = consultantAvailability[consultant.id];
+
+                          return (
+                            <button
+                              key={consultant.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedConsultantIds(prev => [...prev, consultant.id]);
+                                setConsultantSearchQuery('');
+                                setShowConsultantDropdown(false);
+                              }}
+                              className="w-full px-3 py-2 text-left hover:bg-gray-50"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="font-medium text-gray-800 text-sm">{consultant.name || consultant.email}</div>
+                                  {consultant.email && consultant.name && (
+                                    <div className="text-xs text-gray-600">{consultant.email}</div>
+                                  )}
+                                </div>
+
+                                {/* Availability Indicator */}
+                                <div className="ml-2">
+                                  {loadingAvailability ? (
+                                    <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                                      <FaClock className="w-2 h-2 animate-spin" />
+                                      <span className="text-xs">Loading...</span>
+                                    </div>
+                                  ) : availability ? (
+                                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                      availability.availabilityColor
+                                    }`}>
+                                      {availability.availabilityStatus === 'available' && (
+                                        <FaCheckCircle className="w-2 h-2" />
+                                      )}
+                                      {availability.availabilityStatus === 'partially-busy' && (
+                                        <FaClock className="w-2 h-2" />
+                                      )}
+                                      {(availability.availabilityStatus === 'busy' || availability.availabilityStatus === 'overloaded') && (
+                                        <FaExclamationTriangle className="w-2 h-2" />
+                                      )}
+                                      <span>{availability.averageHoursPerWeek}h/wk</span>
+                                    </div>
+                                  ) : durationWeeks ? (
+                                    <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
+                                      <FaCheckCircle className="w-2 h-2" />
+                                      <span>0h/wk</span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-gray-400">Set duration</span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Detailed availability info */}
+                              {availability && availability.projectAllocations && Object.keys(availability.projectAllocations).length > 0 && (
+                                <div className="mt-2 pt-2 border-t border-gray-100">
+                                  <p className="text-xs text-gray-600 mb-1">Current projects:</p>
+                                  <div className="space-y-1">
+                                    {Object.entries(availability.projectAllocations).slice(0, 2).map(([projectTitle, hours]: [string, any]) => (
+                                      <div key={projectTitle} className="text-xs text-gray-500 flex justify-between">
+                                        <span className="truncate max-w-[120px]">{projectTitle}</span>
+                                        <span>{hours}h</span>
+                                      </div>
+                                    ))}
+                                    {Object.keys(availability.projectAllocations).length > 2 && (
+                                      <div className="text-xs text-gray-400">+{Object.keys(availability.projectAllocations).length - 2} more projects</div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
                         {getAvailableConsultants().length === 0 && (
                           <div className="px-3 py-2 text-gray-500 text-sm">No available consultants</div>
                         )}

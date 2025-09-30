@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, NotificationType } from '@prisma/client';
+import { PrismaClient, UserRole, NotificationType, ProjectRole } from '@prisma/client';
+import { createNotificationsForUsers, NotificationTemplates } from '@/lib/notifications';
+import { sendEmail, renderEmailTemplate } from '@/lib/email';
+import PhaseAllocationEmail from '@/emails/PhaseAllocationEmail';
 
 const prisma = new PrismaClient();
 
@@ -49,7 +52,14 @@ export async function POST(
         consultant: true,
         phase: {
           include: {
-            project: true
+            project: {
+              include: {
+                consultants: {
+                  where: { role: ProjectRole.PRODUCT_MANAGER },
+                  include: { user: true }
+                }
+              }
+            }
           }
         }
       }
@@ -83,31 +93,177 @@ export async function POST(
       }
     });
 
-    // Create notification for the consultant
-    const notificationType = action === 'approve' || action === 'modify'
-      ? NotificationType.PHASE_ALLOCATION_APPROVED
-      : NotificationType.PHASE_ALLOCATION_REJECTED;
+    // Send notifications to both consultant and Product Manager
+    try {
+      const consultantName = allocation.consultant.name || allocation.consultant.email || 'Consultant';
+      const productManagerId = allocation.phase.project.consultants[0]?.userId;
+      const recipientIds = [allocation.consultantId];
 
-    const notificationMessage = action === 'approve'
-      ? `Your phase allocation for ${allocation.phase.name} (${allocation.totalHours}h) has been approved.`
-      : action === 'modify'
-      ? `Your phase allocation for ${allocation.phase.name} has been approved with modified hours (${modifiedHours}h instead of ${allocation.totalHours}h).`
-      : `Your phase allocation for ${allocation.phase.name} has been rejected. Reason: ${rejectionReason}`;
+      if (productManagerId) {
+        recipientIds.push(productManagerId);
+      }
 
-    await prisma.notification.create({
-      data: {
-        userId: allocation.consultantId,
-        type: notificationType,
-        title: `Phase Allocation ${action === 'approve' || action === 'modify' ? 'Approved' : 'Rejected'}`,
-        message: notificationMessage,
-        actionUrl: `/dashboard/projects/${allocation.phase.project.id}`,
-        metadata: {
-          projectId: allocation.phase.project.id,
-          phaseId: allocation.phase.id,
-          allocationId: allocation.id
+      if (action === 'approve') {
+        // Notify consultant
+        const consultantTemplate = NotificationTemplates.PHASE_ALLOCATION_APPROVED_FOR_CONSULTANT(
+          allocation.phase.name,
+          allocation.phase.project.title,
+          updatedAllocation.totalHours
+        );
+
+        await createNotificationsForUsers(
+          [allocation.consultantId],
+          NotificationType.PHASE_ALLOCATION_APPROVED,
+          consultantTemplate.title,
+          consultantTemplate.message,
+          `/dashboard/projects/${allocation.phase.project.id}`,
+          {
+            projectId: allocation.phase.project.id,
+            phaseId: allocation.phase.id,
+            allocationId: allocation.id
+          }
+        );
+
+        // Notify Product Manager (only if different from consultant to avoid duplicates)
+        if (productManagerId && productManagerId !== allocation.consultantId) {
+          const pmTemplate = NotificationTemplates.PHASE_ALLOCATION_APPROVED_FOR_PM(
+            consultantName,
+            allocation.phase.name,
+            updatedAllocation.totalHours
+          );
+
+          await createNotificationsForUsers(
+            [productManagerId],
+            NotificationType.PHASE_ALLOCATION_APPROVED,
+            pmTemplate.title,
+            pmTemplate.message,
+            `/dashboard/projects/${allocation.phase.project.id}`,
+            {
+              projectId: allocation.phase.project.id,
+              phaseId: allocation.phase.id,
+              allocationId: allocation.id
+            }
+          );
+        }
+
+        // Send email notification to consultant when approved
+        try {
+          const emailTemplate = PhaseAllocationEmail({
+            type: "allocated",
+            consultantName: allocation.consultant.name || allocation.consultant.email || 'Consultant',
+            projectName: allocation.phase.project.title,
+            phaseName: allocation.phase.name,
+            phaseDescription: allocation.phase.description || undefined,
+            totalHours: updatedAllocation.totalHours,
+            productManagerName: allocation.phase.project.consultants[0]?.user.name || undefined,
+            startDate: allocation.phase.startDate.toISOString(),
+            endDate: allocation.phase.endDate.toISOString()
+          });
+
+          const { html, text } = await renderEmailTemplate(emailTemplate);
+
+          await sendEmail({
+            to: allocation.consultant.email!,
+            subject: `Phase Allocation Approved: ${allocation.phase.name}`,
+            html,
+            text
+          });
+        } catch (emailError) {
+          console.error(`Failed to send approval email to ${allocation.consultant.email}:`, emailError);
+        }
+
+      } else if (action === 'modify') {
+        // Notify consultant
+        const consultantTemplate = NotificationTemplates.PHASE_ALLOCATION_MODIFIED_FOR_CONSULTANT(
+          allocation.phase.name,
+          allocation.phase.project.title,
+          modifiedHours,
+          allocation.totalHours
+        );
+
+        await createNotificationsForUsers(
+          [allocation.consultantId],
+          NotificationType.PHASE_ALLOCATION_MODIFIED,
+          consultantTemplate.title,
+          consultantTemplate.message,
+          `/dashboard/projects/${allocation.phase.project.id}`,
+          {
+            projectId: allocation.phase.project.id,
+            phaseId: allocation.phase.id,
+            allocationId: allocation.id
+          }
+        );
+
+        // Notify Product Manager (only if different from consultant to avoid duplicates)
+        if (productManagerId && productManagerId !== allocation.consultantId) {
+          const pmTemplate = NotificationTemplates.PHASE_ALLOCATION_MODIFIED_FOR_PM(
+            consultantName,
+            allocation.phase.name,
+            modifiedHours,
+            allocation.totalHours
+          );
+
+          await createNotificationsForUsers(
+            [productManagerId],
+            NotificationType.PHASE_ALLOCATION_MODIFIED,
+            pmTemplate.title,
+            pmTemplate.message,
+            `/dashboard/projects/${allocation.phase.project.id}`,
+            {
+              projectId: allocation.phase.project.id,
+              phaseId: allocation.phase.id,
+              allocationId: allocation.id
+            }
+          );
+        }
+
+      } else if (action === 'reject') {
+        // Notify consultant
+        const consultantTemplate = NotificationTemplates.PHASE_ALLOCATION_REJECTED_FOR_CONSULTANT(
+          allocation.phase.name,
+          allocation.phase.project.title,
+          rejectionReason
+        );
+
+        await createNotificationsForUsers(
+          [allocation.consultantId],
+          NotificationType.PHASE_ALLOCATION_REJECTED,
+          consultantTemplate.title,
+          consultantTemplate.message,
+          `/dashboard/projects/${allocation.phase.project.id}`,
+          {
+            projectId: allocation.phase.project.id,
+            phaseId: allocation.phase.id,
+            allocationId: allocation.id
+          }
+        );
+
+        // Notify Product Manager (only if different from consultant to avoid duplicates)
+        if (productManagerId && productManagerId !== allocation.consultantId) {
+          const pmTemplate = NotificationTemplates.PHASE_ALLOCATION_REJECTED_FOR_PM(
+            consultantName,
+            allocation.phase.name,
+            rejectionReason
+          );
+
+          await createNotificationsForUsers(
+            [productManagerId],
+            NotificationType.PHASE_ALLOCATION_REJECTED,
+            pmTemplate.title,
+            pmTemplate.message,
+            `/dashboard/projects/${allocation.phase.project.id}`,
+            {
+              projectId: allocation.phase.project.id,
+              phaseId: allocation.phase.id,
+              allocationId: allocation.id
+            }
+          );
         }
       }
-    });
+    } catch (notificationError) {
+      console.error('Failed to send approval notifications:', notificationError);
+      // Don't fail the approval process if notifications fail
+    }
 
     return NextResponse.json(updatedAllocation);
   } catch (error) {

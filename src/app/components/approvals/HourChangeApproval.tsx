@@ -11,8 +11,8 @@ interface HourChangeRequest {
   createdAt: Date;
   requester: {
     id: string;
-    name: string | null;
-    email: string | null;
+    name: string;
+    email: string;
   };
   phaseAllocation?: {
     id: string;

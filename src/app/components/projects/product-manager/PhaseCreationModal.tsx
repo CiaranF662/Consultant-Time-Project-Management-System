@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Sprint } from '@prisma/client';
 import axios from 'axios';
-import { FaTimes, FaSave, FaProjectDiagram, FaCalendarAlt, FaInfoCircle, FaCheckCircle, FaExclamationTriangle, FaUsers, FaClock, FaUser, FaSearch } from 'react-icons/fa';
+import { FaTimes, FaSave, FaProjectDiagram, FaCalendarAlt, FaInfoCircle, FaCheckCircle, FaExclamationTriangle, FaUsers, FaClock, FaUser, FaSearch, FaCalculator } from 'react-icons/fa';
 
 interface Consultant {
   id: string;
@@ -237,6 +237,39 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
     return Object.values(consultantHours).reduce((sum, hours) => sum + (hours || 0), 0);
   };
 
+  // Calculate maximum realistic hours per consultant based on phase duration
+  const getPhaseHourLimits = () => {
+    if (selectedSprintIds.length === 0) {
+      return {
+        totalWeeks: 0,
+        maxHoursPerConsultant: 0,
+        totalPhaseHours: 0
+      };
+    }
+
+    const selectedSprints = project.sprints
+      .filter(sprint => selectedSprintIds.includes(sprint.id))
+      .sort((a, b) => a.sprintNumber - b.sprintNumber);
+
+    // Calculate total weeks (each sprint is 2 weeks)
+    const totalWeeks = selectedSprints.length * 2;
+
+    // Maximum realistic hours per consultant (40 hours/week)
+    const maxHoursPerConsultant = totalWeeks * 40;
+
+    // Total phase capacity if all consultants worked full time
+    const totalPhaseHours = consultants.length * maxHoursPerConsultant;
+
+    return {
+      totalWeeks,
+      maxHoursPerConsultant,
+      totalPhaseHours,
+      sprintCount: selectedSprints.length
+    };
+  };
+
+  const phaseLimits = getPhaseHourLimits();
+
   const getSelectedSprintsSummary = () => {
     if (selectedSprintIds.length === 0) return null;
 
@@ -270,8 +303,15 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
           const availableHours = projectAllocated - currentAllocatedToPhases;
           const phaseHours = consultantHours[consultantId] || 0;
 
+          // Check project allocation limits
           if (phaseHours > availableHours) {
-            setError(`${consultant.name} is over-allocated by ${phaseHours - availableHours} hours.`);
+            setError(`${consultant.name} is over-allocated by ${phaseHours - availableHours} hours from their project allocation.`);
+            return false;
+          }
+
+          // Check phase capacity limits
+          if (phaseHours > phaseLimits.maxHoursPerConsultant) {
+            setError(`${consultant.name} exceeds the maximum phase capacity of ${phaseLimits.maxHoursPerConsultant} hours. This phase is only ${phaseLimits.totalWeeks} weeks long.`);
             return false;
           }
         }
@@ -307,10 +347,20 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
     setIsLoading(true);
 
     try {
+      // Calculate start and end dates from selected sprints
+      const selectedSprints = project.sprints
+        .filter(sprint => selectedSprintIds.includes(sprint.id))
+        .sort((a, b) => a.sprintNumber - b.sprintNumber);
+
+      const startDate = selectedSprints[0].startDate;
+      const endDate = selectedSprints[selectedSprints.length - 1].endDate;
+
       // Create the phase first
       const phaseResponse = await axios.post(`/api/projects/${project.id}/phases`, {
         name: name.trim(),
         description: description.trim(),
+        startDate: startDate,
+        endDate: endDate,
         sprintIds: selectedSprintIds
       });
 
@@ -502,6 +552,42 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                 <span className="text-xs text-gray-600">(Optional)</span>
               </div>
 
+              {/* Phase Hour Limits Information */}
+              {selectedSprintIds.length > 0 && (
+                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-3">
+                    <FaCalculator className="w-4 h-4 text-blue-600" />
+                    <h3 className="text-sm font-semibold text-blue-800">Phase Capacity Guidelines</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 text-center">
+                    <div className="bg-white rounded-lg p-3 border border-blue-100">
+                      <div className="text-lg font-bold text-blue-600">{phaseLimits.totalWeeks}</div>
+                      <div className="text-xs text-blue-700">Total Weeks</div>
+                      <div className="text-xs text-gray-500">({phaseLimits.sprintCount} sprints)</div>
+                    </div>
+
+                    <div className="bg-white rounded-lg p-3 border border-yellow-100">
+                      <div className="text-lg font-bold text-yellow-600">{phaseLimits.maxHoursPerConsultant}</div>
+                      <div className="text-xs text-yellow-700">Maximum Hours</div>
+                      <div className="text-xs text-gray-500">per consultant</div>
+                    </div>
+
+
+                    <div className="bg-white rounded-lg p-3 border border-purple-100">
+                      <div className="text-lg font-bold text-purple-600">{getTotalHours()}</div>
+                      <div className="text-xs text-purple-700">Currently Allocated</div>
+                      <div className="text-xs text-gray-500">across all consultants</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 text-xs text-blue-600 space-y-1">
+                    <p>• <strong>Maximum Hours:</strong> 40 hours/week per consultant (full-time capacity)</p>
+                    <p>• <strong>Phase Duration:</strong> {phaseLimits.sprintCount} sprint{phaseLimits.sprintCount !== 1 ? 's' : ''} = {phaseLimits.totalWeeks} weeks</p>
+                  </div>
+                </div>
+              )}
+
               <p className="text-xs text-gray-600 mb-4">
                 Assign specific hour allocations to consultants for this phase. All allocations require Growth Team approval.
               </p>
@@ -526,12 +612,19 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                         const phaseHours = consultantHours[consultantId] || 0;
                         const isOverAllocated = phaseHours > availableHours;
 
+                        // Check if allocation exceeds phase capacity limits
+                        const exceedsMaximum = phaseHours > phaseLimits.maxHoursPerConsultant;
+                        const hasCapacityWarning = exceedsMaximum;
+
                         return (
                           <div key={consultantId} className={`relative p-4 rounded-lg border shadow-sm transition-all duration-200 ${
                             consultant?.role === 'PRODUCT_MANAGER'
                               ? 'bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200'
                               : 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200'
-                          } ${isOverAllocated ? 'ring-2 ring-red-200' : ''}`}>
+                          } ${
+                            isOverAllocated ? 'ring-2 ring-red-200' :
+                            exceedsMaximum ? 'ring-2 ring-orange-200' : ''
+                          }`}>
 
                             <div className="flex items-center justify-between relative z-10">
                               <div className="flex items-center">
@@ -554,22 +647,33 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                                   <p className="text-sm text-gray-500 mb-2">{consultant?.email}</p>
 
                                   {/* Project allocation summary */}
-                                  <div className="flex items-center gap-4">
-                                    <div className="text-xs">
+                                  <div className="grid grid-cols-2 gap-4 text-xs">
+                                    <div>
                                       <span className="text-gray-500">Project:</span>
                                       <span className="font-semibold text-blue-600 ml-1">{projectAllocated}h</span>
                                     </div>
-                                    <div className="text-xs">
-                                      <span className="text-gray-500">Allocated:</span>
-                                      <span className="font-semibold text-gray-700 ml-1">{currentAllocatedToPhases}h</span>
-                                    </div>
-                                    <div className="text-xs">
+                                    <div>
                                       <span className="text-gray-500">Available:</span>
                                       <span className={`font-semibold ml-1 ${availableHours > 0 ? 'text-green-600' : 'text-red-600'}`}>
                                         {availableHours}h
                                       </span>
                                     </div>
+                                    <div>
+                                      <span className="text-gray-500">Phase Maximum:</span>
+                                      <span className="font-semibold text-yellow-600 ml-1">{phaseLimits.maxHoursPerConsultant}h</span>
+                                    </div>
                                   </div>
+
+                                  {/* Capacity warnings */}
+                                  {hasCapacityWarning && (
+                                    <div className="mt-2 text-xs">
+                                      {exceedsMaximum && (
+                                        <div className="text-red-600 font-medium">
+                                          ⚠️ Exceeds phase maximum by {phaseHours - phaseLimits.maxHoursPerConsultant}h
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
 
@@ -580,12 +684,14 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                                       type="number"
                                       min="0"
                                       step="0.5"
-                                      max={availableHours}
+                                      max={Math.min(availableHours, phaseLimits.maxHoursPerConsultant)}
                                       value={consultantHours[consultantId] ? consultantHours[consultantId] : ''}
                                       onChange={(e) => updateConsultantHours(consultantId, parseFloat(e.target.value) || 0)}
-                                      className={`w-20 px-3 py-2 text-sm border-2 rounded-lg focus:ring-2 focus:ring-opacity-50 text-center transition-all duration-200 ${
+                                      className={`w-24 px-3 py-2 text-sm border-2 rounded-lg focus:ring-2 focus:ring-opacity-50 text-center transition-all duration-200 ${
                                         isOverAllocated
                                           ? 'border-red-300 focus:border-red-500 focus:ring-red-500 bg-red-50'
+                                          : exceedsMaximum
+                                          ? 'border-orange-300 focus:border-orange-500 focus:ring-orange-500 bg-orange-50'
                                           : consultant?.role === 'PRODUCT_MANAGER'
                                           ? 'border-purple-200 focus:border-purple-500 focus:ring-purple-500'
                                           : 'border-blue-200 focus:border-blue-500 focus:ring-blue-500'
@@ -598,11 +704,19 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                                     }`}>hours</span>
                                   </div>
 
-                                  {isOverAllocated && (
-                                    <div className="text-xs text-red-600">
-                                      ⚠️ Over by {phaseHours - availableHours}h
-                                    </div>
-                                  )}
+                                  {/* Multiple warning types */}
+                                  <div className="text-xs space-y-1">
+                                    {isOverAllocated && (
+                                      <div className="text-red-600 font-medium">
+                                        ⚠️ Project: Over by {phaseHours - availableHours}h
+                                      </div>
+                                    )}
+                                    {exceedsMaximum && (
+                                      <div className="text-orange-600 font-medium">
+                                        ⚠️ Phase: Exceeds maximum
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
 
                                 <button
