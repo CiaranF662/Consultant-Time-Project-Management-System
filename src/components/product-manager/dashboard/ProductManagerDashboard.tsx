@@ -6,8 +6,10 @@ import {
   FaClock,
   FaChartLine,
   FaCalendarWeek,
-  FaChartPie
+  FaChartPie,
+  FaBell
 } from 'react-icons/fa';
+import Link from 'next/link';
 import { formatHours } from '@/lib/dates';
 import ProjectHealthView from '../dashboard-views/ProjectHealthView';
 import PendingRequestsView from '../dashboard-views/PendingRequestsView';
@@ -64,6 +66,8 @@ export default function ProductManagerDashboard() {
   const [loading, setLoading] = useState(true);
   const [showAllProjects, setShowAllProjects] = useState(false);
   const [activeView, setActiveView] = useState<'management' | 'projects' | 'requests'>('management');
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
   const [stats, setStats] = useState({
     // Cross-project PM metrics
     totalProjectsInvolved: 0,
@@ -78,8 +82,31 @@ export default function ProductManagerDashboard() {
   });
 
   useEffect(() => {
+    let abortController = new AbortController();
+
     fetchDashboardData();
+    fetchNotifications(abortController.signal);
+
+    return () => {
+      abortController.abort(); // Cancel requests on unmount
+    };
   }, []);
+
+  const fetchNotifications = async (signal?: AbortSignal) => {
+    try {
+      const response = await fetch('/api/notifications?limit=1&unreadOnly=true', { signal });
+      if (response.ok) {
+        const data = await response.json();
+        setUnreadNotifications(data.unreadCount || 0);
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        return; // Request was cancelled, ignore
+      }
+      console.error('Error fetching notifications:', error);
+    }
+    setLoadingNotifications(false);
+  };
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -233,7 +260,7 @@ export default function ProductManagerDashboard() {
       </div>
 
       {/* PM-Focused Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {/* Portfolio Overview Card */}
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6">
           <div className="flex items-center justify-between mb-4">
@@ -351,6 +378,37 @@ export default function ProductManagerDashboard() {
             </p>
           </div>
         </div>
+
+        {/* Notifications Card */}
+        <Link href="/dashboard/notifications" className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl shadow-sm border border-indigo-200 p-6 hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-indigo-500 rounded-lg">
+              <FaBell className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-indigo-900">
+                {loadingNotifications ? '...' : unreadNotifications}
+              </p>
+              <p className="text-sm text-indigo-600">Notifications</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-indigo-700">Status:</span>
+              <span className="text-indigo-800 font-medium">
+                {loadingNotifications ? 'Loading' : unreadNotifications > 0 ? `${unreadNotifications} unread` : 'All read'}
+              </span>
+            </div>
+            {!loadingNotifications && unreadNotifications > 0 && (
+              <div className="w-full bg-indigo-200 rounded-full h-1.5">
+                <div className="bg-indigo-500 h-1.5 rounded-full w-full animate-pulse"></div>
+              </div>
+            )}
+            <p className="text-xs text-indigo-700">
+              {loadingNotifications ? 'Loading...' : unreadNotifications > 0 ? 'Click to view notifications' : 'All notifications read'}
+            </p>
+          </div>
+        </Link>
       </div>
 
 

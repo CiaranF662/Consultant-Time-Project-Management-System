@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { FaCalendarWeek, FaClock, FaChartPie, FaExclamationTriangle, FaCheckCircle, FaProjectDiagram, FaUser, FaChartLine, FaCalendar, FaHourglassHalf } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
+import { FaCalendarWeek, FaClock, FaChartPie, FaExclamationTriangle, FaCheckCircle, FaProjectDiagram, FaUser, FaChartLine, FaCalendar, FaHourglassHalf, FaBell } from 'react-icons/fa';
+import Link from 'next/link';
 import { formatHours, formatDate } from '@/lib/dates';
 import { getPhaseStatus, getStatusColorClasses, getProgressBarColor } from '@/lib/phase-status';
 import WeeklyPlannerEnhanced from './WeeklyPlannerEnhanced';
@@ -82,6 +83,36 @@ interface ConsultantDashboardProps {
 
 export default function ConsultantDashboard({ data, userId, userName }: ConsultantDashboardProps) {
   const [activeView, setActiveView] = useState<'overview' | 'planner' | 'calendar' | 'planning'>('overview');
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    const fetchNotifications = async () => {
+      try {
+        const response = await fetch('/api/notifications?limit=1&unreadOnly=true', {
+          signal: abortController.signal
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUnreadNotifications(data.unreadCount || 0);
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          return; // Request was cancelled, ignore
+        }
+        console.error('Error fetching notifications:', error);
+      }
+      setLoadingNotifications(false);
+    };
+
+    fetchNotifications();
+
+    return () => {
+      abortController.abort(); // Cancel requests on unmount
+    };
+  }, []);
 
   // Calculate enhanced stats
   const calculateEnhancedStats = () => {
@@ -261,7 +292,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
       </div>
 
       {/* Enhanced Professional Stats Cards - Always Visible */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         {/* Total Allocated Card */}
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6">
           <div className="flex items-center justify-between mb-4">
@@ -379,6 +410,37 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
             </p>
           </div>
         </div>
+
+        {/* Notifications Card */}
+        <Link href="/dashboard/notifications" className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl shadow-sm border border-indigo-200 p-6 hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-indigo-500 rounded-lg">
+              <FaBell className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-indigo-900">
+                {loadingNotifications ? '...' : unreadNotifications}
+              </p>
+              <p className="text-sm text-indigo-600">Notifications</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-indigo-700">Status:</span>
+              <span className="text-indigo-800 font-medium">
+                {loadingNotifications ? 'Loading' : unreadNotifications > 0 ? `${unreadNotifications} unread` : 'All read'}
+              </span>
+            </div>
+            {!loadingNotifications && unreadNotifications > 0 && (
+              <div className="w-full bg-indigo-200 rounded-full h-1.5">
+                <div className="bg-indigo-500 h-1.5 rounded-full w-full animate-pulse"></div>
+              </div>
+            )}
+            <p className="text-xs text-indigo-700">
+              {loadingNotifications ? 'Loading...' : unreadNotifications > 0 ? 'Click to view notifications' : 'All notifications read'}
+            </p>
+          </div>
+        </Link>
       </div>
 
       {/* View Switcher */}

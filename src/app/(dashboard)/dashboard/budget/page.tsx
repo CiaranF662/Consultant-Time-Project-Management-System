@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { UserRole } from '@prisma/client';
-import BudgetOverview from '@/components/budget/BudgetOverview';
+import BudgetOverview from '@/components/growth-team/budget/BudgetOverview';
 
 export default async function BudgetPage() {
   const session = await getServerSession(authOptions);

@@ -56,15 +56,22 @@ export default function GrowthTeamDashboard({ data, userRole }: GrowthTeamDashbo
 
   // Fetch approvals and notifications data
   useEffect(() => {
+    const abortController = new AbortController();
+
     const fetchApprovals = async () => {
       try {
-        const response = await fetch('/api/approvals/summary');
+        const response = await fetch('/api/approvals/summary', {
+          signal: abortController.signal
+        });
         if (response.ok) {
           const data = await response.json();
           setApprovalsSummary(data);
           setLastUpdated(new Date()); // Update timestamp when data refreshes
         }
       } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          return; // Request was cancelled, ignore
+        }
         console.error('Error fetching approvals summary:', error);
       }
       setLoadingApprovals(false);
@@ -72,12 +79,17 @@ export default function GrowthTeamDashboard({ data, userRole }: GrowthTeamDashbo
 
     const fetchNotifications = async () => {
       try {
-        const response = await fetch('/api/notifications?limit=1&unreadOnly=true');
+        const response = await fetch('/api/notifications?limit=1&unreadOnly=true', {
+          signal: abortController.signal
+        });
         if (response.ok) {
           const data = await response.json();
           setUnreadNotifications(data.unreadCount || 0);
         }
       } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          return; // Request was cancelled, ignore
+        }
         console.error('Error fetching notifications:', error);
       }
       setLoadingNotifications(false);
@@ -85,6 +97,10 @@ export default function GrowthTeamDashboard({ data, userRole }: GrowthTeamDashbo
 
     fetchApprovals();
     fetchNotifications();
+
+    return () => {
+      abortController.abort(); // Cancel requests on unmount
+    };
   }, []);
 
   // Update timestamp every minute to show data freshness

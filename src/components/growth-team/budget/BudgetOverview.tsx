@@ -110,48 +110,104 @@ export default function BudgetOverview() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent mb-2">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">
               Budget Overview
             </h1>
             <p className={`text-lg ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
               Track resource allocation and budget utilization across all projects
             </p>
           </div>
-          <button className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-400 text-white rounded-xl shadow hover:scale-105 transition">
-            <Download className="w-5 h-5" /> Export
+          <button className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 shadow-sm transition-colors duration-200">
+            <Download className="w-4 h-4" />
+            Export
           </button>
         </div>
 
-        {/* Summary Cards */}
+        {/* Summary Cards - Enhanced to match system theme */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-gradient-to-r from-blue-500 to-cyan-400 p-6 rounded-2xl shadow text-white">
-            <p>Total Budget</p>
-            <p className="text-4xl font-bold">{totalBudget}h</p>
-            <DollarSign className="w-8 h-8 mt-2" />
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-blue-500 rounded-lg">
+                <DollarSign className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-blue-900">{totalBudget}h</p>
+                <p className="text-sm text-blue-600">Total Budget</p>
+              </div>
+            </div>
+            <div className="w-full bg-blue-200 rounded-full h-1.5">
+              <div className="bg-blue-500 h-1.5 rounded-full w-full"></div>
+            </div>
           </div>
-          <div className="bg-gradient-to-r from-green-500 to-emerald-400 p-6 rounded-2xl shadow text-white">
-            <p>Total Allocated</p>
-            <p className="text-4xl font-bold">{totalAllocated}h</p>
-            <TrendingUp className="w-8 h-8 mt-2" />
+
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-sm border border-green-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-green-500 rounded-lg">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-green-900">{totalAllocated}h</p>
+                <p className="text-sm text-green-600">Total Allocated</p>
+              </div>
+            </div>
+            <div className="w-full bg-green-200 rounded-full h-1.5">
+              <div
+                className="bg-green-500 h-1.5 rounded-full transition-all"
+                style={{ width: `${Math.min((totalAllocated / Math.max(totalBudget, 1)) * 100, 100)}%` }}
+              ></div>
+            </div>
           </div>
-          <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 rounded-2xl shadow text-white">
-            <p>Utilization</p>
-            <p className="text-4xl font-bold">{overallUtilization}%</p>
-            <Activity className="w-8 h-8 mt-2" />
+
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-sm border border-purple-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-purple-500 rounded-lg">
+                <Activity className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-right">
+                <p className={`text-2xl font-bold ${
+                  parseFloat(overallUtilization) < 70 ? 'text-red-700' :
+                  parseFloat(overallUtilization) < 90 ? 'text-yellow-700' :
+                  parseFloat(overallUtilization) <= 100 ? 'text-green-700' : 'text-red-700'
+                }`}>
+                  {overallUtilization}%
+                </p>
+                <p className="text-sm text-purple-600">Utilization Rate</p>
+              </div>
+            </div>
+            <div className="w-full bg-purple-200 rounded-full h-1.5">
+              <div
+                className={`h-1.5 rounded-full transition-all ${
+                  parseFloat(overallUtilization) < 70 ? 'bg-red-500' :
+                  parseFloat(overallUtilization) < 90 ? 'bg-yellow-500' :
+                  parseFloat(overallUtilization) <= 100 ? 'bg-green-500' : 'bg-red-500'
+                }`}
+                style={{ width: `${Math.min(parseFloat(overallUtilization), 100)}%` }}
+              ></div>
+            </div>
           </div>
-          <div className="bg-gradient-to-r from-orange-500 to-red-400 p-6 rounded-2xl shadow text-white">
-            <p>Active Projects</p>
-            <p className="text-4xl font-bold">{activeProjects}</p>
-            <FaUsers className="w-8 h-8 mt-2" />
+
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl shadow-sm border border-orange-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-orange-500 rounded-lg">
+                <FaUsers className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-orange-900">{activeProjects}</p>
+                <p className="text-sm text-orange-600">Active Projects</p>
+              </div>
+            </div>
+            <div className="text-xs text-orange-700">
+              Tracking {activeProjects} {activeProjects === 1 ? 'project' : 'projects'}
+            </div>
           </div>
         </div>
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Budget vs Allocated */}
-          <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl shadow p-6`}>
+          <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-xl shadow-sm border border-gray-200 p-6`}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Budget vs Allocated</h3>
+              <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Budget vs Allocated</h3>
               {/* Legend */}
               <div className="flex gap-4 text-sm">
                 <span className="flex items-center gap-1">
@@ -211,8 +267,8 @@ export default function BudgetOverview() {
           </div>
 
           {/* Pie Chart */}
-          <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl shadow p-6`}>
-            <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Allocation Distribution</h3>
+          <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-xl shadow-sm border border-gray-200 p-6`}>
+            <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Allocation Distribution</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie data={utilizationChartData} cx="50%" cy="50%" outerRadius={100} dataKey="value">
@@ -233,8 +289,8 @@ export default function BudgetOverview() {
         </div>
 
         {/* Trend */}
-        <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl shadow p-6`}>
-          <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Budget Trends Over Time</h3>
+        <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-xl shadow-sm border border-gray-200 p-6`}>
+          <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Budget Trends Over Time</h3>
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={monthlyTrendData}>
               <defs>
@@ -258,41 +314,69 @@ export default function BudgetOverview() {
         </div>
 
         {/* Project Table */}
-        <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl shadow overflow-hidden`}>
-          <div className={`px-6 py-4 border-b ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-            <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>Project Budget Breakdown</h3>
+        <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-xl shadow-sm border border-gray-200 overflow-hidden`}>
+          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
+            <h3 className="text-xl font-bold text-white">Project Budget Breakdown</h3>
+            <p className="text-blue-100 text-sm mt-1">Detailed allocation and utilization per project</p>
           </div>
           <table className="w-full">
-            <thead className={`${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}`}>
+            <thead className={`${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} border-b-2 border-gray-200`}>
               <tr>
-                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Project</th>
-                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Budget</th>
-                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Allocated</th>
-                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Planned</th>
-                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Remaining</th>
-                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Utilization</th>
-                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Team</th>
-                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Actions</th>
+                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider`}>Project</th>
+                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider`}>Budget</th>
+                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider`}>Allocated</th>
+                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider`}>Planned</th>
+                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider`}>Remaining</th>
+                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider`}>Utilization</th>
+                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider`}>Team</th>
+                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider`}>Actions</th>
               </tr>
             </thead>
-            <tbody className={`${theme === 'dark' ? 'divide-gray-700' : 'divide-gray-200'} divide-y`}>
+            <tbody className={`${theme === 'dark' ? 'divide-gray-700' : 'divide-gray-100'} divide-y`}>
               {data.projects.map((p) => (
-                <tr key={p.id} className={`${theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
-                  <td className="py-4 px-6 flex items-center gap-2">
-                    {getStatusIcon(parseFloat(p.utilizationRate))}
-                    <span className={`${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{p.title}</span>
+                <tr key={p.id} className={`${theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-blue-50'} transition-colors duration-150`}>
+                  <td className="py-4 px-6">
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(parseFloat(p.utilizationRate))}
+                      <span className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{p.title}</span>
+                    </div>
                   </td>
-                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{p.budgetedHours}h</td>
-                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{p.totalAllocated}h</td>
-                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{p.totalPlanned}h</td>
-                  <td className={`py-4 px-6 ${p.remaining >= 0 ? "text-green-600" : "text-red-600"}`}>
+                  <td className="py-4 px-6">
+                    <span className={`font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>{p.budgetedHours}h</span>
+                  </td>
+                  <td className="py-4 px-6">
+                    <span className={`font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>{p.totalAllocated}h</span>
+                    <div className="w-20 bg-gray-200 rounded-full h-1 mt-1">
+                      <div
+                        className="bg-blue-500 h-1 rounded-full"
+                        style={{ width: `${Math.min((p.totalAllocated / Math.max(p.budgetedHours, 1)) * 100, 100)}%` }}
+                      ></div>
+                    </div>
+                  </td>
+                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>{p.totalPlanned}h</td>
+                  <td className={`py-4 px-6 font-bold ${p.remaining >= 0 ? "text-green-600" : "text-red-600"}`}>
                     {p.remaining > 0 ? "+" : ""}{p.remaining}h
                   </td>
-                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{p.utilizationRate}%</td>
-                  <td className={`py-4 px-6 flex items-center ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}><FaUsers className="h-4 w-4 mr-1" />{p.teamSize}</td>
                   <td className="py-4 px-6">
-                    <Link href={`/dashboard/budget/${p.id}`} className="flex items-center gap-1 text-blue-600 hover:text-blue-900">
-                      <FaEye className="h-4 w-4" /> View Details
+                    <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                      parseFloat(p.utilizationRate) < 70 ? 'text-red-600 bg-red-100' :
+                      parseFloat(p.utilizationRate) < 90 ? 'text-yellow-600 bg-yellow-100' :
+                      parseFloat(p.utilizationRate) <= 100 ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'
+                    }`}>
+                      {p.utilizationRate}%
+                    </span>
+                  </td>
+                  <td className="py-4 px-6">
+                    <div className="flex items-center gap-1 font-medium">
+                      <div className="p-1.5 bg-gray-100 rounded">
+                        <FaUsers className="h-3 w-3 text-gray-600" />
+                      </div>
+                      <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>{p.teamSize}</span>
+                    </div>
+                  </td>
+                  <td className="py-4 px-6">
+                    <Link href={`/dashboard/budget/${p.id}`} className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-150">
+                      <FaEye className="h-3.5 w-3.5" /> View
                     </Link>
                   </td>
                 </tr>
