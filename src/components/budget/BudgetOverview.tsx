@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTheme } from '@/app/contexts/ThemeContext';
-import PageLoader from '@/app/components/ui/PageLoader';
+import { useTheme } from '@/contexts/ThemeContext';
+import PageLoader from '@/components/ui/PageLoader';
 import axios from "axios";
 import Link from "next/link";
 import {

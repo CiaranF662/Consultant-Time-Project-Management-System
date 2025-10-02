@@ -12,7 +12,6 @@ import {
   FaChartBar,
   FaBars,
   FaTimes,
-  FaUserPlus,
   FaChevronLeft,
   FaChevronRight,
   FaSignOutAlt,
@@ -50,7 +49,7 @@ export default function Sidebar({ children }: SidebarProps) {
   // Dynamically check if user is a Product Manager
   useEffect(() => {
     if (session?.user?.id && session.user.role !== UserRole.GROWTH_TEAM) {
-      fetch('/api/user/pm-status')
+      fetch('/api/current-user/pm-status')
         .then(res => res.json())
         .then(data => {
           setIsDynamicPM(data.isProductManager || false);
@@ -117,13 +116,6 @@ export default function Sidebar({ children }: SidebarProps) {
           icon: FaUsers,
           roles: [UserRole.GROWTH_TEAM],
           key: 'growth-manage-users'
-        },
-        {
-          label: 'User Approvals',
-          href: '/dashboard/admin/user-approvals',
-          icon: FaUserPlus,
-          roles: [UserRole.GROWTH_TEAM],
-          key: 'growth-user-approvals'
         },
         {
           label: 'Notifications',
@@ -218,7 +210,7 @@ export default function Sidebar({ children }: SidebarProps) {
       {/* Mobile menu button */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200">
         <div className="flex items-center justify-between p-4">
-          <h1 className="text-xl font-bold text-gray-800">Resource System</h1>
+          <h1 className="text-xl font-bold text-gray-800 font-[family-name:var(--font-poppins)]">Agility</h1>
           <div className="flex items-center gap-2">
             <NotificationBadge />
             <button
@@ -242,7 +234,7 @@ export default function Sidebar({ children }: SidebarProps) {
       }`}>
         <div className="flex flex-col h-full">
           <div className="p-4 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-gray-800">Resource System</h1>
+            <h1 className="text-xl font-bold text-gray-800 font-[family-name:var(--font-poppins)]">Agility</h1>
           </div>
           <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
@@ -287,7 +279,7 @@ export default function Sidebar({ children }: SidebarProps) {
           {/* Header */}
           <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
             {!isCollapsed && (
-              <h1 className="text-xl font-bold text-gray-800">Resource System</h1>
+              <h1 className="text-xl font-bold text-gray-800 font-[family-name:var(--font-poppins)]">Agility</h1>
             )}
             <div className="flex items-center gap-2">
               <NotificationBadge />

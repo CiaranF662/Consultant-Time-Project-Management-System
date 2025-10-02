@@ -27,7 +27,7 @@ export default function IntegratedPMDashboard({ userId, userName }: IntegratedPM
     setLoadingConsultantData(true);
     try {
       // Get all phase allocations for the consultant with related data (same as allocations page)
-      const response = await fetch('/api/user/consultant-data');
+      const response = await fetch('/api/current-user/consultant-data');
       if (response.ok) {
         const data = await response.json();
         setConsultantData(data);

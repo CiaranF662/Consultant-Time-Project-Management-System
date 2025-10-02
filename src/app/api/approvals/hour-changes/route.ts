@@ -1,67 +1,66 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { requireGrowthTeam, isAuthError } from '@/lib/api-auth';
-import { UserRole } from '@prisma/client';
+import { NextResponse } from 'next/server';
+import { ChangeStatus } from '@prisma/client';
+import { requireAuth, isAuthError } from '@/lib/api-auth';
 
 import { prisma } from "@/lib/prisma";
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session } = auth;
+
   try {
-    const auth = await requireGrowthTeam();
-    if (isAuthError(auth)) return auth;
-    const { session, user } = auth;
+    let requests;
 
-    // Get pending hour change requests
-    const pendingHourChanges = await prisma.hourChangeRequest.findMany({
-      where: {
-        status: 'PENDING'
-      },
-      include: {
-        requester: {
-          select: {
-            id: true,
-            name: true,
-            email: true
+    if (session.user.role === 'GROWTH_TEAM') {
+      // Growth Team sees all pending requests
+      requests = await prisma.hourChangeRequest.findMany({
+        where: { status: ChangeStatus.PENDING },
+        include: {
+          requester: true,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+    } else {
+      // Product Managers see requests for their projects only
+      const managedProjects = await prisma.project.findMany({
+        where: { productManagerId: session.user.id },
+        select: { id: true }
+      });
+
+      const projectIds = managedProjects.map(p => p.id);
+
+      // Get all phase allocations for managed projects
+      const phaseAllocations = await prisma.phaseAllocation.findMany({
+        where: {
+          phase: {
+            projectId: { in: projectIds }
           }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
+        },
+        select: { id: true }
+      });
 
-    // Fetch phase allocation data for each request
-    const requestsWithPhaseData = await Promise.all(
-      pendingHourChanges.map(async (request) => {
-        let phaseAllocation = null;
+      const phaseAllocationIds = phaseAllocations.map(pa => pa.id);
 
-        if (request.phaseAllocationId) {
-          phaseAllocation = await prisma.phaseAllocation.findUnique({
-            where: { id: request.phaseAllocationId },
-            include: {
-              phase: {
-                include: {
-                  project: {
-                    select: {
-                      id: true,
-                      title: true
-                    }
-                  }
-                }
-              }
-            }
-          });
-        }
+      requests = await prisma.hourChangeRequest.findMany({
+        where: {
+          status: ChangeStatus.PENDING,
+          phaseAllocationId: { in: phaseAllocationIds }
+        },
+        include: {
+          requester: true,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+    }
 
-        return {
-          ...request,
-          phaseAllocation
-        };
-      })
-    );
-
-    return NextResponse.json(requestsWithPhaseData);
+    return NextResponse.json(requests);
   } catch (error) {
     console.error('Error fetching hour change requests:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return new NextResponse(JSON.stringify({ error: 'Failed to fetch requests' }), { status: 500 });
   }
 }

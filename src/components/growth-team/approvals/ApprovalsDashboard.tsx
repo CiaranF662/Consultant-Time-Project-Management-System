@@ -322,14 +322,15 @@ export default function ApprovalsDashboard({
   };
 
   // Handle hour change request approval
-  const handleHourChangeApproval = async (requestId: string, action: 'approve' | 'reject', data?: any) => {
+  const handleHourChangeApproval = async (requestId: string, action: 'approve' | 'reject') => {
     setProcessingIds(prev => new Set(prev).add(requestId));
 
     try {
+      const status = action === 'approve' ? 'APPROVED' : 'REJECTED';
       const response = await fetch(`/api/approvals/hour-changes/${requestId}`, {
-        method: 'POST',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, ...data })
+        body: JSON.stringify({ status })
       });
 
       if (response.ok) {

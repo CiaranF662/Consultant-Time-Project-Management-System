@@ -1,121 +1,205 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { requireGrowthTeam, isAuthError } from '@/lib/api-auth';
-import { UserRole } from '@prisma/client';
+import { NextResponse } from 'next/server';
+import { ChangeStatus, ChangeType } from '@prisma/client';
+import { requireAuth, isAuthError } from '@/lib/api-auth';
+import { sendEmail, renderEmailTemplate } from '@/lib/email';
+import { createNotification, NotificationTemplates } from '@/lib/notifications';
+import HourChangeRequestEmail from '@/emails/HourChangeRequestEmail';
 
 import { prisma } from "@/lib/prisma";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
+
   try {
-    const auth = await requireGrowthTeam();
-    if (isAuthError(auth)) return auth;
-    const { session, user } = auth;
+    const { id } = await params;
+    const { status } = await request.json();
 
-    const { action, rejectionReason } = await request.json();
-    const requestId = params.id;
+    if (!Object.values(ChangeStatus).includes(status)) {
+      return new NextResponse(JSON.stringify({ error: 'Invalid status' }), { status: 400 });
+    }
 
-    // Get the hour change request
-    const hourChangeRequest = await prisma.hourChangeRequest.findUnique({
-      where: { id: requestId },
+    // First, get the request to check authorization
+    const existingRequest = await prisma.hourChangeRequest.findUnique({
+      where: { id },
       include: {
-        requester: true,
-        phaseAllocation: {
-          include: {
-            phase: {
-              include: {
-                project: true
-              }
-            }
-          }
+        requester: {
+          select: { id: true, name: true, email: true }
         }
       }
     });
 
-    if (!hourChangeRequest) {
-      return NextResponse.json({ error: 'Hour change request not found' }, { status: 404 });
+    if (!existingRequest) {
+      return new NextResponse(JSON.stringify({ error: 'Request not found' }), { status: 404 });
     }
 
-    if (hourChangeRequest.status !== 'PENDING') {
-      return NextResponse.json({ error: 'Hour change request is not pending' }, { status: 400 });
+    // Get project info for authorization check
+    let projectData = null;
+    if (existingRequest.phaseAllocationId) {
+      projectData = await prisma.phaseAllocation.findUnique({
+        where: { id: existingRequest.phaseAllocationId },
+        include: {
+          phase: {
+            include: {
+              project: true
+            }
+          }
+        }
+      });
     }
 
-    if (action === 'approve') {
-      // Update the phase allocation based on the request type
-      const currentAllocation = hourChangeRequest.phaseAllocation;
-      let newTotalHours = currentAllocation.totalHours;
+    // Check if user can approve this request (Growth Team or PM of the project)
+    const isGrowthTeam = session.user.role === 'GROWTH_TEAM';
+    const isProjectManager = projectData?.phase?.project?.productManagerId === session.user.id;
 
-      if (hourChangeRequest.requestType === 'INCREASE') {
-        newTotalHours += hourChangeRequest.requestedHours;
-      } else if (hourChangeRequest.requestType === 'DECREASE') {
-        newTotalHours -= hourChangeRequest.requestedHours;
-        if (newTotalHours < 0) newTotalHours = 0;
+    if (!isGrowthTeam && !isProjectManager) {
+      return new NextResponse(JSON.stringify({ error: 'Not authorized to approve this request' }), { status: 403 });
+    }
+
+    // Use a transaction to ensure data consistency
+    const updatedRequest = await prisma.$transaction(async (tx) => {
+      const request = await tx.hourChangeRequest.update({
+        where: { id },
+        data: { status, approverId: session.user.id },
+        include: {
+          requester: {
+            select: { id: true, name: true, email: true }
+          },
+          approver: {
+            select: { id: true, name: true, email: true }
+          }
+        }
+      });
+
+      // If approved, update the weekly allocations
+      if (status === ChangeStatus.APPROVED) {
+        // Handle different change types according to the new schema
+        if (request.changeType === ChangeType.ADJUSTMENT && request.phaseAllocationId) {
+          // For hour adjustments, update the phase allocation
+          await tx.phaseAllocation.update({
+            where: { id: request.phaseAllocationId },
+            data: { totalHours: request.requestedHours },
+          });
+        }
+        // Note: SHIFT type changes would require more complex logic to transfer hours between consultants
       }
-      // Note: TRANSFER requests would require additional logic to handle the transfer
 
-      // Update the phase allocation
-      await prisma.phaseAllocation.update({
-        where: { id: currentAllocation.id },
-        data: { totalHours: newTotalHours }
-      });
+      return request;
+    });
 
-      // Update the hour change request status
-      await prisma.hourChangeRequest.update({
-        where: { id: requestId },
-        data: {
-          status: 'APPROVED',
-          approvedAt: new Date(),
-          approverId: session.user.id
+    // Send email notification to consultant and Growth Team
+    try {
+      if (projectData?.phase) {
+        const { project } = projectData.phase;
+        const { phase } = projectData;
+
+        // Get approved Growth Team users for CC
+        const growthTeamUsers = await prisma.user.findMany({
+          where: {
+            role: 'GROWTH_TEAM',
+            status: 'APPROVED'
+          },
+          select: { email: true }
+        });
+
+        // Get consultant name for shift requests
+        let toConsultantName = undefined;
+        if (updatedRequest.changeType === ChangeType.SHIFT && updatedRequest.toConsultantId) {
+          const toConsultant = await prisma.user.findUnique({
+            where: { id: updatedRequest.toConsultantId },
+            select: { name: true }
+          });
+          toConsultantName = toConsultant?.name || undefined;
         }
-      });
 
-      // Create notification for the requester
-      await prisma.notification.create({
-        data: {
-          userId: hourChangeRequest.requesterId,
-          type: 'HOUR_CHANGE_APPROVED',
-          title: 'Hour Change Request Approved',
-          message: `Your request to ${hourChangeRequest.requestType.toLowerCase()} ${hourChangeRequest.requestedHours} hours for ${currentAllocation.phase.name} in ${currentAllocation.phase.project.title} has been approved.`,
-          data: {
-            hourChangeRequestId: requestId,
-            phaseAllocationId: currentAllocation.id,
-            projectId: currentAllocation.phase.project.id
+        const emailTemplate = HourChangeRequestEmail({
+          type: status === ChangeStatus.APPROVED ? 'approved' : 'rejected',
+          consultantName: updatedRequest.requester.name || 'Unknown',
+          consultantEmail: updatedRequest.requester.email || '',
+          projectName: project.title,
+          phaseName: phase.name,
+          changeType: updatedRequest.changeType as 'ADJUSTMENT' | 'SHIFT',
+          originalHours: updatedRequest.originalHours,
+          requestedHours: updatedRequest.requestedHours,
+          reason: updatedRequest.reason,
+          approverName: updatedRequest.approver?.name || undefined,
+          toConsultantName
+        });
+
+        const { html, text } = await renderEmailTemplate(emailTemplate);
+
+        // Send to consultant (primary) and CC Growth Team
+        const consultantEmail = updatedRequest.requester.email;
+        if (consultantEmail) {
+          const ccRecipients = growthTeamUsers
+            .map(user => user.email)
+            .filter((email): email is string => !!email && email !== consultantEmail);
+
+          await sendEmail({
+            to: [consultantEmail, ...ccRecipients],
+            subject: `Hour Change Request ${status === ChangeStatus.APPROVED ? 'Approved' : 'Rejected'}: ${project.title} - ${phase.name}`,
+            html,
+            text
+          });
+
+          // Create in-app notifications
+          const isApproved = status === ChangeStatus.APPROVED;
+          const consultantNotificationTemplate = isApproved
+            ? NotificationTemplates.HOUR_CHANGE_APPROVED(project.title)
+            : NotificationTemplates.HOUR_CHANGE_REJECTED(project.title);
+
+          // Notification for the consultant who made the request
+          await createNotification({
+            userId: updatedRequest.consultantId,
+            type: isApproved ? 'HOUR_CHANGE_APPROVED' : 'HOUR_CHANGE_REJECTED',
+            title: consultantNotificationTemplate.title,
+            message: consultantNotificationTemplate.message,
+            actionUrl: `/dashboard/projects/${project.id}`,
+            metadata: {
+              requestId: updatedRequest.id,
+              projectId: project.id,
+              projectTitle: project.title,
+              status: status,
+              approverName: updatedRequest.approver?.name || 'Administrator'
+            }
+          });
+
+          // Notification for Product Manager (if they didn't approve it themselves)
+          if (project.productManagerId && project.productManagerId !== session.user.id) {
+            const consultantName = updatedRequest.requester.name || 'A consultant';
+            const pmNotificationTitle = `Hour Change Request ${isApproved ? 'Approved' : 'Rejected'}`;
+            const pmNotificationMessage = `${consultantName}'s hour change request for "${project.title}" has been ${isApproved ? 'approved' : 'rejected'}.`;
+
+            await createNotification({
+              userId: project.productManagerId,
+              type: isApproved ? 'HOUR_CHANGE_APPROVED' : 'HOUR_CHANGE_REJECTED',
+              title: pmNotificationTitle,
+              message: pmNotificationMessage,
+              actionUrl: `/dashboard/projects/${project.id}`,
+              metadata: {
+                requestId: updatedRequest.id,
+                projectId: project.id,
+                projectTitle: project.title,
+                status: status,
+                consultantName,
+                approverName: updatedRequest.approver?.name || 'Administrator'
+              }
+            });
           }
         }
-      });
-
-    } else if (action === 'reject') {
-      // Update the hour change request status
-      await prisma.hourChangeRequest.update({
-        where: { id: requestId },
-        data: {
-          status: 'REJECTED',
-          rejectedAt: new Date(),
-          rejectionReason: rejectionReason,
-          approverId: session.user.id
-        }
-      });
-
-      // Create notification for the requester
-      await prisma.notification.create({
-        data: {
-          userId: hourChangeRequest.requesterId,
-          type: 'HOUR_CHANGE_REJECTED',
-          title: 'Hour Change Request Rejected',
-          message: `Your request to ${hourChangeRequest.requestType.toLowerCase()} ${hourChangeRequest.requestedHours} hours for ${hourChangeRequest.phaseAllocation.phase.name} in ${hourChangeRequest.phaseAllocation.phase.project.title} has been rejected. Reason: ${rejectionReason}`,
-          data: {
-            hourChangeRequestId: requestId,
-            phaseAllocationId: hourChangeRequest.phaseAllocation.id,
-            projectId: hourChangeRequest.phaseAllocation.phase.project.id
-          }
-        }
-      });
+      }
+    } catch (emailError) {
+      console.error('Failed to send hour change approval notification:', emailError);
+      // Don't fail the request if email fails
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json(updatedRequest);
   } catch (error) {
-    console.error('Error processing hour change approval:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error updating hour change request:', error);
+    return new NextResponse(JSON.stringify({ error: 'Failed to update request' }), { status: 500 });
   }
 }

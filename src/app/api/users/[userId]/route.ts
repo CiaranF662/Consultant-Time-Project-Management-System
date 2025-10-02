@@ -31,3 +31,30 @@ export async function PATCH(
     return new NextResponse(JSON.stringify({ error: 'Failed to update user role' }), { status: 500 });
   }
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ userId: string }> }
+) {
+  const auth = await requireGrowthTeam();
+  if (isAuthError(auth)) return auth;
+  const { session } = auth;
+
+  try {
+    const { userId } = await params;
+
+    // Prevent deleting yourself
+    if (userId === session.user.id) {
+      return new NextResponse(JSON.stringify({ error: 'Cannot delete your own account' }), { status: 400 });
+    }
+
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return NextResponse.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return new NextResponse(JSON.stringify({ error: 'Failed to delete user' }), { status: 500 });
+  }
+}

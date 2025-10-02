@@ -51,10 +51,10 @@ export default function HourChangeApprovalsManager({ requests, userId }: HourCha
 
   const handleApproval = async (requestId: string, newStatus: 'APPROVED' | 'REJECTED') => {
     setProcessingRequests(prev => new Set(prev).add(requestId));
-    
+
     try {
-      await axios.patch(`/api/admin/hour-changes/${requestId}`, { 
-        status: newStatus 
+      await axios.patch(`/api/approvals/hour-changes/${requestId}`, {
+        status: newStatus
       });
       
       setProcessedRequests(prev => new Set(prev).add(requestId));

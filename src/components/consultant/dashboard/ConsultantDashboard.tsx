@@ -273,7 +273,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-800">Consultant Dashboard</h1>
           <p className="text-lg text-gray-600">
             {activeView === 'overview'
               ? 'Manage your time allocation across projects and phases'
