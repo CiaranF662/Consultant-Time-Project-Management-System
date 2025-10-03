@@ -206,16 +206,16 @@ export default function Sidebar({ children }: SidebarProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card shadow-sm border-b border-border">
         <div className="flex items-center justify-between p-4">
-          <h1 className="text-xl font-bold text-gray-800 font-[family-name:var(--font-poppins)]">Agility</h1>
+          <h1 className="text-xl font-bold text-foreground font-[family-name:var(--font-poppins)]">Agility</h1>
           <div className="flex items-center gap-2">
             <NotificationBadge />
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               {isMobileMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
             </button>
@@ -229,12 +229,12 @@ export default function Sidebar({ children }: SidebarProps) {
       )}
 
       {/* Mobile menu drawer */}
-      <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform ${
+      <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg transform transition-transform ${
         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="flex flex-col h-full">
-          <div className="p-4 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-gray-800 font-[family-name:var(--font-poppins)]">Agility</h1>
+          <div className="p-4 border-b border-border">
+            <h1 className="text-xl font-bold text-foreground font-[family-name:var(--font-poppins)]">Agility</h1>
           </div>
           <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
@@ -247,8 +247,8 @@ export default function Sidebar({ children }: SidebarProps) {
                   className={`
                     flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
                     ${isActive(item.href)
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                     }
                   `}
                 >
@@ -258,10 +258,10 @@ export default function Sidebar({ children }: SidebarProps) {
               );
             })}
           </nav>
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-border">
             <button
               onClick={handleSignOut}
-              className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
             >
               <FaSignOutAlt className="mr-3 h-5 w-5" />
               Sign Out
@@ -272,20 +272,20 @@ export default function Sidebar({ children }: SidebarProps) {
 
       {/* Desktop Sidebar */}
       <div className={`
-        hidden lg:block fixed inset-y-0 left-0 z-50 bg-white shadow-lg transition-all duration-300 ease-in-out
+        hidden lg:block fixed inset-y-0 left-0 z-50 bg-sidebar shadow-lg transition-all duration-300 ease-in-out border-r border-sidebar-border
         ${isCollapsed ? 'w-16' : 'w-64'}
       `}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+          <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
             {!isCollapsed && (
-              <h1 className="text-xl font-bold text-gray-800 font-[family-name:var(--font-poppins)]">Agility</h1>
+              <h1 className="text-xl font-bold text-sidebar-foreground font-[family-name:var(--font-poppins)]">Agility</h1>
             )}
             <div className="flex items-center gap-2">
               <NotificationBadge />
               <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className={`p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors ${
+                className={`p-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors ${
                   isCollapsed ? 'w-full flex justify-center' : ''
                 }`}
               >
@@ -296,19 +296,19 @@ export default function Sidebar({ children }: SidebarProps) {
 
           {/* User info */}
           {!isCollapsed && (
-            <div className="p-4 border-b border-gray-200">
+            <div className="p-4 border-b border-sidebar-border">
               <div className="flex items-center space-x-3">
                 <Link href="/profile" className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-medium text-sm">
+                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                    <span className="text-primary-foreground font-medium text-sm">
                       {session.user.name?.charAt(0) || session.user.email?.charAt(0)}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p className="text-sm font-medium text-sidebar-foreground truncate">
                       {session.user.name || 'User'}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">
+                    <p className="text-xs text-sidebar-foreground/60 truncate">
                       {isGrowthTeam ? 'Growth Team' : isProductManager ? 'Product Manager' : 'Consultant'}
                     </p>
                   </div>
@@ -319,9 +319,9 @@ export default function Sidebar({ children }: SidebarProps) {
 
           {/* Collapsed user avatar */}
           {isCollapsed && (
-            <div className="p-2 border-b border-gray-200 flex justify-center">
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-medium text-xs">
+            <div className="p-2 border-b border-sidebar-border flex justify-center">
+              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                <span className="text-primary-foreground font-medium text-xs">
                   {session.user.name?.charAt(0) || session.user.email?.charAt(0)}
                 </span>
               </div>
@@ -339,8 +339,8 @@ export default function Sidebar({ children }: SidebarProps) {
                     className={`
                       flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors relative
                       ${isActive(item.href)
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                        : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                       }
                       ${isCollapsed ? 'justify-center' : ''}
                     `}
@@ -350,15 +350,14 @@ export default function Sidebar({ children }: SidebarProps) {
 
                     {/* Active indicator for collapsed mode */}
                     {isCollapsed && isActive(item.href) && (
-                      <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-blue-700 rounded-l-full"></div>
+                      <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-primary rounded-l-full"></div>
                     )}
                   </Link>
 
                   {/* Tooltip for collapsed mode */}
                   {isCollapsed && (
-                    <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 top-1/2 transform -translate-y-1/2">
+                    <div className="absolute left-full ml-2 px-3 py-2 bg-popover text-popover-foreground text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 top-1/2 transform -translate-y-1/2 border border-border shadow-md">
                       {item.label}
-                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 border-4 border-transparent border-r-gray-900"></div>
                     </div>
                   )}
                 </div>
@@ -367,24 +366,23 @@ export default function Sidebar({ children }: SidebarProps) {
           </nav>
 
           {/* Sign out button */}
-          <div className="p-2 border-t border-gray-200">
+          <div className="p-2 border-t border-sidebar-border">
             {isCollapsed ? (
               <div className="relative group">
                 <button
                   onClick={handleSignOut}
-                  className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
                 >
                   <FaSignOutAlt className="h-5 w-5" />
                 </button>
-                <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 top-1/2 transform -translate-y-1/2">
+                <div className="absolute left-full ml-2 px-3 py-2 bg-popover text-popover-foreground text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 top-1/2 transform -translate-y-1/2 border border-border shadow-md">
                   Sign Out
-                  <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 border-4 border-transparent border-r-gray-900"></div>
                 </div>
               </div>
             ) : (
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
               >
                 <FaSignOutAlt className="mr-3 h-5 w-5" />
                 Sign Out

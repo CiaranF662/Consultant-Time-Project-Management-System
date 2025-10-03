@@ -45,7 +45,7 @@ export default function HourRequestDetailModal({ request, onClose }: HourRequest
       case 'REJECTED':
         return 'bg-red-100 text-red-800 border-red-200';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-100 text-foreground border-gray-200';
     }
   };
 
@@ -92,7 +92,7 @@ export default function HourRequestDetailModal({ request, onClose }: HourRequest
                 {changeInfo.icon}
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-gray-800">{changeInfo.title}</h2>
+                <h2 className="text-xl font-semibold text-foreground">{changeInfo.title}</h2>
                 <p className="text-sm text-gray-600">Request #{request.id.slice(-8)}</p>
               </div>
             </div>
@@ -103,7 +103,7 @@ export default function HourRequestDetailModal({ request, onClose }: HourRequest
               </div>
               <button
                 onClick={onClose}
-                className="p-2 text-gray-400 hover:text-gray-600 rounded"
+                className="p-2 text-muted-foreground hover:text-gray-600 rounded"
               >
                 <FaTimes />
               </button>
@@ -114,7 +114,7 @@ export default function HourRequestDetailModal({ request, onClose }: HourRequest
         <div className="p-6 space-y-6">
           {/* Request Summary */}
           <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="text-lg font-medium text-gray-800 mb-3">Request Details</h3>
+            <h3 className="text-lg font-medium text-foreground mb-3">Request Details</h3>
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">Type:</span>
@@ -167,20 +167,20 @@ export default function HourRequestDetailModal({ request, onClose }: HourRequest
 
           {/* Reason */}
           <div>
-            <h3 className="text-lg font-medium text-gray-800 mb-2">Reason for Request</h3>
+            <h3 className="text-lg font-medium text-foreground mb-2">Reason for Request</h3>
             <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-gray-700">{request.reason}</p>
+              <p className="text-card-foreground">{request.reason}</p>
             </div>
           </div>
 
           {/* Timeline */}
           <div>
-            <h3 className="text-lg font-medium text-gray-800 mb-3">Request Timeline</h3>
+            <h3 className="text-lg font-medium text-foreground mb-3">Request Timeline</h3>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
                 <div>
-                  <div className="font-medium text-gray-800">Request Created</div>
+                  <div className="font-medium text-foreground">Request Created</div>
                   <div className="text-sm text-gray-600">
                     {new Date(request.createdAt).toLocaleString()} by {request.requester.name || request.requester.email}
                   </div>
@@ -193,7 +193,7 @@ export default function HourRequestDetailModal({ request, onClose }: HourRequest
                     request.status === 'APPROVED' ? 'bg-green-500' : 'bg-red-500'
                   }`}></div>
                   <div>
-                    <div className="font-medium text-gray-800">
+                    <div className="font-medium text-foreground">
                       Request {request.status === 'APPROVED' ? 'Approved' : 'Rejected'}
                     </div>
                     <div className="text-sm text-gray-600">
@@ -208,7 +208,7 @@ export default function HourRequestDetailModal({ request, onClose }: HourRequest
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
                   <div>
-                    <div className="font-medium text-gray-800">Awaiting Approval</div>
+                    <div className="font-medium text-foreground">Awaiting Approval</div>
                     <div className="text-sm text-gray-600">
                       Your request is being reviewed by the Growth Team
                     </div>
@@ -248,7 +248,7 @@ export default function HourRequestDetailModal({ request, onClose }: HourRequest
           <div className="flex justify-end">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="px-4 py-2 text-sm font-medium text-card-foreground bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Close
             </button>

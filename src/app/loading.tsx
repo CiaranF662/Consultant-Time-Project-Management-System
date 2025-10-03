@@ -52,7 +52,7 @@ export default function Loading({ className, size = "md", fullScreen = false, me
 
       {/* Enhanced loading text */}
       <div className="text-center">
-        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 animate-pulse">
+        <p className="text-sm font-medium text-card-foreground dark:text-gray-300 animate-pulse">
           {message}
         </p>
       </div>

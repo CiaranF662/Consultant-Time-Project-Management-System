@@ -227,12 +227,12 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
                 <div className="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center">
                   <FaProjectDiagram className="w-4 h-4" />
                 </div>
-                <h2 className="text-lg font-bold text-gray-800">Phase Information</h2>
+                <h2 className="text-lg font-bold text-foreground">Phase Information</h2>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="phaseName" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="phaseName" className="block text-sm font-medium text-card-foreground mb-2">
                     Phase Name *
                   </label>
                   <input
@@ -248,7 +248,7 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
                 </div>
 
                 <div>
-                  <label htmlFor="phaseDescription" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="phaseDescription" className="block text-sm font-medium text-card-foreground mb-2">
                     Description
                   </label>
                   <textarea
@@ -270,7 +270,7 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
                 <div className="w-8 h-8 bg-green-600 text-white rounded-lg flex items-center justify-center">
                   <FaCalendarAlt className="w-4 h-4" />
                 </div>
-                <h2 className="text-lg font-bold text-gray-800">Sprint Assignment</h2>
+                <h2 className="text-lg font-bold text-foreground">Sprint Assignment</h2>
               </div>
 
               <p className="text-sm text-gray-600 mb-4">
@@ -305,7 +305,7 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
                         />
                         <label
                           htmlFor={`sprint-${sprint.id}`}
-                          className={`ml-3 flex-1 cursor-pointer ${isAvailable ? 'text-gray-900' : 'text-gray-400'}`}
+                          className={`ml-3 flex-1 cursor-pointer ${isAvailable ? 'text-foreground' : 'text-muted-foreground'}`}
                         >
                           <div className="flex items-center justify-between">
                             <div>
@@ -319,7 +319,7 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
                                 <span className="text-red-500 text-sm ml-2">(Past sprint)</span>
                               )}
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-muted-foreground">
                               {formatDate(sprint.startDate)} - {formatDate(sprint.endDate)}
                             </div>
                           </div>
@@ -365,15 +365,15 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center p-3 bg-white rounded-lg border border-gray-200">
-                    <div className="text-2xl font-bold text-gray-700">{summary.count}</div>
+                    <div className="text-2xl font-bold text-card-foreground">{summary.count}</div>
                     <div className="text-sm text-gray-600">Sprints Selected</div>
                   </div>
                   <div className="text-center p-3 bg-white rounded-lg border border-gray-200">
-                    <div className="text-sm font-medium text-gray-700">{formatDate(summary.startDate)}</div>
+                    <div className="text-sm font-medium text-card-foreground">{formatDate(summary.startDate)}</div>
                     <div className="text-sm text-gray-600">Start Date</div>
                   </div>
                   <div className="text-center p-3 bg-white rounded-lg border border-gray-200">
-                    <div className="text-sm font-medium text-gray-700">{formatDate(summary.endDate)}</div>
+                    <div className="text-sm font-medium text-card-foreground">{formatDate(summary.endDate)}</div>
                     <div className="text-sm text-gray-600">End Date</div>
                   </div>
                 </div>
@@ -404,7 +404,7 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200"
+                  className="px-6 py-3 text-sm font-medium text-card-foreground bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200"
                   disabled={isLoading}
                 >
                   Cancel

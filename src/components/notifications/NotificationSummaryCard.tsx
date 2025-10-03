@@ -50,8 +50,8 @@ export default function NotificationSummaryCard({ className = '' }: Notification
           <div className="flex items-center gap-2">
             <FaBell className="text-blue-500 h-6 w-6" />
             <div>
-              <p className="text-sm font-medium text-gray-600">Notifications</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Notifications</p>
+              <p className="text-2xl font-bold text-foreground">
                 {isLoading ? (
                   <FaSpinner className="animate-spin h-6 w-6" />
                 ) : (
@@ -72,9 +72,9 @@ export default function NotificationSummaryCard({ className = '' }: Notification
           {isLoading ? (
             <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
           ) : unreadCount > 0 ? (
-            <p className="text-sm text-gray-600">Click to view notifications</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Click to view notifications</p>
           ) : (
-            <p className="text-sm text-gray-500">All notifications read</p>
+            <p className="text-sm text-muted-foreground">All notifications read</p>
           )}
         </div>
       </div>

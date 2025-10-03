@@ -427,14 +427,14 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                 <div className="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center">
                   <FaBriefcase className="w-4 h-4" />
                 </div>
-                <h2 className="text-lg font-bold text-gray-800">Project Details</h2>
+                <h2 className="text-lg font-bold text-foreground">Project Details</h2>
               </div>
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Left Column */}
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <label htmlFor="title" className="block text-sm font-semibold text-card-foreground mb-2 flex items-center gap-2">
                       <FaBriefcase className="w-3 h-3 text-blue-600" />
                       Project Title *
                     </label>
@@ -450,7 +450,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                   </div>
 
                   <div>
-                    <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label htmlFor="description" className="block text-sm font-semibold text-card-foreground mb-2">
                       Description
                     </label>
                     <textarea
@@ -467,7 +467,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                 {/* Right Column */}
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="budgetedHours" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <label htmlFor="budgetedHours" className="block text-sm font-semibold text-card-foreground mb-2 flex items-center gap-2">
                       <FaCalendar className="w-3 h-3 text-blue-600" />
                       Budget Hours *
                     </label>
@@ -482,7 +482,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                         required
                         placeholder="480"
                       />
-                      <span className="inline-flex items-center px-3 rounded-r-lg border-2 border-l-0 border-gray-200 bg-gray-50 text-gray-700 font-medium text-sm">
+                      <span className="inline-flex items-center px-3 rounded-r-lg border-2 border-l-0 border-gray-200 bg-gray-50 text-card-foreground font-medium text-sm">
                         hours
                       </span>
                     </div>
@@ -492,11 +492,11 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                   <div className="space-y-4">
                     {/* Start Date (Read-only) */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                        <FaCalendar className="w-3 h-3 text-gray-500" />
+                      <label className="block text-sm font-semibold text-card-foreground mb-2 flex items-center gap-2">
+                        <FaCalendar className="w-3 h-3 text-muted-foreground" />
                         Start Date
                       </label>
-                      <div className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-700">
+                      <div className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg bg-gray-50 text-card-foreground">
                         {new Date(startDate).toLocaleDateString('en-US', {
                           weekday: 'long',
                           year: 'numeric',
@@ -504,12 +504,12 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                           day: 'numeric'
                         })}
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">Start date cannot be changed once project is created</p>
+                      <p className="text-xs text-muted-foreground mt-1">Start date cannot be changed once project is created</p>
                     </div>
 
                     {/* Duration Control */}
                     <div>
-                      <label htmlFor="duration" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                      <label htmlFor="duration" className="block text-sm font-semibold text-card-foreground mb-2 flex items-center gap-2">
                         <FaClock className="w-3 h-3 text-blue-600" />
                         Project Duration *
                       </label>
@@ -524,7 +524,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                           max="104"
                           required
                         />
-                        <span className="text-sm text-gray-700 font-medium">weeks</span>
+                        <span className="text-sm text-card-foreground font-medium">weeks</span>
                         <div className="flex-1 ml-4">
                           <div className="text-xs text-gray-600">
                             = {calculateProjectDays()} days
@@ -535,7 +535,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
 
                     {/* Calculated End Date */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                      <label className="block text-sm font-semibold text-card-foreground mb-2 flex items-center gap-2">
                         <FaCalendar className="w-3 h-3 text-green-600" />
                         End Date (Calculated)
                       </label>
@@ -579,13 +579,13 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                 <div className="w-8 h-8 bg-purple-600 text-white rounded-lg flex items-center justify-center">
                   <FaUsers className="w-4 h-4" />
                 </div>
-                <h2 className="text-lg font-bold text-gray-800">Team Assignment</h2>
+                <h2 className="text-lg font-bold text-foreground">Team Assignment</h2>
               </div>
               
               <div className="space-y-6">
                 {/* Product Manager Selection */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <label className="block text-sm font-semibold text-card-foreground mb-2 flex items-center gap-2">
                     <FaUser className="w-3 h-3 text-purple-600" />
                     Product Manager *
                   </label>
@@ -641,7 +641,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                               className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center justify-between"
                             >
                               <div>
-                                <div className="font-medium text-gray-800 text-sm">{consultant.name || consultant.email}</div>
+                                <div className="font-medium text-foreground text-sm">{consultant.name || consultant.email}</div>
                                 {consultant.email && consultant.name && (
                                   <div className="text-xs text-gray-600">{consultant.email}</div>
                                 )}
@@ -684,7 +684,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                           );
                         })}
                         {getAvailableProductManagers().length === 0 && (
-                          <div className="px-3 py-2 text-gray-500 text-sm">No consultants found</div>
+                          <div className="px-3 py-2 text-muted-foreground text-sm">No consultants found</div>
                         )}
                       </div>
                     )}
@@ -693,7 +693,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
 
                 {/* Team Members Selection */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <label className="block text-sm font-semibold text-card-foreground mb-2 flex items-center gap-2">
                     <FaUsers className="w-3 h-3 text-purple-600" />
                     Team Members
                   </label>
@@ -736,7 +736,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                   {/* Availability Legend */}
                   {durationWeeks && (
                     <div className="mb-3 p-3 bg-gray-50 rounded-lg">
-                      <p className="text-xs font-medium text-gray-700 mb-2">Availability Legend for Project Period:</p>
+                      <p className="text-xs font-medium text-card-foreground mb-2">Availability Legend for Project Period:</p>
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className="flex items-center gap-1">
                           <div className="w-2 h-2 rounded-full bg-green-500"></div>
@@ -800,7 +800,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                             >
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <div className="font-medium text-gray-800 text-sm">{consultant.name || consultant.email}</div>
+                                  <div className="font-medium text-foreground text-sm">{consultant.name || consultant.email}</div>
                                   {consultant.email && consultant.name && (
                                     <div className="text-xs text-gray-600">{consultant.email}</div>
                                   )}
@@ -834,7 +834,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                                       <span>0h/wk</span>
                                     </div>
                                   ) : (
-                                    <span className="text-xs text-gray-400">Set duration</span>
+                                    <span className="text-xs text-muted-foreground">Set duration</span>
                                   )}
                                 </div>
                               </div>
@@ -845,13 +845,13 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                                   <p className="text-xs text-gray-600 mb-1">Current projects:</p>
                                   <div className="space-y-1">
                                     {Object.entries(availability.projectAllocations).slice(0, 2).map(([projectTitle, hours]: [string, any]) => (
-                                      <div key={projectTitle} className="text-xs text-gray-500 flex justify-between">
+                                      <div key={projectTitle} className="text-xs text-muted-foreground flex justify-between">
                                         <span className="truncate max-w-[120px]">{projectTitle}</span>
                                         <span>{hours}h</span>
                                       </div>
                                     ))}
                                     {Object.keys(availability.projectAllocations).length > 2 && (
-                                      <div className="text-xs text-gray-400">+{Object.keys(availability.projectAllocations).length - 2} more projects</div>
+                                      <div className="text-xs text-muted-foreground">+{Object.keys(availability.projectAllocations).length - 2} more projects</div>
                                     )}
                                   </div>
                                 </div>
@@ -860,7 +860,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                           );
                         })}
                         {getAvailableConsultants().length === 0 && (
-                          <div className="px-3 py-2 text-gray-500 text-sm">No available consultants</div>
+                          <div className="px-3 py-2 text-muted-foreground text-sm">No available consultants</div>
                         )}
                       </div>
                     )}
@@ -876,7 +876,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                   <div className="w-8 h-8 bg-orange-600 text-white rounded-lg flex items-center justify-center">
                     <FaClock className="w-4 h-4" />
                   </div>
-                  <h2 className="text-lg font-bold text-gray-800">Hour Allocation</h2>
+                  <h2 className="text-lg font-bold text-foreground">Hour Allocation</h2>
                 </div>
                 <div className="space-y-3">
                   {/* Product Manager Allocation */}
@@ -888,13 +888,13 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                             <FaUser className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className="font-semibold text-gray-900 flex items-center gap-2">
+                            <p className="font-semibold text-foreground flex items-center gap-2">
                               {getSelectedProductManager()?.name || getSelectedProductManager()?.email}
                               <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-medium">
                                 Product Manager
                               </span>
                             </p>
-                            <p className="text-sm text-gray-500">{getSelectedProductManager()?.email}</p>
+                            <p className="text-sm text-muted-foreground">{getSelectedProductManager()?.email}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -924,13 +924,13 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                             <FaUser className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className="font-semibold text-gray-900 flex items-center gap-2">
+                            <p className="font-semibold text-foreground flex items-center gap-2">
                               {consultant.name || consultant.email}
                               <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">
                                 Team Member
                               </span>
                             </p>
-                            <p className="text-sm text-gray-500">{consultant.email}</p>
+                            <p className="text-sm text-muted-foreground">{consultant.email}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -980,7 +980,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors duration-200"
+              className="px-4 py-2 text-gray-600 hover:text-foreground font-medium transition-colors duration-200"
             >
               Cancel
             </button>

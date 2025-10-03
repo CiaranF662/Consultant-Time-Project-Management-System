@@ -217,7 +217,7 @@ export default function CreateProjectPage() {
         <div className="container mx-auto p-4 md:p-8">
           <div className="max-w-3xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-800">Create New Project</h1>
+              <h1 className="text-3xl font-bold text-foreground">Create New Project</h1>
               <p className="text-lg text-gray-600 mt-1">
                 Set up a new project with resource allocation and budget planning.
               </p>
@@ -228,11 +228,11 @@ export default function CreateProjectPage() {
                 
                 {/* Basic Project Information */}
                 <div className="border-b pb-6">
-                  <h2 className="text-lg font-semibold text-gray-800 mb-4">Project Details</h2>
+                  <h2 className="text-lg font-semibold text-foreground mb-4">Project Details</h2>
                   
                   <div className="space-y-4">
                     <div>
-                      <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="title" className="block text-sm font-medium text-card-foreground">
                         Project Title *
                       </label>
                       <input
@@ -247,7 +247,7 @@ export default function CreateProjectPage() {
                     </div>
                     
                     <div>
-                      <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="description" className="block text-sm font-medium text-card-foreground">
                         Description
                       </label>
                       <textarea
@@ -262,7 +262,7 @@ export default function CreateProjectPage() {
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
+                        <label htmlFor="startDate" className="block text-sm font-medium text-card-foreground">
                           Start Date *
                         </label>
                         <input
@@ -286,7 +286,7 @@ export default function CreateProjectPage() {
                       </div>
                       
                       <div>
-                        <label htmlFor="durationInWeeks" className="block text-sm font-medium text-gray-700">
+                        <label htmlFor="durationInWeeks" className="block text-sm font-medium text-card-foreground">
                           Duration (weeks) *
                         </label>
                         <input
@@ -306,10 +306,10 @@ export default function CreateProjectPage() {
 
                 {/* Budget Planning */}
                 <div className="border-b pb-6">
-                  <h2 className="text-lg font-semibold text-gray-800 mb-4">Budget Planning</h2>
+                  <h2 className="text-lg font-semibold text-foreground mb-4">Budget Planning</h2>
                   
                   <div>
-                    <label htmlFor="budgetedHours" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="budgetedHours" className="block text-sm font-medium text-card-foreground">
                       Total Budgeted Hours *
                     </label>
                     <div className="mt-1 flex rounded-md shadow-sm">
@@ -323,7 +323,7 @@ export default function CreateProjectPage() {
                         required
                         placeholder="480"
                       />
-                      <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                      <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-muted-foreground text-sm">
                         hours
                       </span>
                     </div>
@@ -348,11 +348,11 @@ export default function CreateProjectPage() {
 
                 {/* Team Assignment */}
                 <div className="border-b pb-6">
-                  <h2 className="text-lg font-semibold text-gray-800 mb-4">Team Assignment</h2>
+                  <h2 className="text-lg font-semibold text-foreground mb-4">Team Assignment</h2>
                   
                   <div className="space-y-4">
                     <div>
-                      <label htmlFor="productManager" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="productManager" className="block text-sm font-medium text-card-foreground">
                         Product Manager *
                       </label>
                       <select
@@ -369,13 +369,13 @@ export default function CreateProjectPage() {
                           </option>
                         ))}
                       </select>
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         The Product Manager will be responsible for phase planning and hour allocation.
                       </p>
                     </div>
 
                     <div>
-                      <label htmlFor="consultants" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="consultants" className="block text-sm font-medium text-card-foreground">
                         Team Consultants *
                       </label>
                       <div className="mt-1 space-y-2">
@@ -416,8 +416,8 @@ export default function CreateProjectPage() {
                                     )}
                                   </div>
                                   <div>
-                                    <p className="font-medium text-gray-900">{consultant.name}</p>
-                                    <p className="text-xs text-gray-500">{consultant.email}</p>
+                                    <p className="font-medium text-foreground">{consultant.name}</p>
+                                    <p className="text-xs text-muted-foreground">{consultant.email}</p>
                                   </div>
                                 </div>
 
@@ -450,7 +450,7 @@ export default function CreateProjectPage() {
                                       <span>Available (0h/wk)</span>
                                     </div>
                                   ) : (
-                                    <span className="text-xs text-gray-400">Set project dates</span>
+                                    <span className="text-xs text-muted-foreground">Set project dates</span>
                                   )}
                                 </div>
                               </div>
@@ -461,7 +461,7 @@ export default function CreateProjectPage() {
                                   <p className="text-xs text-gray-600 mb-1">Current allocations:</p>
                                   <div className="space-y-1">
                                     {Object.entries(availability.projectAllocations).map(([projectTitle, hours]: [string, any]) => (
-                                      <div key={projectTitle} className="text-xs text-gray-500 flex justify-between">
+                                      <div key={projectTitle} className="text-xs text-muted-foreground flex justify-between">
                                         <span className="truncate">{projectTitle}</span>
                                         <span>{hours}h</span>
                                       </div>
@@ -473,14 +473,14 @@ export default function CreateProjectPage() {
                           );
                         })}
                       </div>
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         Click consultants to select them for the project. Availability shows their current workload during the project period.
                       </p>
 
                       {/* Availability Legend */}
                       {startDate && durationInWeeks && (
                         <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                          <p className="text-xs font-medium text-gray-700 mb-2">Availability Legend:</p>
+                          <p className="text-xs font-medium text-card-foreground mb-2">Availability Legend:</p>
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             <div className="flex items-center gap-1">
                               <div className="w-3 h-3 rounded-full bg-green-500"></div>
@@ -506,7 +506,7 @@ export default function CreateProjectPage() {
                     {/* Hour Allocation Section */}
                     {selectedConsultantIds.length > 0 && (
                       <div className="mt-6">
-                        <h3 className="text-md font-medium text-gray-800 mb-3">Initial Hour Allocation</h3>
+                        <h3 className="text-md font-medium text-foreground mb-3">Initial Hour Allocation</h3>
                         <div className="space-y-3">
                           {selectedConsultantIds.map(consultantId => {
                             const consultant = consultants.find(c => c.id === consultantId);
@@ -519,8 +519,8 @@ export default function CreateProjectPage() {
                                     {consultant.name?.charAt(0) || consultant.email?.charAt(0) || 'U'}
                                   </div>
                                   <div>
-                                    <p className="font-medium text-gray-900">{consultant.name}</p>
-                                    <p className="text-xs text-gray-500">{consultant.email}</p>
+                                    <p className="font-medium text-foreground">{consultant.name}</p>
+                                    <p className="text-xs text-muted-foreground">{consultant.email}</p>
                                   </div>
                                 </div>
                                 <div className="flex items-center">
@@ -532,7 +532,7 @@ export default function CreateProjectPage() {
                                     className="w-24 rounded-md border-gray-300 text-sm"
                                     placeholder="0"
                                   />
-                                  <span className="ml-2 text-sm text-gray-500">hours</span>
+                                  <span className="ml-2 text-sm text-muted-foreground">hours</span>
                                 </div>
                               </div>
                             );

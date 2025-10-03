@@ -138,68 +138,68 @@ export default function UserManagement({ initialData }: UserManagementProps) {
     <div className="p-4 md:p-8 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">User Management</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-2">User Management</h1>
         <p className="text-lg text-gray-600">Manage user approvals and permissions</p>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 rounded-xl shadow-sm border border-blue-200 dark:border-blue-800 p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-500 rounded-lg">
+            <div className="p-3 bg-blue-500 dark:bg-blue-600 rounded-lg">
               <FaUsers className="w-6 h-6 text-white" />
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-blue-900">{stats.totalUsers}</p>
-              <p className="text-sm text-blue-600">Total Users</p>
+              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.totalUsers}</p>
+              <p className="text-sm text-blue-600 dark:text-blue-400">Total Users</p>
             </div>
           </div>
-          <div className="text-xs text-blue-700">
+          <div className="text-xs text-blue-700 dark:text-blue-300">
             All approved users in the system
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl shadow-sm border border-orange-200 p-6">
+        <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/20 rounded-xl shadow-sm border border-orange-200 dark:border-orange-800 p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-orange-500 rounded-lg">
+            <div className="p-3 bg-orange-500 dark:bg-orange-600 rounded-lg">
               <FaUserClock className="w-6 h-6 text-white" />
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-orange-900">{stats.pendingApprovals}</p>
-              <p className="text-sm text-orange-600">Pending Approvals</p>
+              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{stats.pendingApprovals}</p>
+              <p className="text-sm text-orange-600 dark:text-orange-400">Pending Approvals</p>
             </div>
           </div>
-          <div className="text-xs text-orange-700">
+          <div className="text-xs text-orange-700 dark:text-orange-300">
             {stats.pendingApprovals > 0 ? 'Awaiting your review' : 'All caught up!'}
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-sm border border-purple-200 p-6">
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/20 rounded-xl shadow-sm border border-purple-200 dark:border-purple-800 p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-purple-500 rounded-lg">
+            <div className="p-3 bg-purple-500 dark:bg-purple-600 rounded-lg">
               <FaUserShield className="w-6 h-6 text-white" />
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-purple-900">{stats.growthTeamMembers}</p>
-              <p className="text-sm text-purple-600">Growth Team</p>
+              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{stats.growthTeamMembers}</p>
+              <p className="text-sm text-purple-600 dark:text-purple-400">Growth Team</p>
             </div>
           </div>
-          <div className="text-xs text-purple-700">
+          <div className="text-xs text-purple-700 dark:text-purple-300">
             Administrative users
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-sm border border-green-200 p-6">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 rounded-xl shadow-sm border border-green-200 dark:border-green-800 p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-green-500 rounded-lg">
+            <div className="p-3 bg-green-500 dark:bg-green-600 rounded-lg">
               <FaUserTie className="w-6 h-6 text-white" />
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-green-900">{stats.consultants}</p>
-              <p className="text-sm text-green-600">Consultants</p>
+              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{stats.consultants}</p>
+              <p className="text-sm text-green-600 dark:text-green-400">Consultants</p>
             </div>
           </div>
-          <div className="text-xs text-green-700">
+          <div className="text-xs text-green-700 dark:text-green-300">
             Active consultants
           </div>
         </div>
@@ -215,7 +215,7 @@ export default function UserManagement({ initialData }: UserManagementProps) {
               className={`px-6 py-4 text-sm font-semibold border-b-2 transition-colors ${
                 activeTab === 'pending'
                   ? 'border-orange-500 text-orange-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  : 'border-transparent text-muted-foreground hover:text-card-foreground'
               }`}
             >
               <div className="flex items-center gap-2">
@@ -233,7 +233,7 @@ export default function UserManagement({ initialData }: UserManagementProps) {
               className={`px-6 py-4 text-sm font-semibold border-b-2 transition-colors ${
                 activeTab === 'all'
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  : 'border-transparent text-muted-foreground hover:text-card-foreground'
               }`}
             >
               <div className="flex items-center gap-2">
@@ -252,7 +252,7 @@ export default function UserManagement({ initialData }: UserManagementProps) {
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Search */}
             <div className="flex-1 relative">
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Search by name or email..."
@@ -266,7 +266,7 @@ export default function UserManagement({ initialData }: UserManagementProps) {
             {activeTab === 'all' && (
               <div className="sm:w-64">
                 <div className="relative">
-                  <FaFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <FaFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
                   <select
                     value={roleFilter}
                     onChange={(e) => setRoleFilter(e.target.value as UserRole | 'ALL')}
@@ -303,7 +303,7 @@ export default function UserManagement({ initialData }: UserManagementProps) {
                         <FaUserClock className="w-6 h-6 text-orange-600" />
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-900">{user.name}</p>
+                        <p className="font-semibold text-foreground">{user.name}</p>
                         <p className="text-sm text-gray-600">{user.email}</p>
                         <p className="text-xs text-orange-600 mt-1">
                           Registered: {new Date(user.createdAt).toLocaleDateString()}
@@ -345,7 +345,7 @@ export default function UserManagement({ initialData }: UserManagementProps) {
               </div>
             ) : (
               <div className="text-center py-12">
-                <FaUserCheck className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <FaUserCheck className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-gray-600">
                   {searchQuery ? 'No pending users match your search' : 'No pending user approvals'}
                 </p>
@@ -358,19 +358,19 @@ export default function UserManagement({ initialData }: UserManagementProps) {
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b-2 border-gray-200">
                     <tr>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-card-foreground uppercase tracking-wider">
                         User
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-card-foreground uppercase tracking-wider">
                         Role
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-card-foreground uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-card-foreground uppercase tracking-wider">
                         Joined
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-card-foreground uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -386,7 +386,7 @@ export default function UserManagement({ initialData }: UserManagementProps) {
                               </span>
                             </div>
                             <div>
-                              <p className="font-semibold text-gray-900">{user.name}</p>
+                              <p className="font-semibold text-foreground">{user.name}</p>
                               <p className="text-sm text-gray-600">{user.email}</p>
                             </div>
                           </div>
@@ -451,7 +451,7 @@ export default function UserManagement({ initialData }: UserManagementProps) {
               </div>
             ) : (
               <div className="text-center py-12">
-                <FaUsers className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <FaUsers className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-gray-600">
                   {searchQuery || roleFilter !== 'ALL'
                     ? 'No users match your filters'
@@ -471,7 +471,7 @@ export default function UserManagement({ initialData }: UserManagementProps) {
               <h3 className="text-xl font-bold">Reject User Registration</h3>
             </div>
             <div className="p-6">
-              <p className="text-gray-700 mb-4">
+              <p className="text-card-foreground mb-4">
                 Are you sure you want to reject the registration for <strong>{selectedUser.name}</strong>?
               </p>
               <p className="text-sm text-gray-600 mb-4">
@@ -483,7 +483,7 @@ export default function UserManagement({ initialData }: UserManagementProps) {
                     setShowRejectModal(false);
                     setSelectedUser(null);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-card-foreground hover:bg-gray-50"
                   disabled={actionLoading === selectedUser.id}
                 >
                   Cancel
@@ -509,7 +509,7 @@ export default function UserManagement({ initialData }: UserManagementProps) {
               <h3 className="text-xl font-bold">Change User Role</h3>
             </div>
             <div className="p-6">
-              <p className="text-gray-700 mb-4">
+              <p className="text-card-foreground mb-4">
                 Change role for <strong>{selectedUser.name}</strong> to:
               </p>
               <div className="mb-4">
@@ -529,7 +529,7 @@ export default function UserManagement({ initialData }: UserManagementProps) {
                     setSelectedUser(null);
                     setSelectedRole(null);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-card-foreground hover:bg-gray-50"
                   disabled={actionLoading === selectedUser.id}
                 >
                   Cancel
@@ -555,7 +555,7 @@ export default function UserManagement({ initialData }: UserManagementProps) {
               <h3 className="text-xl font-bold">Delete User</h3>
             </div>
             <div className="p-6">
-              <p className="text-gray-700 mb-4">
+              <p className="text-card-foreground mb-4">
                 Are you sure you want to delete <strong>{selectedUser.name}</strong>?
               </p>
               <p className="text-sm text-red-600 font-medium mb-4">
@@ -567,7 +567,7 @@ export default function UserManagement({ initialData }: UserManagementProps) {
                     setShowDeleteModal(false);
                     setSelectedUser(null);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-card-foreground hover:bg-gray-50"
                   disabled={actionLoading === selectedUser.id}
                 >
                   Cancel

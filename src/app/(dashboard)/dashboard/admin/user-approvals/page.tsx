@@ -51,7 +51,7 @@ export default function UserApprovalsPage() {
                     <FaArrowLeft /> Back to Dashboard
                 </Link>
             </div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-6">User Sign-Up Approvals</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-6">User Sign-Up Approvals</h1>
             <div className="bg-white rounded-lg shadow-md border">
                 {pendingUsers.length > 0 ? (
                     <ul className="divide-y divide-gray-200">
@@ -59,7 +59,7 @@ export default function UserApprovalsPage() {
                             <li key={user.id} className="p-4 flex justify-between items-center">
                                 <div>
                                     <p className="font-semibold">{user.name}</p>
-                                    <p className="text-sm text-gray-500">{user.email}</p>
+                                    <p className="text-sm text-muted-foreground">{user.email}</p>
                                 </div>
                                 <div className="flex gap-2">
                                     <button onClick={() => handleApproval(user.id, 'APPROVED')} className="px-3 py-1 bg-green-500 text-white rounded-md text-sm hover:bg-green-600">
@@ -71,7 +71,7 @@ export default function UserApprovalsPage() {
                         ))}
                     </ul>
                 ) : (
-                    <p className="p-8 text-center text-gray-500">No pending user approvals.</p>
+                    <p className="p-8 text-center text-muted-foreground">No pending user approvals.</p>
                 )}
             </div>
         </div>

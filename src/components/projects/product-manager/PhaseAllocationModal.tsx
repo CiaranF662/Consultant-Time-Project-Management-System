@@ -154,12 +154,12 @@ export default function PhaseAllocationModal({
         <div className="p-6 border-b">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-xl font-semibold text-gray-800">Manage Phase Allocations</h2>
+              <h2 className="text-xl font-semibold text-foreground">Manage Phase Allocations</h2>
               <p className="text-sm text-gray-600 mt-1">{phase.name}</p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 rounded"
+              className="p-2 text-muted-foreground hover:text-gray-600 rounded"
               disabled={isSubmitting}
             >
               <FaTimes />
@@ -176,14 +176,14 @@ export default function PhaseAllocationModal({
 
           <div className="mb-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-800">Resource Allocations</h3>
+              <h3 className="text-lg font-medium text-foreground">Resource Allocations</h3>
               <div className="text-sm text-gray-600">
                 Total Allocated: <span className="font-semibold">{formatHours(totalAllocated)}</span>
               </div>
             </div>
 
             {allocations.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 <p>No allocations set. Click "Add Allocation" to assign hours to team members.</p>
               </div>
             ) : (
@@ -191,7 +191,7 @@ export default function PhaseAllocationModal({
                 {allocations.map((allocation, index) => (
                   <div key={index} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg">
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-card-foreground mb-1">
                         Consultant
                       </label>
                       <select
@@ -214,7 +214,7 @@ export default function PhaseAllocationModal({
                     </div>
 
                     <div className="w-32">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-card-foreground mb-1">
                         Hours
                       </label>
                       <input
@@ -262,7 +262,7 @@ export default function PhaseAllocationModal({
 
           {/* Summary */}
           <div className="bg-gray-50 p-4 rounded-lg mb-6">
-            <h4 className="text-sm font-medium text-gray-800 mb-2">Allocation Summary</h4>
+            <h4 className="text-sm font-medium text-foreground mb-2">Allocation Summary</h4>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-600">Team Members Assigned:</span>
@@ -274,7 +274,7 @@ export default function PhaseAllocationModal({
               </div>
             </div>
             {projectConsultants.length > allocations.length && (
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-muted-foreground mt-2">
                 {projectConsultants.length - allocations.length} team member(s) not assigned
               </p>
             )}
@@ -285,7 +285,7 @@ export default function PhaseAllocationModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="px-4 py-2 text-sm font-medium text-card-foreground bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               disabled={isSubmitting}
             >
               Cancel

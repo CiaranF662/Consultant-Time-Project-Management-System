@@ -209,19 +209,52 @@ export default function ProjectGanttChart({ project }: ProjectGanttChartProps) {
       {/* Custom styles for better visibility */}
       <style dangerouslySetInnerHTML={{
         __html: `
+          /* Light mode styles */
           .gantt-container .gantt-timeline .gantt-header {
-            background-color: #f9fafb !important;
+            background-color: rgb(249 250 251) !important;
           }
           .gantt-container .gantt-timeline .gantt-header-top {
-            background-color: #f3f4f6 !important;
+            background-color: rgb(243 244 246) !important;
             font-weight: 600 !important;
-            border-bottom: 2px solid #d1d5db !important;
+            border-bottom: 2px solid rgb(209 213 219) !important;
             font-size: ${viewMode === ViewMode.Month ? '14px' : '12px'} !important;
+            color: rgb(17 24 39) !important;
           }
           .gantt-container .gantt-timeline .gantt-header-bottom {
             font-size: ${viewMode === ViewMode.Month ? '13px' : '11px'} !important;
             font-weight: 500 !important;
+            color: rgb(55 65 81) !important;
           }
+          .gantt-wrapper svg {
+            background-color: rgb(255 255 255) !important;
+          }
+          .gantt-wrapper line {
+            stroke: rgb(229 231 235) !important;
+          }
+
+          /* Dark mode styles - using filter inversion */
+          .dark .gantt-container .gantt-timeline .gantt-header {
+            background-color: rgb(31 41 55) !important;
+          }
+          .dark .gantt-container .gantt-timeline .gantt-header-top {
+            background-color: rgb(55 65 81) !important;
+            border-bottom: 2px solid rgb(75 85 99) !important;
+            color: rgb(243 244 246) !important;
+          }
+          .dark .gantt-container .gantt-timeline .gantt-header-bottom {
+            color: rgb(209 213 219) !important;
+          }
+          .dark .gantt-wrapper {
+            background-color: rgb(17 24 39) !important;
+          }
+          /* When inverted, rgb(238 231 216) becomes roughly rgb(17 24 39) */
+          .dark .gantt-wrapper svg {
+            background-color: rgb(238 231 216) !important;
+          }
+          .dark .gantt-wrapper line {
+            stroke: rgb(200 190 174) !important;
+          }
+
           ${viewMode === ViewMode.Month ? `
             .gantt-container .gantt-timeline .gantt-header-top {
               height: 35px !important;
@@ -235,8 +268,8 @@ export default function ProjectGanttChart({ project }: ProjectGanttChartProps) {
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-700">View Mode:</span>
-            <div className="flex bg-gray-50 border border-gray-200 rounded-lg p-1">
+            <span className="text-sm font-medium text-card-foreground">View Mode:</span>
+            <div className="flex bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-1">
               {[
                 { mode: ViewMode.Week, label: 'Week', icon: FaCalendarWeek },
                 { mode: ViewMode.Month, label: 'Month', icon: FaCalendarAlt },
@@ -248,7 +281,7 @@ export default function ProjectGanttChart({ project }: ProjectGanttChartProps) {
                   className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 flex items-center gap-1.5 ${
                     viewMode === mode
                       ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700 hover:text-foreground hover:shadow-sm'
                   }`}
                 >
                   <Icon className="h-3 w-3" />
@@ -259,21 +292,21 @@ export default function ProjectGanttChart({ project }: ProjectGanttChartProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-700">Zoom:</span>
-            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg p-1">
+            <span className="text-sm font-medium text-card-foreground">Zoom:</span>
+            <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-1">
               <button
                 onClick={zoomOut}
                 disabled={zoomLevel <= 0.5}
                 className={`p-2 rounded-md transition-all duration-200 ${
                   zoomLevel <= 0.5
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
+                    ? 'text-muted-foreground cursor-not-allowed'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700 hover:text-foreground hover:shadow-sm'
                 }`}
                 title="Zoom Out"
               >
                 <FaSearchMinus className="h-3 w-3" />
               </button>
-              <span className="text-xs font-medium text-gray-600 min-w-[3rem] text-center">
+              <span className="text-xs font-medium text-gray-600 dark:text-gray-400 min-w-[3rem] text-center">
                 {Math.round(zoomLevel * 100)}%
               </span>
               <button
@@ -281,8 +314,8 @@ export default function ProjectGanttChart({ project }: ProjectGanttChartProps) {
                 disabled={zoomLevel >= 2}
                 className={`p-2 rounded-md transition-all duration-200 ${
                   zoomLevel >= 2
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
+                    ? 'text-muted-foreground cursor-not-allowed'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700 hover:text-foreground hover:shadow-sm'
                 }`}
                 title="Zoom In"
               >
@@ -292,14 +325,14 @@ export default function ProjectGanttChart({ project }: ProjectGanttChartProps) {
           </div>
         </div>
 
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-gray-600 dark:text-gray-400">
           1 project • {project.phases.length} phase{project.phases.length !== 1 ? 's' : ''}
         </div>
       </div>
 
       {/* Gantt Chart */}
       <div
-        className="border border-gray-200 rounded-lg overflow-hidden"
+        className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-900"
         style={{
           height: (project.phases.length + 1) <= 12
             ? `${Math.max((project.phases.length + 1) * 50 + 100, 250)}px`
@@ -309,7 +342,8 @@ export default function ProjectGanttChart({ project }: ProjectGanttChartProps) {
         }}
       >
         {tasks.length > 0 ? (
-          <Gantt
+          <div className="gantt-wrapper h-full dark:[&_svg]:invert dark:[&_svg]:hue-rotate-180">
+            <Gantt
             tasks={tasks}
             viewMode={viewMode}
             columnWidth={getColumnWidth()}
@@ -333,7 +367,7 @@ export default function ProjectGanttChart({ project }: ProjectGanttChartProps) {
             locale="en-US"
             TaskListHeader={() => (
               <div
-                className="font-bold text-gray-900 bg-gray-200 border-r-2 border-gray-400 px-3 py-3 text-center"
+                className="font-bold text-foreground bg-gray-200 dark:bg-gray-700 border-r-2 border-gray-400 dark:border-gray-600 px-3 py-3 text-center"
                 style={{
                   height: viewMode === ViewMode.Month ? '80px' : '50px',
                   display: 'flex',
@@ -345,14 +379,14 @@ export default function ProjectGanttChart({ project }: ProjectGanttChartProps) {
               </div>
             )}
             TaskListTable={({ tasks }) => (
-              <div className="bg-gray-50 border-r-2 border-gray-300">
+              <div className="bg-gray-50 dark:bg-gray-800 border-r-2 border-gray-300 dark:border-gray-600">
                 {tasks.map((task) => (
                   <div
                     key={task.id}
-                    className={`px-4 border-b border-gray-200 text-sm overflow-hidden transition-colors ${
+                    className={`px-4 border-b border-gray-200 dark:border-gray-700 text-sm overflow-hidden transition-colors ${
                       task.type === 'project'
-                        ? 'font-bold text-gray-900 bg-blue-50 border-l-4 border-blue-500'
-                        : 'font-semibold text-gray-800 bg-white hover:bg-gray-50 pl-8'
+                        ? 'font-bold text-foreground bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 dark:border-blue-400'
+                        : 'font-semibold text-foreground bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 pl-8'
                     }`}
                     style={{
                       height: '50px',
@@ -382,45 +416,45 @@ export default function ProjectGanttChart({ project }: ProjectGanttChartProps) {
                 project.phases.reduce((sum, p) => sum + (p.allocations?.reduce((pSum, a) => pSum + a.hours, 0) || 0), 0) : 0;
 
               return (
-                <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 w-80">
-                  <div className="font-bold text-gray-800 mb-3 text-lg truncate" title={task.name}>
+                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 w-80">
+                  <div className="font-bold text-foreground mb-3 text-lg truncate" title={task.name}>
                     {task.name}
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center min-h-[20px]">
-                      <span className="text-sm font-medium text-gray-600">Type:</span>
-                      <span className="text-sm font-semibold text-gray-800">
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Type:</span>
+                      <span className="text-sm font-semibold text-foreground">
                         {isProject ? 'Project Overview' : 'Phase'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center min-h-[20px]">
-                      <span className="text-sm font-medium text-gray-600">Start Date:</span>
-                      <span className="text-sm font-semibold text-gray-800">{formatDate(task.start)}</span>
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Start Date:</span>
+                      <span className="text-sm font-semibold text-foreground">{formatDate(task.start)}</span>
                     </div>
                     <div className="flex justify-between items-center min-h-[20px]">
-                      <span className="text-sm font-medium text-gray-600">End Date:</span>
-                      <span className="text-sm font-semibold text-gray-800">{formatDate(task.end)}</span>
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">End Date:</span>
+                      <span className="text-sm font-semibold text-foreground">{formatDate(task.end)}</span>
                     </div>
                     <div className="flex justify-between items-center min-h-[20px]">
-                      <span className="text-sm font-medium text-gray-600">Duration:</span>
-                      <span className="text-sm font-semibold text-gray-800">{duration} days</span>
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Duration:</span>
+                      <span className="text-sm font-semibold text-foreground">{duration} days</span>
                     </div>
                     <div className="flex justify-between items-center min-h-[20px]">
-                      <span className="text-sm font-medium text-gray-600">Progress:</span>
-                      <span className="text-sm font-semibold text-blue-600">{task.progress}%</span>
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Progress:</span>
+                      <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">{task.progress}%</span>
                     </div>
 
                     {isProject ? (
                       <>
                         <div className="flex justify-between items-center min-h-[20px]">
-                          <span className="text-sm font-medium text-gray-600">Total Phases:</span>
-                          <span className="text-sm font-semibold text-gray-800">
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Phases:</span>
+                          <span className="text-sm font-semibold text-foreground">
                             {project.phases.length} phase{project.phases.length !== 1 ? 's' : ''}
                           </span>
                         </div>
                         <div className="flex justify-between items-center min-h-[20px]">
-                          <span className="text-sm font-medium text-gray-600">Total Budget:</span>
-                          <span className="text-sm font-semibold text-gray-800">
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Budget:</span>
+                          <span className="text-sm font-semibold text-foreground">
                             {totalProjectHours}h allocated across all phases
                           </span>
                         </div>
@@ -428,27 +462,27 @@ export default function ProjectGanttChart({ project }: ProjectGanttChartProps) {
                     ) : phase ? (
                       <>
                         <div className="flex justify-between items-center min-h-[20px]">
-                          <span className="text-sm font-medium text-gray-600">Sprints:</span>
-                          <span className="text-sm font-semibold text-gray-800">
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Sprints:</span>
+                          <span className="text-sm font-semibold text-foreground">
                             {phase.sprints.length} sprint{phase.sprints.length !== 1 ? 's' : ''}
                           </span>
                         </div>
                         <div className="flex justify-between items-center min-h-[20px]">
-                          <span className="text-sm font-medium text-gray-600">Total Hours:</span>
-                          <span className="text-sm font-semibold text-gray-800">
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Hours:</span>
+                          <span className="text-sm font-semibold text-foreground">
                             {totalAllocatedHours}h allocated
                           </span>
                         </div>
                         {allocations.length > 0 && (
-                          <div className="mt-3 pt-3 border-t border-gray-200">
-                            <div className="text-sm font-medium text-gray-600 mb-2">Team Allocations:</div>
+                          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                            <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Team Allocations:</div>
                             <div className="space-y-1 max-h-32 overflow-y-auto">
                               {allocations.map((allocation, index) => (
                                 <div key={index} className="flex justify-between items-center text-xs">
-                                  <span className="text-gray-700 truncate max-w-[200px]" title={allocation.consultantName}>
+                                  <span className="text-card-foreground truncate max-w-[200px]" title={allocation.consultantName}>
                                     {allocation.consultantName}
                                   </span>
-                                  <span className="font-medium text-blue-600 ml-2 flex-shrink-0">
+                                  <span className="font-medium text-blue-600 dark:text-blue-400 ml-2 flex-shrink-0">
                                     {allocation.hours}h
                                   </span>
                                 </div>
@@ -457,8 +491,8 @@ export default function ProjectGanttChart({ project }: ProjectGanttChartProps) {
                           </div>
                         )}
                         {allocations.length === 0 && (
-                          <div className="mt-3 pt-3 border-t border-gray-200">
-                            <div className="text-sm text-gray-500 italic">No team allocations assigned yet</div>
+                          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                            <div className="text-sm text-muted-foreground italic">No team allocations assigned yet</div>
                           </div>
                         )}
                       </>
@@ -468,20 +502,21 @@ export default function ProjectGanttChart({ project }: ProjectGanttChartProps) {
               );
             }}
           />
+          </div>
         ) : (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <div className="text-gray-400 text-lg mb-2">No phases to display</div>
-              <div className="text-gray-500 text-sm">Create phases to see them on the timeline</div>
+              <div className="text-muted-foreground text-lg mb-2">No phases to display</div>
+              <div className="text-muted-foreground text-sm">Create phases to see them on the timeline</div>
             </div>
           </div>
         )}
       </div>
 
       {/* Instructions */}
-      <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-        <div className="text-sm font-medium text-blue-800 mb-1">Project Timeline View:</div>
-        <div className="text-xs text-blue-700">
+      <div className="mt-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+        <div className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1">Project Timeline View:</div>
+        <div className="text-xs text-blue-700 dark:text-blue-400">
           This view shows your project phases as a timeline. Each row represents a phase with its timeline bar. Hover over any phase bar to see detailed information including dates, duration, team allocations, and progress.
         </div>
       </div>

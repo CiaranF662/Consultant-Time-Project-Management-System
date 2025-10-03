@@ -124,7 +124,7 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
           <FaArrowLeft /> Back to Budget Overview
         </Link>
         <div className="text-center py-8">
-          <p className="text-gray-500">No project data found</p>
+          <p className="text-muted-foreground">No project data found</p>
         </div>
       </div>
     );
@@ -140,7 +140,7 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
         >
           <FaArrowLeft /> Back to Budget Overview
         </Link>
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">{data.project.title}</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-2">{data.project.title}</h1>
         <p className="text-lg text-gray-600">Detailed budget breakdown and resource allocation</p>
       </div>
 
@@ -150,7 +150,7 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Budget</p>
-              <p className="text-2xl font-bold text-gray-900">{data.summary.totalBudget}h</p>
+              <p className="text-2xl font-bold text-foreground">{data.summary.totalBudget}h</p>
             </div>
             <FaClock className="h-8 w-8 text-blue-500" />
           </div>
@@ -160,7 +160,7 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Allocated</p>
-              <p className="text-2xl font-bold text-gray-900">{data.summary.totalAllocated}h</p>
+              <p className="text-2xl font-bold text-foreground">{data.summary.totalAllocated}h</p>
             </div>
             <FaUsers className="h-8 w-8 text-green-500" />
           </div>
@@ -195,14 +195,14 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
       <div className="space-y-6">
         {data.phaseBreakdown.length === 0 ? (
           <div className="bg-white rounded-lg shadow-md border p-8 text-center">
-            <p className="text-gray-500">No phases found for this project</p>
+            <p className="text-muted-foreground">No phases found for this project</p>
           </div>
         ) : (
           data.phaseBreakdown.map((phase) => (
             <div key={phase.phaseId} className="bg-white rounded-lg shadow-md border">
               <div className="p-6 border-b bg-gray-50">
                 <div className="flex justify-between items-center">
-                  <h2 className="text-xl font-semibold text-gray-800">{phase.phaseName}</h2>
+                  <h2 className="text-xl font-semibold text-foreground">{phase.phaseName}</h2>
                   <div className="flex items-center gap-6 text-sm text-gray-600">
                     <span>Allocated: <span className="font-medium">{phase.allocated}h</span></span>
                     <span>Planned: <span className="font-medium">{phase.planned}h</span></span>
@@ -211,14 +211,14 @@ export default function ProjectBudgetDetails({ projectId }: ProjectBudgetDetails
               </div>
               
               <div className="p-6">
-                <h3 className="text-lg font-medium text-gray-800 mb-4">Consultant Allocations</h3>
+                <h3 className="text-lg font-medium text-foreground mb-4">Consultant Allocations</h3>
                 {phase.consultants.length === 0 ? (
-                  <p className="text-gray-500">No consultants allocated to this phase</p>
+                  <p className="text-muted-foreground">No consultants allocated to this phase</p>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {phase.consultants.map((consultant) => (
                       <div key={consultant.consultantId} className="bg-gray-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-gray-900 mb-2">{consultant.consultantName}</h4>
+                        <h4 className="font-medium text-foreground mb-2">{consultant.consultantName}</h4>
                         <div className="space-y-1 text-sm text-gray-600">
                           <div className="flex justify-between">
                             <span>Allocated:</span>

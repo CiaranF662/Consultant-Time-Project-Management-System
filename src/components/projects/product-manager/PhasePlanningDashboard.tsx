@@ -82,7 +82,7 @@ export default function PhasePlanningDashboard({ data, userId }: PhasePlanningDa
   if (data.projects.length === 0) {
     return (
       <div className="p-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">Phase Planning</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-4">Phase Planning</h1>
         <div className="bg-gray-50 rounded-lg p-8 text-center">
           <p className="text-gray-600">No projects found where you are assigned as Product Manager.</p>
         </div>
@@ -103,14 +103,14 @@ export default function PhasePlanningDashboard({ data, userId }: PhasePlanningDa
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Phase Planning</h1>
+          <h1 className="text-3xl font-bold text-foreground">Phase Planning</h1>
           <p className="text-lg text-gray-600">Manage project phases and resource allocation</p>
         </div>
       </div>
 
       {/* Project Selection */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-card-foreground mb-2">
           Select Project
         </label>
         <select
@@ -137,7 +137,7 @@ export default function PhasePlanningDashboard({ data, userId }: PhasePlanningDa
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Budget</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatHours(selectedProject.budgetedHours)}</p>
+                  <p className="text-2xl font-bold text-foreground">{formatHours(selectedProject.budgetedHours)}</p>
                 </div>
                 <FaClock className="h-8 w-8 text-blue-500" />
               </div>
@@ -147,7 +147,7 @@ export default function PhasePlanningDashboard({ data, userId }: PhasePlanningDa
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Phases</p>
-                  <p className="text-2xl font-bold text-gray-900">{selectedProject.phases.length}</p>
+                  <p className="text-2xl font-bold text-foreground">{selectedProject.phases.length}</p>
                 </div>
                 <FaCalendarAlt className="h-8 w-8 text-green-500" />
               </div>
@@ -157,7 +157,7 @@ export default function PhasePlanningDashboard({ data, userId }: PhasePlanningDa
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Sprints</p>
-                  <p className="text-2xl font-bold text-gray-900">{selectedProject.sprints.length}</p>
+                  <p className="text-2xl font-bold text-foreground">{selectedProject.sprints.length}</p>
                 </div>
                 <FaCalendarAlt className="h-8 w-8 text-purple-500" />
               </div>
@@ -167,7 +167,7 @@ export default function PhasePlanningDashboard({ data, userId }: PhasePlanningDa
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Team Members</p>
-                  <p className="text-2xl font-bold text-gray-900">{selectedProject.consultants.length}</p>
+                  <p className="text-2xl font-bold text-foreground">{selectedProject.consultants.length}</p>
                 </div>
                 <FaUsers className="h-8 w-8 text-orange-500" />
               </div>
@@ -177,7 +177,7 @@ export default function PhasePlanningDashboard({ data, userId }: PhasePlanningDa
           {/* Phases Section */}
           <div className="bg-white rounded-lg shadow-md border">
             <div className="p-4 border-b flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-800">Project Phases</h2>
+              <h2 className="text-xl font-semibold text-foreground">Project Phases</h2>
               {selectedProject.productManagerId === userId && (
                 <button
                   onClick={() => setShowPhaseCreation(true)}
@@ -192,7 +192,7 @@ export default function PhasePlanningDashboard({ data, userId }: PhasePlanningDa
             <div className="p-4">
               {selectedProject.phases.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">No phases created yet. Click "Add Phase" to get started.</p>
+                  <p className="text-muted-foreground">No phases created yet. Click "Add Phase" to get started.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -203,11 +203,11 @@ export default function PhasePlanningDashboard({ data, userId }: PhasePlanningDa
                       <div key={phase.id} className="border rounded-lg p-4">
                         <div className="flex justify-between items-start mb-4">
                           <div>
-                            <h3 className="text-lg font-semibold text-gray-800">{phase.name}</h3>
+                            <h3 className="text-lg font-semibold text-foreground">{phase.name}</h3>
                             {phase.description && (
                               <p className="text-sm text-gray-600 mt-1">{phase.description}</p>
                             )}
-                            <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                               <span>
                                 {new Date(phase.startDate).toLocaleDateString()} - {new Date(phase.endDate).toLocaleDateString()}
                               </span>
@@ -239,9 +239,9 @@ export default function PhasePlanningDashboard({ data, userId }: PhasePlanningDa
 
                         {/* Phase Allocations */}
                         <div className="border-t pt-4">
-                          <h4 className="text-sm font-medium text-gray-700 mb-2">Resource Allocations</h4>
+                          <h4 className="text-sm font-medium text-card-foreground mb-2">Resource Allocations</h4>
                           {phase.allocations.length === 0 ? (
-                            <p className="text-sm text-gray-500">No allocations set</p>
+                            <p className="text-sm text-muted-foreground">No allocations set</p>
                           ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                               {phase.allocations.map((allocation) => (

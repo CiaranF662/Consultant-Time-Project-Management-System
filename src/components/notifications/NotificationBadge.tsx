@@ -120,7 +120,7 @@ export default function NotificationBadge({ className = '' }: NotificationBadgeP
       <button
         ref={buttonRef}
         onClick={handleToggleDropdown}
-        className="relative p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors border border-gray-300"
+        className="relative p-2 text-gray-600 dark:text-gray-300 hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors border border-gray-300 dark:border-gray-600"
         aria-label="Notifications"
         title="Notifications"
       >

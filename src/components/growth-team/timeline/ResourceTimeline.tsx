@@ -179,18 +179,18 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
   }
 
   return (
-    <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+    <div className="overflow-x-auto max-h-[600px] overflow-y-auto bg-white dark:bg-gray-900">
       <div className={`${weeks >= 32 ? 'min-w-[3600px]' : weeks >= 24 ? 'min-w-[2400px]' : weeks >= 12 ? 'min-w-[1300px]' : 'min-w-[1000px]'} ${weeks >= 32 ? 'pr-4' : ''}`}>
         {/* Header */}
-        <div className="flex border-b bg-gray-50 sticky top-0 z-20 shadow-[0_2px_4px_-1px_rgba(0,0,0,0.1)]">
-          <div className="w-56 md:w-64 p-4 font-semibold text-gray-700 border-r flex-shrink-0 sticky left-0 bg-gray-50 z-30 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.1)]">Consultant</div>
+        <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 sticky top-0 z-20 shadow-[0_2px_4px_-1px_rgba(0,0,0,0.1)]">
+          <div className="w-56 md:w-64 p-4 font-semibold text-card-foreground border-r border-gray-200 dark:border-gray-700 flex-shrink-0 sticky left-0 bg-gray-50 dark:bg-gray-800 z-30 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.1)]">Consultant</div>
           <div className="flex-1 flex">
             {weekHeaders.map((week, index) => (
               <div
                 key={index}
-                className={`flex-1 ${weeks >= 32 ? 'min-w-[100px]' : weeks >= 24 ? 'min-w-[90px]' : 'min-w-[80px]'} p-2 text-center text-xs font-medium border-r ${
-                  week.isCurrent ? 'bg-blue-50 text-blue-700 font-bold' : 
-                  week.isPast ? 'bg-gray-50 text-gray-400' : 'bg-gray-50 text-gray-600'
+                className={`flex-1 ${weeks >= 32 ? 'min-w-[100px]' : weeks >= 24 ? 'min-w-[90px]' : 'min-w-[80px]'} p-2 text-center text-xs font-medium border-r border-gray-200 dark:border-gray-700 ${
+                  week.isCurrent ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-100 font-bold' :
+                  week.isPast ? 'bg-gray-50 dark:bg-gray-800 text-muted-foreground' : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
                 }`}
               >
                 {week.label}
@@ -222,21 +222,21 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
           const consultantData = timelineData.find(td => td.consultantId === consultant.id);
           
           return (
-            <div key={consultant.id} className="flex border-b hover:bg-gray-50">
-              <div 
-                className="w-56 md:w-64 p-4 font-medium text-gray-700 border-r cursor-pointer hover:text-blue-600 flex-shrink-0 sticky left-0 bg-white z-10 hover:bg-gray-50 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.1)]"
+            <div key={consultant.id} className="flex border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
+              <div
+                className="w-56 md:w-64 p-4 font-medium text-card-foreground border-r border-gray-200 dark:border-gray-700 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 flex-shrink-0 sticky left-0 bg-white dark:bg-gray-900 z-10 hover:bg-gray-50 dark:hover:bg-gray-800 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.1)]"
                 onClick={() => onConsultantClick?.(consultant.id)}
               >
                 <div className="flex items-center gap-2">
                   <div className="truncate flex-1">{consultant.name || consultant.email}</div>
                   {consultantData?.isProductManager && (
-                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full whitespace-nowrap">
+                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100 rounded-full whitespace-nowrap">
                       PM
                     </span>
                   )}
                 </div>
                 {consultantData?.isProductManager && consultantData.managedProjects.length > 0 && (
-                  <div className="text-xs text-gray-500 mt-1 truncate">
+                  <div className="text-xs text-muted-foreground mt-1 truncate">
                     Manages {consultantData.managedProjects.length} project{consultantData.managedProjects.length !== 1 ? 's' : ''}
                   </div>
                 )}
@@ -253,16 +253,16 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
                   return (
                     <div key={weekIndex} className={`flex-1 ${weeks >= 32 ? 'min-w-[100px]' : weeks >= 24 ? 'min-w-[90px]' : 'min-w-[80px]'} relative group`}>
                       <div
-                        className={`p-2 text-center border-r transition-all ${bgColor} ${
+                        className={`p-2 text-center border-r border-gray-200 dark:border-gray-700 transition-all ${bgColor} ${
                           hasAllocations ? 'cursor-pointer hover:opacity-80' : 'cursor-default'
-                        } ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
+                        } ${isSelected ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''}`}
                         onClick={() => hasAllocations && handleWeekClick(consultant.id, weekIndex)}
                       >
-                        <div className={`text-sm font-medium ${hasAllocations ? 'hover:text-blue-600' : ''} ${weekHeader.isPast ? 'text-gray-400' : ''}`}>
+                        <div className={`text-sm font-medium ${hasAllocations ? 'hover:text-blue-600 dark:hover:text-blue-400' : ''} ${weekHeader.isPast ? 'text-muted-foreground' : ''}`}>
                           {totalHours > 0 ? formatHours(totalHours) : '-'}
                         </div>
                         {hasAllocations && (
-                          <div className="text-[10px] text-gray-600 mt-0.5">Click for details</div>
+                          <div className="text-[10px] text-gray-600 dark:text-gray-400 mt-0.5">Click for details</div>
                         )}
                       </div>
                       
@@ -297,13 +297,13 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
       {/* Week Details Modal */}
       {selectedWeek && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setSelectedWeek(null)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 text-white p-6">
               <div className="flex justify-between items-start">
                 <div>
                   <h2 className="text-xl font-bold">{selectedWeek.consultantName}</h2>
-                  <p className="text-blue-100">{selectedWeek.weekLabel} Allocation Details</p>
+                  <p className="text-blue-100 dark:text-blue-200">{selectedWeek.weekLabel} Allocation Details</p>
                 </div>
                 <button
                   onClick={() => setSelectedWeek(null)}
@@ -330,49 +330,49 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
             <div className="p-6 overflow-y-auto max-h-[60vh]">
               <div className="space-y-4">
                 {selectedWeek.weekData.allocations.map((alloc: any, index: number) => (
-                  <div key={alloc.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                  <div key={alloc.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <div 
-                            className="w-4 h-4 rounded-full" 
+                          <div
+                            className="w-4 h-4 rounded-full"
                             style={{ backgroundColor: `hsl(${Math.abs(alloc.projectId.split('').reduce((a: number, b: string) => a + b.charCodeAt(0), 0)) % 360}, 70%, 60%)` }}
                           ></div>
-                          <h3 className="font-semibold text-gray-900">{alloc.project}</h3>
+                          <h3 className="font-semibold text-foreground">{alloc.project}</h3>
                           {alloc.isProductManager && (
-                            <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                            <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 rounded-full">
                               You manage this project
                             </span>
                           )}
                         </div>
                         <div className="ml-7">
-                          <p className="text-gray-600 text-sm mb-1">{alloc.phase}</p>
+                          <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">{alloc.phase}</p>
                           {alloc.sprint && (
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">
+                              <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100 rounded-full">
                                 Sprint {alloc.sprint.sprintNumber}
                               </span>
-                              <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                              <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded-full">
                                 Week {alloc.sprint.weekOfSprint} of 2
                               </span>
                             </div>
                           )}
                           {alloc.consultantDescription && (
-                            <div className="mt-2 p-3 bg-gray-50 rounded-md border-l-4 border-blue-200">
-                              <div className="text-xs font-medium text-gray-700 mb-1">Consultant Plan:</div>
-                              <div className="text-sm text-gray-600">{alloc.consultantDescription}</div>
+                            <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-md border-l-4 border-blue-200 dark:border-blue-700">
+                              <div className="text-xs font-medium text-card-foreground mb-1">Consultant Plan:</div>
+                              <div className="text-sm text-gray-600 dark:text-gray-400">{alloc.consultantDescription}</div>
                             </div>
                           )}
                           <div className="flex items-center gap-2 mt-2">
-                            <span className="text-lg font-bold text-blue-600">{formatHours(alloc.hours)}</span>
-                            <span className="text-sm text-gray-500">
+                            <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatHours(alloc.hours)}</span>
+                            <span className="text-sm text-muted-foreground">
                               ({Math.round((alloc.hours / selectedWeek.weekData.totalHours) * 100)}% of week)
                             </span>
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm text-gray-500">Allocation #{index + 1}</div>
+                        <div className="text-sm text-muted-foreground">Allocation #{index + 1}</div>
                       </div>
                     </div>
                   </div>
@@ -380,34 +380,34 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
               </div>
 
               {/* Weekly Summary */}
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Week Summary</h3>
+              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Week Summary</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <div className="text-sm text-blue-600 font-medium">Total Allocation</div>
-                    <div className="text-2xl font-bold text-blue-900">{formatHours(selectedWeek.weekData.totalHours)}</div>
+                  <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
+                    <div className="text-sm text-blue-600 dark:text-blue-300 font-medium">Total Allocation</div>
+                    <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">{formatHours(selectedWeek.weekData.totalHours)}</div>
                   </div>
-                  <div className="bg-green-50 rounded-lg p-4">
-                    <div className="text-sm text-green-600 font-medium">Utilization</div>
-                    <div className="text-2xl font-bold text-green-900">
+                  <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-4">
+                    <div className="text-sm text-green-600 dark:text-green-300 font-medium">Utilization</div>
+                    <div className="text-2xl font-bold text-green-900 dark:text-green-100">
                       {Math.round((selectedWeek.weekData.totalHours / 40) * 100)}%
                     </div>
-                    <div className="text-xs text-green-600">Based on 40h work week</div>
+                    <div className="text-xs text-green-600 dark:text-green-400">Based on 40h work week</div>
                   </div>
                   {(() => {
                     const pmHours = selectedWeek.weekData.allocations.filter((a: any) => a.isProductManager).reduce((sum: number, a: any) => sum + a.hours, 0);
                     const teamHours = selectedWeek.weekData.allocations.filter((a: any) => !a.isProductManager).reduce((sum: number, a: any) => sum + a.hours, 0);
                     return (
                       <>
-                        <div className="bg-yellow-50 rounded-lg p-4">
-                          <div className="text-sm text-yellow-600 font-medium">PM Work</div>
-                          <div className="text-2xl font-bold text-yellow-900">{formatHours(pmHours)}</div>
-                          <div className="text-xs text-yellow-600">Projects you manage</div>
+                        <div className="bg-yellow-50 dark:bg-yellow-900/30 rounded-lg p-4">
+                          <div className="text-sm text-yellow-600 dark:text-yellow-300 font-medium">PM Work</div>
+                          <div className="text-2xl font-bold text-yellow-900 dark:text-yellow-100">{formatHours(pmHours)}</div>
+                          <div className="text-xs text-yellow-600 dark:text-yellow-400">Projects you manage</div>
                         </div>
-                        <div className="bg-purple-50 rounded-lg p-4">
-                          <div className="text-sm text-purple-600 font-medium">Team Work</div>
-                          <div className="text-2xl font-bold text-purple-900">{formatHours(teamHours)}</div>
-                          <div className="text-xs text-purple-600">As team member</div>
+                        <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4">
+                          <div className="text-sm text-purple-600 dark:text-purple-300 font-medium">Team Work</div>
+                          <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">{formatHours(teamHours)}</div>
+                          <div className="text-xs text-purple-600 dark:text-purple-400">As team member</div>
                         </div>
                       </>
                     );
@@ -417,10 +417,10 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-gray-50 px-6 py-4 flex justify-end">
+            <div className="bg-gray-50 dark:bg-gray-800 px-6 py-4 flex justify-end">
               <button
                 onClick={() => setSelectedWeek(null)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                className="px-4 py-2 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
               >
                 Close
               </button>

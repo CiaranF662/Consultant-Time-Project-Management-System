@@ -65,10 +65,10 @@ export default function RegisterPage() {
             <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
               <BarChart3 className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-gray-900">AgilePM</span>
+            <span className="text-2xl font-bold text-foreground">Agility</span>
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create your account</h1>
-          <p className="text-gray-600">Join thousands of teams managing resources efficiently</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Create your account</h1>
+          <p className="text-gray-600 dark:text-gray-300">Join thousands of teams managing resources efficiently</p>
         </div>
 
         {/* Main Card */}
@@ -82,7 +82,7 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Role Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium text-card-foreground mb-3">
                 I am joining as a...
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -106,13 +106,13 @@ export default function RegisterPage() {
                       w-8 h-8 rounded-lg flex items-center justify-center mr-3
                       ${role === UserRole.CONSULTANT ? 'bg-blue-100' : 'bg-gray-100'}
                     `}>
-                      <User className={`w-4 h-4 ${role === UserRole.CONSULTANT ? 'text-blue-600' : 'text-gray-500'}`} />
+                      <User className={`w-4 h-4 ${role === UserRole.CONSULTANT ? 'text-blue-600' : 'text-muted-foreground'}`} />
                     </div>
                     <div>
-                      <div className={`text-sm font-medium ${role === UserRole.CONSULTANT ? 'text-blue-900' : 'text-gray-900'}`}>
+                      <div className={`text-sm font-medium ${role === UserRole.CONSULTANT ? 'text-blue-900' : 'text-foreground'}`}>
                         Consultant
                       </div>
-                      <div className={`text-xs ${role === UserRole.CONSULTANT ? 'text-blue-700' : 'text-gray-500'}`}>
+                      <div className={`text-xs ${role === UserRole.CONSULTANT ? 'text-blue-700' : 'text-muted-foreground'}`}>
                         Execute projects
                       </div>
                     </div>
@@ -139,13 +139,13 @@ export default function RegisterPage() {
                       w-8 h-8 rounded-lg flex items-center justify-center mr-3
                       ${role === UserRole.GROWTH_TEAM ? 'bg-blue-100' : 'bg-gray-100'}
                     `}>
-                      <Users2 className={`w-4 h-4 ${role === UserRole.GROWTH_TEAM ? 'text-blue-600' : 'text-gray-500'}`} />
+                      <Users2 className={`w-4 h-4 ${role === UserRole.GROWTH_TEAM ? 'text-blue-600' : 'text-muted-foreground'}`} />
                     </div>
                     <div>
-                      <div className={`text-sm font-medium ${role === UserRole.GROWTH_TEAM ? 'text-blue-900' : 'text-gray-900'}`}>
+                      <div className={`text-sm font-medium ${role === UserRole.GROWTH_TEAM ? 'text-blue-900' : 'text-foreground'}`}>
                         Growth Team
                       </div>
-                      <div className={`text-xs ${role === UserRole.GROWTH_TEAM ? 'text-blue-700' : 'text-gray-500'}`}>
+                      <div className={`text-xs ${role === UserRole.GROWTH_TEAM ? 'text-blue-700' : 'text-muted-foreground'}`}>
                         Manage resources
                       </div>
                     </div>
@@ -156,7 +156,7 @@ export default function RegisterPage() {
 
             {/* Name Input */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="name" className="block text-sm font-medium text-card-foreground mb-2">
                 Full name
               </label>
               <input
@@ -167,14 +167,14 @@ export default function RegisterPage() {
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors"
+                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors"
                 placeholder="Enter your full name"
               />
             </div>
 
             {/* Email Input */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-card-foreground mb-2">
                 Email address
               </label>
               <input
@@ -185,14 +185,14 @@ export default function RegisterPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors"
+                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors"
                 placeholder="Enter your email"
               />
             </div>
 
             {/* Password Input */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-card-foreground mb-2">
                 Password
               </label>
               <input
@@ -203,15 +203,15 @@ export default function RegisterPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors"
+                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors"
                 placeholder="Create a password"
               />
-              <p className="mt-1 text-xs text-gray-500">Must be at least 6 characters</p>
+              <p className="mt-1 text-xs text-muted-foreground">Must be at least 6 characters</p>
             </div>
 
             {/* Confirm Password Input */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-card-foreground mb-2">
                 Confirm password
               </label>
               <input
@@ -222,7 +222,7 @@ export default function RegisterPage() {
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors"
+                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors"
                 placeholder="Confirm your password"
               />
             </div>
@@ -239,7 +239,7 @@ export default function RegisterPage() {
 
         {/* Sign in link */}
         <div className="text-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
             Already have an account?{' '}
             <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
               Sign in instead

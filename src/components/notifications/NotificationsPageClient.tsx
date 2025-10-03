@@ -237,7 +237,7 @@ export default function NotificationsPageClient({
               <FaBell className="text-white text-xl" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
+              <h1 className="text-3xl font-bold text-foreground">Notifications</h1>
               <p className="text-gray-600">Stay updated with your project activities</p>
             </div>
           </div>
@@ -269,7 +269,7 @@ export default function NotificationsPageClient({
           {/* Search Bar */}
           <div className="relative mb-4">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FaSearch className="h-4 w-4 text-gray-400" />
+              <FaSearch className="h-4 w-4 text-muted-foreground" />
             </div>
             <input
               type="text"
@@ -283,7 +283,7 @@ export default function NotificationsPageClient({
                 onClick={() => setSearchQuery('')}
                 className="absolute inset-y-0 right-0 pr-3 flex items-center"
               >
-                <FaTimes className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                <FaTimes className="h-4 w-4 text-muted-foreground hover:text-gray-600" />
               </button>
             )}
           </div>
@@ -298,7 +298,7 @@ export default function NotificationsPageClient({
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     selectedFilter === 'all'
                       ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      : 'text-gray-600 hover:text-foreground'
                   }`}
                 >
                   All
@@ -308,7 +308,7 @@ export default function NotificationsPageClient({
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors relative ${
                     selectedFilter === 'unread'
                       ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      : 'text-gray-600 hover:text-foreground'
                   }`}
                 >
                   Unread
@@ -326,9 +326,9 @@ export default function NotificationsPageClient({
                   onClick={() => setShowFilters(!showFilters)}
                   className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 focus:ring-2 focus:ring-blue-500"
                 >
-                  <FaFilter className="h-3 w-3 text-gray-500" />
+                  <FaFilter className="h-3 w-3 text-muted-foreground" />
                   <span>{selectedFilter !== 'all' && selectedFilter !== 'unread' ? notificationTypeLabels[selectedFilter as NotificationType] : 'Filter by Type'}</span>
-                  <FaChevronDown className={`h-3 w-3 text-gray-500 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+                  <FaChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${showFilters ? 'rotate-180' : ''}`} />
                 </button>
 
                 {showFilters && (
@@ -443,12 +443,12 @@ export default function NotificationsPageClient({
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="text-center py-16">
             <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FaBell className="text-2xl text-gray-400" />
+              <FaBell className="text-2xl text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            <h3 className="text-xl font-semibold text-foreground mb-2">
               {selectedFilter === 'unread' ? 'All caught up!' : 'No notifications yet'}
             </h3>
-            <p className="text-gray-500 max-w-sm mx-auto">
+            <p className="text-muted-foreground max-w-sm mx-auto">
               {selectedFilter === 'unread'
                 ? "You don't have any unread notifications. Great job staying on top of things!"
                 : searchQuery

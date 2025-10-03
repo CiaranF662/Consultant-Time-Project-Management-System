@@ -432,12 +432,12 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                 <div className="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center">
                   <FaProjectDiagram className="w-4 h-4" />
                 </div>
-                <h2 className="text-lg font-bold text-gray-800">Phase Information</h2>
+                <h2 className="text-lg font-bold text-foreground">Phase Information</h2>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="phaseName" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="phaseName" className="block text-sm font-medium text-card-foreground mb-2">
                     Phase Name *
                   </label>
                   <input
@@ -453,7 +453,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                 </div>
 
                 <div>
-                  <label htmlFor="phaseDescription" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="phaseDescription" className="block text-sm font-medium text-card-foreground mb-2">
                     Description
                   </label>
                   <textarea
@@ -475,7 +475,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                 <div className="w-8 h-8 bg-green-600 text-white rounded-lg flex items-center justify-center">
                   <FaCalendarAlt className="w-4 h-4" />
                 </div>
-                <h2 className="text-lg font-bold text-gray-800">Sprint Assignment</h2>
+                <h2 className="text-lg font-bold text-foreground">Sprint Assignment</h2>
               </div>
 
               <p className="text-sm text-gray-600 mb-4">
@@ -509,14 +509,14 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                         />
                         <label
                           htmlFor={`sprint-${sprint.id}`}
-                          className={`ml-3 flex-1 cursor-pointer ${isAvailable ? 'text-gray-900' : 'text-gray-400'}`}
+                          className={`ml-3 flex-1 cursor-pointer ${isAvailable ? 'text-foreground' : 'text-muted-foreground'}`}
                         >
                           <div className="flex items-center justify-between">
                             <div>
                               <span className="font-medium">Sprint {sprint.sprintNumber}</span>
                               {!isAvailable && <span className="text-red-500 text-sm ml-2">(Past sprint)</span>}
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-muted-foreground">
                               {new Date(sprint.startDate).toLocaleDateString('en-GB')} - {new Date(sprint.endDate).toLocaleDateString('en-GB')}
                             </div>
                           </div>
@@ -548,7 +548,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                 <div className="w-8 h-8 bg-orange-600 text-white rounded-lg flex items-center justify-center">
                   <FaUsers className="w-4 h-4" />
                 </div>
-                <h2 className="text-lg font-bold text-gray-800">Consultant Hour Allocations</h2>
+                <h2 className="text-lg font-bold text-foreground">Consultant Hour Allocations</h2>
                 <span className="text-xs text-gray-600">(Optional)</span>
               </div>
 
@@ -564,20 +564,20 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                     <div className="bg-white rounded-lg p-3 border border-blue-100">
                       <div className="text-lg font-bold text-blue-600">{phaseLimits.totalWeeks}</div>
                       <div className="text-xs text-blue-700">Total Weeks</div>
-                      <div className="text-xs text-gray-500">({phaseLimits.sprintCount} sprints)</div>
+                      <div className="text-xs text-muted-foreground">({phaseLimits.sprintCount} sprints)</div>
                     </div>
 
                     <div className="bg-white rounded-lg p-3 border border-yellow-100">
                       <div className="text-lg font-bold text-yellow-600">{phaseLimits.maxHoursPerConsultant}</div>
                       <div className="text-xs text-yellow-700">Maximum Hours</div>
-                      <div className="text-xs text-gray-500">per consultant</div>
+                      <div className="text-xs text-muted-foreground">per consultant</div>
                     </div>
 
 
                     <div className="bg-white rounded-lg p-3 border border-purple-100">
                       <div className="text-lg font-bold text-purple-600">{getTotalHours()}</div>
                       <div className="text-xs text-purple-700">Currently Allocated</div>
-                      <div className="text-xs text-gray-500">across all consultants</div>
+                      <div className="text-xs text-muted-foreground">across all consultants</div>
                     </div>
                   </div>
 
@@ -600,7 +600,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                       <div className="w-6 h-6 bg-orange-600 text-white rounded-lg flex items-center justify-center">
                         <FaClock className="w-3 h-3" />
                       </div>
-                      <div className="text-sm font-semibold text-gray-800">Phase Hour Allocation</div>
+                      <div className="text-sm font-semibold text-foreground">Phase Hour Allocation</div>
                     </div>
 
                     <div className="space-y-3">
@@ -635,7 +635,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                                 </div>
                                 <div>
                                   <div className="flex items-center gap-2 mb-1">
-                                    <p className="font-semibold text-gray-900">{consultant?.name}</p>
+                                    <p className="font-semibold text-foreground">{consultant?.name}</p>
                                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                                       consultant?.role === 'PRODUCT_MANAGER'
                                         ? 'bg-purple-100 text-purple-800'
@@ -644,22 +644,22 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                                       {consultant?.role === 'PRODUCT_MANAGER' ? 'Product Manager' : 'Team Member'}
                                     </span>
                                   </div>
-                                  <p className="text-sm text-gray-500 mb-2">{consultant?.email}</p>
+                                  <p className="text-sm text-muted-foreground mb-2">{consultant?.email}</p>
 
                                   {/* Project allocation summary */}
                                   <div className="grid grid-cols-2 gap-4 text-xs">
                                     <div>
-                                      <span className="text-gray-500">Project:</span>
+                                      <span className="text-muted-foreground">Project:</span>
                                       <span className="font-semibold text-blue-600 ml-1">{projectAllocated}h</span>
                                     </div>
                                     <div>
-                                      <span className="text-gray-500">Available:</span>
+                                      <span className="text-muted-foreground">Available:</span>
                                       <span className={`font-semibold ml-1 ${availableHours > 0 ? 'text-green-600' : 'text-red-600'}`}>
                                         {availableHours}h
                                       </span>
                                     </div>
                                     <div>
-                                      <span className="text-gray-500">Phase Maximum:</span>
+                                      <span className="text-muted-foreground">Phase Maximum:</span>
                                       <span className="font-semibold text-yellow-600 ml-1">{phaseLimits.maxHoursPerConsultant}h</span>
                                     </div>
                                   </div>
@@ -722,7 +722,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                                 <button
                                   type="button"
                                   onClick={() => removeConsultant(consultantId)}
-                                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200"
+                                  className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200"
                                   title="Remove from phase"
                                   disabled={isLoading}
                                 >
@@ -752,13 +752,13 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                     placeholder="Search and select consultants to allocate hours..."
                     disabled={isLoading}
                   />
-                  <FaSearch className="absolute right-3 top-3 h-3 w-3 text-gray-400" />
+                  <FaSearch className="absolute right-3 top-3 h-3 w-3 text-muted-foreground" />
                 </div>
 
                 {showConsultantDropdown && (
                   <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     {getFilteredConsultants().filter(c => !selectedConsultantIds.includes(c.id)).length === 0 ? (
-                      <div className="px-3 py-2 text-gray-500 text-sm">No available consultants found</div>
+                      <div className="px-3 py-2 text-muted-foreground text-sm">No available consultants found</div>
                     ) : (
                       getFilteredConsultants().filter(c => !selectedConsultantIds.includes(c.id)).map((consultant) => {
                         const projectAllocated = consultant.allocatedHours || 0;
@@ -780,7 +780,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
-                                  <div className="font-medium text-gray-800 text-sm">{consultant.name}</div>
+                                  <div className="font-medium text-foreground text-sm">{consultant.name}</div>
                                   {consultant.role === 'PRODUCT_MANAGER' && (
                                     <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full font-medium">
                                       PM
@@ -790,8 +790,8 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                                 <div className="text-xs text-gray-600">{consultant.email}</div>
                               </div>
                               <div className="text-right">
-                                <div className="text-xs text-gray-500">Available</div>
-                                <div className={`text-sm font-semibold ${availableHours > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                                <div className="text-xs text-muted-foreground">Available</div>
+                                <div className={`text-sm font-semibold ${availableHours > 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
                                   {availableHours}h
                                 </div>
                               </div>
@@ -848,15 +848,15 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center p-3 bg-white rounded-lg border border-gray-200">
-                    <div className="text-2xl font-bold text-gray-700">{summary.count}</div>
+                    <div className="text-2xl font-bold text-card-foreground">{summary.count}</div>
                     <div className="text-sm text-gray-600">Sprints Selected</div>
                   </div>
                   <div className="text-center p-3 bg-white rounded-lg border border-gray-200">
-                    <div className="text-sm font-medium text-gray-700">{summary.startDate.toLocaleDateString('en-GB')}</div>
+                    <div className="text-sm font-medium text-card-foreground">{summary.startDate.toLocaleDateString('en-GB')}</div>
                     <div className="text-sm text-gray-600">Start Date</div>
                   </div>
                   <div className="text-center p-3 bg-white rounded-lg border border-gray-200">
-                    <div className="text-sm font-medium text-gray-700">{summary.endDate.toLocaleDateString('en-GB')}</div>
+                    <div className="text-sm font-medium text-card-foreground">{summary.endDate.toLocaleDateString('en-GB')}</div>
                     <div className="text-sm text-gray-600">End Date</div>
                   </div>
                 </div>
@@ -876,7 +876,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
               <button
                 type="button"
                 onClick={onClose}
-                className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200"
+                className="px-6 py-3 text-sm font-medium text-card-foreground bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200"
                 disabled={isLoading}
               >
                 Cancel

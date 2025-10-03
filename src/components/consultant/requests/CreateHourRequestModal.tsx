@@ -70,7 +70,7 @@ export default function CreateHourRequestModal({
   
   // Get other consultants from the selected project
   const otherConsultants = selectedProject?.project.consultants.filter(
-    consultant => consultant.userId !== userId
+    (consultant: any) => consultant.userId !== userId
   ) || [];
 
   // Reset phase selection when project changes
@@ -191,7 +191,7 @@ export default function CreateHourRequestModal({
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <FaInfoCircle className="text-blue-500" />
-                <label className="text-lg font-semibold text-gray-800">
+                <label className="text-lg font-semibold text-foreground">
                   Request Type
                 </label>
                 <span className="text-red-500">*</span>
@@ -215,10 +215,10 @@ export default function CreateHourRequestModal({
                     <div className={`p-2 rounded-lg ${
                       requestType === 'ADJUSTMENT' ? 'bg-blue-100' : 'bg-gray-100'
                     }`}>
-                      <FaPlus className={requestType === 'ADJUSTMENT' ? 'text-blue-600' : 'text-gray-400'} />
+                      <FaPlus className={requestType === 'ADJUSTMENT' ? 'text-blue-600' : 'text-muted-foreground'} />
                     </div>
                     <div className="flex-1">
-                      <div className="font-medium text-gray-800">Hour Adjustment</div>
+                      <div className="font-medium text-foreground">Hour Adjustment</div>
                       <div className="text-sm text-gray-600 mt-1">
                         Increase or decrease your allocated hours for a specific phase
                       </div>
@@ -248,10 +248,10 @@ export default function CreateHourRequestModal({
                     <div className={`p-2 rounded-lg ${
                       requestType === 'SHIFT' ? 'bg-blue-100' : 'bg-gray-100'
                     }`}>
-                      <FaExchangeAlt className={requestType === 'SHIFT' ? 'text-blue-600' : 'text-gray-400'} />
+                      <FaExchangeAlt className={requestType === 'SHIFT' ? 'text-blue-600' : 'text-muted-foreground'} />
                     </div>
                     <div className="flex-1">
-                      <div className="font-medium text-gray-800">Hour Transfer</div>
+                      <div className="font-medium text-foreground">Hour Transfer</div>
                       <div className="text-sm text-gray-600 mt-1">
                         Transfer some of your hours to another team member
                       </div>
@@ -270,7 +270,7 @@ export default function CreateHourRequestModal({
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <FaInfoCircle className="text-blue-500" />
-                <label className="text-lg font-semibold text-gray-800">
+                <label className="text-lg font-semibold text-foreground">
                   Select Project & Phase
                 </label>
                 <span className="text-red-500">*</span>
@@ -279,7 +279,7 @@ export default function CreateHourRequestModal({
               <div className="grid md:grid-cols-2 gap-4">
                 {/* Project Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-card-foreground mb-2">
                     Project
                   </label>
                   <select
@@ -300,7 +300,7 @@ export default function CreateHourRequestModal({
 
                 {/* Phase Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-card-foreground mb-2">
                     Phase Allocation
                   </label>
                   <select
@@ -331,11 +331,11 @@ export default function CreateHourRequestModal({
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <div>
                       <span className="text-gray-600 block">Project:</span>
-                      <span className="font-medium text-gray-800">{selectedAllocation.phase.project.title}</span>
+                      <span className="font-medium text-foreground">{selectedAllocation.phase.project.title}</span>
                     </div>
                     <div>
                       <span className="text-gray-600 block">Phase:</span>
-                      <span className="font-medium text-gray-800">{selectedAllocation.phase.name}</span>
+                      <span className="font-medium text-foreground">{selectedAllocation.phase.name}</span>
                     </div>
                     <div>
                       <span className="text-gray-600 block">Current Hours:</span>
@@ -346,7 +346,7 @@ export default function CreateHourRequestModal({
                     <div className="mt-3 pt-3 border-t border-blue-200">
                       <span className="text-gray-600 text-sm block mb-1">Team Members:</span>
                       <div className="flex flex-wrap gap-2">
-                        {otherConsultants.map((consultant) => (
+                        {otherConsultants.map((consultant: any) => (
                           <span key={consultant.userId} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
                             {consultant.user.name || consultant.user.email}
                           </span>
@@ -363,7 +363,7 @@ export default function CreateHourRequestModal({
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <FaPlus className="text-green-500" />
-                  <label className="text-lg font-semibold text-gray-800">
+                  <label className="text-lg font-semibold text-foreground">
                     Hour Adjustment
                   </label>
                   <span className="text-red-500">*</span>
@@ -372,7 +372,7 @@ export default function CreateHourRequestModal({
                 <div className="bg-gray-50 p-4 rounded-xl">
                   <div className="flex items-center gap-4">
                     <div className="flex-1">
-                      <label htmlFor="adjustmentHours" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label htmlFor="adjustmentHours" className="block text-sm font-medium text-card-foreground mb-2">
                         Adjustment Amount
                       </label>
                       <input
@@ -386,14 +386,14 @@ export default function CreateHourRequestModal({
                         disabled={isSubmitting}
                         required
                       />
-                      <p className="mt-2 text-xs text-gray-500">
+                      <p className="mt-2 text-xs text-muted-foreground">
                         Use positive numbers to increase hours, negative to decrease
                       </p>
                     </div>
                     
                     {selectedAllocation && adjustmentHours !== 0 && (
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium text-gray-700 mb-2">Preview</div>
+                        <div className="text-sm font-medium text-card-foreground mb-2">Preview</div>
                         <div className="space-y-2">
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-600">Current:</span>
@@ -424,7 +424,7 @@ export default function CreateHourRequestModal({
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <FaExchangeAlt className="text-orange-500" />
-                  <label className="text-lg font-semibold text-gray-800">
+                  <label className="text-lg font-semibold text-foreground">
                     Hour Transfer
                   </label>
                   <span className="text-red-500">*</span>
@@ -432,7 +432,7 @@ export default function CreateHourRequestModal({
                 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="shiftToConsultant" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="shiftToConsultant" className="block text-sm font-medium text-card-foreground mb-2">
                       Transfer To
                     </label>
                     <select
@@ -444,7 +444,7 @@ export default function CreateHourRequestModal({
                       required
                     >
                       <option value="">Select team member...</option>
-                      {otherConsultants.map((consultant) => (
+                      {otherConsultants.map((consultant: any) => (
                         <option key={consultant.userId} value={consultant.userId}>
                           {consultant.user.name || consultant.user.email}
                         </option>
@@ -453,7 +453,7 @@ export default function CreateHourRequestModal({
                   </div>
 
                   <div>
-                    <label htmlFor="shiftHours" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="shiftHours" className="block text-sm font-medium text-card-foreground mb-2">
                       Hours to Transfer
                     </label>
                     <input
@@ -503,7 +503,7 @@ export default function CreateHourRequestModal({
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <FaInfoCircle className="text-blue-500" />
-                <label className="text-lg font-semibold text-gray-800">
+                <label className="text-lg font-semibold text-foreground">
                   Reason for Request
                 </label>
                 <span className="text-red-500">*</span>
@@ -519,7 +519,7 @@ export default function CreateHourRequestModal({
                 disabled={isSubmitting}
                 required
               />
-              <div className="text-right text-xs text-gray-500">
+              <div className="text-right text-xs text-muted-foreground">
                 {reason.length}/500 characters
               </div>
             </div>
@@ -529,7 +529,7 @@ export default function CreateHourRequestModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="px-6 py-3 text-sm font-medium text-card-foreground bg-white border border-gray-300 rounded-xl shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 disabled={isSubmitting}
               >
                 Cancel

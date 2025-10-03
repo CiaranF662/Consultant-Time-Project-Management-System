@@ -262,7 +262,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
       case 'planning':
         return <FaChartPie className="h-5 w-5 text-yellow-500" />;
       default:
-        return <FaClock className="h-5 w-5 text-gray-500" />;
+        return <FaClock className="h-5 w-5 text-muted-foreground" />;
     }
   };
 
@@ -273,8 +273,8 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Consultant Dashboard</h1>
-          <p className="text-lg text-gray-600">
+          <h1 className="text-3xl font-bold text-foreground">Consultant Dashboard</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400">
             {activeView === 'overview'
               ? 'Manage your time allocation across projects and phases'
               : activeView === 'planner'
@@ -286,157 +286,157 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
           </p>
         </div>
         <div className="text-right">
-          <p className="text-sm text-gray-500">Welcome back</p>
-          <p className="text-xl font-semibold text-gray-800">{userName}</p>
+          <p className="text-sm text-muted-foreground">Welcome back</p>
+          <p className="text-xl font-semibold text-foreground">{userName}</p>
         </div>
       </div>
 
       {/* Enhanced Professional Stats Cards - Always Visible */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         {/* Total Allocated Card */}
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 rounded-xl shadow-sm border border-blue-200 dark:border-blue-800 p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-500 rounded-lg">
+            <div className="p-3 bg-blue-500 dark:bg-blue-600 rounded-lg">
               <FaClock className="w-6 h-6 text-white" />
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-blue-900">{formatHours(data.stats.totalAllocatedHours)}</p>
-              <p className="text-sm text-blue-600">Total Allocated</p>
+              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{formatHours(data.stats.totalAllocatedHours)}</p>
+              <p className="text-sm text-blue-600 dark:text-blue-400">Total Allocated</p>
             </div>
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-blue-700">Projects: {enhancedStats.projectsInvolved}</span>
-              <span className="text-blue-600">Phases: {data.stats.activePhases}</span>
+              <span className="text-blue-700 dark:text-blue-300">Projects: {enhancedStats.projectsInvolved}</span>
+              <span className="text-blue-600 dark:text-blue-400">Phases: {data.stats.activePhases}</span>
             </div>
-            <div className="w-full bg-blue-200 rounded-full h-1.5">
+            <div className="w-full bg-blue-200 dark:bg-blue-800/50 rounded-full h-1.5">
               <div
-                className="bg-blue-500 h-1.5 rounded-full transition-all"
+                className="bg-blue-500 dark:bg-blue-400 h-1.5 rounded-full transition-all"
                 style={{ width: `${Math.min((data.stats.totalDistributedHours / Math.max(data.stats.totalAllocatedHours, 1)) * 100, 100)}%` }}
               ></div>
             </div>
-            <p className="text-xs text-blue-700">
+            <p className="text-xs text-blue-700 dark:text-blue-300">
               {Math.round((data.stats.totalDistributedHours / Math.max(data.stats.totalAllocatedHours, 1)) * 100)}% distributed
             </p>
           </div>
         </div>
 
         {/* Active Projects Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-sm border border-green-200 p-6">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 rounded-xl shadow-sm border border-green-200 dark:border-green-800 p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-green-500 rounded-lg">
+            <div className="p-3 bg-green-500 dark:bg-green-600 rounded-lg">
               <FaProjectDiagram className="w-6 h-6 text-white" />
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-green-900">{enhancedStats.projectsInvolved}</p>
-              <p className="text-sm text-green-600">Active Projects</p>
+              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{enhancedStats.projectsInvolved}</p>
+              <p className="text-sm text-green-600 dark:text-green-400">Active Projects</p>
             </div>
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-green-700">Distributed: {formatHours(data.stats.totalDistributedHours)}</span>
-              <span className="text-green-600">This Week: {formatHours(enhancedStats.thisWeekHours)}</span>
+              <span className="text-green-700 dark:text-green-300">Distributed: {formatHours(data.stats.totalDistributedHours)}</span>
+              <span className="text-green-600 dark:text-green-400">This Week: {formatHours(enhancedStats.thisWeekHours)}</span>
             </div>
-            <div className="w-full bg-green-200 rounded-full h-1.5">
+            <div className="w-full bg-green-200 dark:bg-green-800/50 rounded-full h-1.5">
               <div
-                className="bg-green-500 h-1.5 rounded-full transition-all"
+                className="bg-green-500 dark:bg-green-400 h-1.5 rounded-full transition-all"
                 style={{ width: `${Math.min((data.stats.totalDistributedHours / Math.max(data.stats.totalAllocatedHours, 1)) * 100, 100)}%` }}
               ></div>
             </div>
-            <p className="text-xs text-green-700">
+            <p className="text-xs text-green-700 dark:text-green-300">
               {Math.round((data.stats.totalDistributedHours / Math.max(data.stats.totalAllocatedHours, 1)) * 100)}% of hours distributed
             </p>
           </div>
         </div>
 
         {/* Remaining Hours Card */}
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl shadow-sm border border-orange-200 p-6">
+        <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/20 rounded-xl shadow-sm border border-orange-200 dark:border-orange-800 p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-orange-500 rounded-lg">
+            <div className="p-3 bg-orange-500 dark:bg-orange-600 rounded-lg">
               <FaExclamationTriangle className="w-6 h-6 text-white" />
             </div>
             <div className="text-right">
               <p className={`text-2xl font-bold ${
-                data.stats.remainingToDistribute > 0 ? 'text-orange-900' : 'text-green-900'
+                data.stats.remainingToDistribute > 0 ? 'text-orange-900 dark:text-orange-100' : 'text-green-900 dark:text-green-100'
               }`}>
                 {formatHours(data.stats.remainingToDistribute)}
               </p>
-              <p className="text-sm text-orange-600">Remaining</p>
+              <p className="text-sm text-orange-600 dark:text-orange-400">Remaining</p>
             </div>
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-orange-700">Pending: {enhancedStats.pendingPhaseApprovals + enhancedStats.pendingWeeklyApprovals}</span>
-              <span className="text-orange-600">Status: {data.stats.remainingToDistribute === 0 ? 'Complete' : 'Planning'}</span>
+              <span className="text-orange-700 dark:text-orange-300">Pending: {enhancedStats.pendingPhaseApprovals + enhancedStats.pendingWeeklyApprovals}</span>
+              <span className="text-orange-600 dark:text-orange-400">Status: {data.stats.remainingToDistribute === 0 ? 'Complete' : 'Planning'}</span>
             </div>
-            <div className="w-full bg-orange-200 rounded-full h-1.5">
+            <div className="w-full bg-orange-200 dark:bg-orange-800/50 rounded-full h-1.5">
               <div
                 className={`h-1.5 rounded-full transition-all ${
-                  data.stats.remainingToDistribute === 0 ? 'bg-green-500' : 'bg-orange-500'
+                  data.stats.remainingToDistribute === 0 ? 'bg-green-500 dark:bg-green-400' : 'bg-orange-500 dark:bg-orange-400'
                 }`}
                 style={{ width: `${data.stats.remainingToDistribute === 0 ? 100 : 75}%` }}
               ></div>
             </div>
-            <p className="text-xs text-orange-700">
+            <p className="text-xs text-orange-700 dark:text-orange-300">
               {data.stats.remainingToDistribute === 0 ? '✅ All hours allocated' : 'Needs distribution'}
             </p>
           </div>
         </div>
 
         {/* Active Phases Card */}
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-sm border border-purple-200 p-6">
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/20 rounded-xl shadow-sm border border-purple-200 dark:border-purple-800 p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-purple-500 rounded-lg">
+            <div className="p-3 bg-purple-500 dark:bg-purple-600 rounded-lg">
               <FaChartPie className="w-6 h-6 text-white" />
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-purple-900">{data.stats.activePhases}</p>
-              <p className="text-sm text-purple-600">Active Phases</p>
+              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{data.stats.activePhases}</p>
+              <p className="text-sm text-purple-600 dark:text-purple-400">Active Phases</p>
             </div>
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-purple-700">Approved: {data.phaseAllocations.filter(a => a.approvalStatus === 'APPROVED').length}</span>
-              <span className="text-purple-600">Pending: {enhancedStats.pendingPhaseApprovals}</span>
+              <span className="text-purple-700 dark:text-purple-300">Approved: {data.phaseAllocations.filter(a => a.approvalStatus === 'APPROVED').length}</span>
+              <span className="text-purple-600 dark:text-purple-400">Pending: {enhancedStats.pendingPhaseApprovals}</span>
             </div>
-            <div className="w-full bg-purple-200 rounded-full h-1.5">
+            <div className="w-full bg-purple-200 dark:bg-purple-800/50 rounded-full h-1.5">
               <div
-                className="bg-purple-500 h-1.5 rounded-full transition-all"
+                className="bg-purple-500 dark:bg-purple-400 h-1.5 rounded-full transition-all"
                 style={{ width: `${Math.min((data.phaseAllocations.filter(a => a.approvalStatus === 'APPROVED').length / Math.max(data.stats.activePhases, 1)) * 100, 100)}%` }}
               ></div>
             </div>
-            <p className="text-xs text-purple-700">
+            <p className="text-xs text-purple-700 dark:text-purple-300">
               {enhancedStats.rejectedAllocations > 0 ? `⚠️ ${enhancedStats.rejectedAllocations} rejected` : 'All phases on track'}
             </p>
           </div>
         </div>
 
         {/* Notifications Card */}
-        <Link href="/dashboard/notifications" className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl shadow-sm border border-indigo-200 p-6 hover:shadow-md transition-all">
+        <Link href="/dashboard/notifications" className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/30 dark:to-indigo-800/20 rounded-xl shadow-sm border border-indigo-200 dark:border-indigo-800 p-6 hover:shadow-md transition-all">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-indigo-500 rounded-lg">
+            <div className="p-3 bg-indigo-500 dark:bg-indigo-600 rounded-lg">
               <FaBell className="w-6 h-6 text-white" />
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-indigo-900">
+              <p className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">
                 {loadingNotifications ? '...' : unreadNotifications}
               </p>
-              <p className="text-sm text-indigo-600">Notifications</p>
+              <p className="text-sm text-indigo-600 dark:text-indigo-400">Notifications</p>
             </div>
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-indigo-700">Status:</span>
-              <span className="text-indigo-800 font-medium">
+              <span className="text-indigo-700 dark:text-indigo-300">Status:</span>
+              <span className="text-indigo-800 dark:text-indigo-200 font-medium">
                 {loadingNotifications ? 'Loading' : unreadNotifications > 0 ? `${unreadNotifications} unread` : 'All read'}
               </span>
             </div>
             {!loadingNotifications && unreadNotifications > 0 && (
-              <div className="w-full bg-indigo-200 rounded-full h-1.5">
-                <div className="bg-indigo-500 h-1.5 rounded-full w-full animate-pulse"></div>
+              <div className="w-full bg-indigo-200 dark:bg-indigo-800/50 rounded-full h-1.5">
+                <div className="bg-indigo-500 dark:bg-indigo-400 h-1.5 rounded-full w-full animate-pulse"></div>
               </div>
             )}
-            <p className="text-xs text-indigo-700">
+            <p className="text-xs text-indigo-700 dark:text-indigo-300">
               {loadingNotifications ? 'Loading...' : unreadNotifications > 0 ? 'Click to view notifications' : 'All notifications read'}
             </p>
           </div>
@@ -445,7 +445,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
 
       {/* View Switcher */}
       <div className="mb-6">
-        <div className="border-b border-gray-200">
+        <div className="border-b border-gray-200 dark:border-gray-700">
           <nav className="-mb-px flex space-x-8">
             {[
               { key: 'overview', label: 'Overview', icon: FaChartPie },
@@ -458,8 +458,8 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                 onClick={() => setActiveView(key as any)}
                 className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
                   activeView === key
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-muted-foreground hover:text-card-foreground hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
                 <Icon />
@@ -476,8 +476,8 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
 
           {/* Phase Allocations */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 flex flex-col overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 flex flex-col overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 p-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-white/20 rounded-lg">
                     <FaChartPie className="w-6 h-6 text-white" />
@@ -488,14 +488,14 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                   </div>
                 </div>
               </div>
-              <div className="p-4 space-y-4 flex-1 overflow-y-auto" style={{ minHeight: '400px', maxHeight: 'calc(100vh - 400px)' }}>
+              <div className="p-4 space-y-4 flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-800/50" style={{ minHeight: '400px', maxHeight: 'calc(100vh - 400px)' }}>
                 {data.phaseAllocations.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                      <FaChartPie className="w-8 h-8 text-blue-500" />
+                    <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center mb-4">
+                      <FaChartPie className="w-8 h-8 text-blue-500 dark:text-blue-400" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-800 mb-2">No Phase Allocations</h3>
-                    <p className="text-gray-500 text-sm">You haven't been assigned to any project phases yet.</p>
+                    <h3 className="text-lg font-medium text-foreground mb-2">No Phase Allocations</h3>
+                    <p className="text-muted-foreground text-sm">You haven't been assigned to any project phases yet.</p>
                   </div>
                 ) : (
                   data.phaseAllocations.map((allocation) => {
@@ -504,16 +504,16 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
 
                     return (
                       <div key={allocation.id} className={`rounded-xl shadow-sm border-l-4 transition-all hover:shadow-md ${
-                        allocation.approvalStatus === 'APPROVED' ? 'border-l-green-500 bg-gradient-to-r from-green-50 to-white' :
-                        allocation.approvalStatus === 'REJECTED' ? 'border-l-red-500 bg-gradient-to-r from-red-50 to-white' :
-                        'border-l-yellow-500 bg-gradient-to-r from-yellow-50 to-white'
+                        allocation.approvalStatus === 'APPROVED' ? 'border-l-green-500 bg-gradient-to-r from-green-50 to-white dark:from-green-900/20 dark:to-gray-800' :
+                        allocation.approvalStatus === 'REJECTED' ? 'border-l-red-500 bg-gradient-to-r from-red-50 to-white dark:from-red-900/20 dark:to-gray-800' :
+                        'border-l-yellow-500 bg-gradient-to-r from-yellow-50 to-white dark:from-yellow-900/20 dark:to-gray-800'
                       } p-5`}>
                         <div className="flex justify-between items-start mb-3">
                           <div>
-                            <h3 className="font-semibold text-gray-800">{allocation.phase.name}</h3>
-                            <p className="text-sm text-gray-600">{allocation.phase.project.title}</p>
+                            <h3 className="font-semibold text-foreground">{allocation.phase.name}</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{allocation.phase.project.title}</p>
                             {allocation.approvalStatus === 'REJECTED' && allocation.rejectionReason && (
-                              <p className="text-xs text-red-600 mt-1">Rejected: {allocation.rejectionReason}</p>
+                              <p className="text-xs text-red-600 dark:text-red-400 mt-1">Rejected: {allocation.rejectionReason}</p>
                             )}
                           </div>
                           <div className="flex flex-col items-end gap-1">
@@ -525,20 +525,20 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                             {/* Work Progress Status */}
                             <div className="flex items-center gap-2">
                               {getStatusIcon(enhancedPhaseStatus.status)}
-                              <span className="text-xs text-gray-600">{enhancedPhaseStatus.label}</span>
+                              <span className="text-xs text-gray-600 dark:text-gray-400">{enhancedPhaseStatus.label}</span>
                             </div>
                           </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <span className="text-gray-600">Allocated:</span>
-                            <span className="ml-2 font-medium">{formatHours(allocation.totalHours)}</span>
+                            <span className="text-gray-600 dark:text-gray-400">Allocated:</span>
+                            <span className="ml-2 font-medium text-foreground">{formatHours(allocation.totalHours)}</span>
                           </div>
                           <div>
-                            <span className="text-gray-600">Sprints:</span>
-                            <span className="ml-2 font-medium">
-                              {allocation.phase.sprints.length > 0 
+                            <span className="text-gray-600 dark:text-gray-400">Sprints:</span>
+                            <span className="ml-2 font-medium text-foreground">
+                              {allocation.phase.sprints.length > 0
                                 ? `${allocation.phase.sprints[0].sprintNumber}-${allocation.phase.sprints[allocation.phase.sprints.length-1].sprintNumber}`
                                 : 'None'
                               }
@@ -551,18 +551,18 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                           {/* Approval Progress (for approved phases) */}
                           {allocation.approvalStatus === 'APPROVED' && (
                             <div>
-                              <div className="flex justify-between text-xs mb-1">
+                              <div className="flex justify-between text-xs mb-1 text-gray-700 dark:text-gray-300">
                                 <span>Weekly Approval Progress</span>
                                 <span>
                                   {allocation.weeklyAllocations.reduce((sum, week) => sum + (week.approvedHours || 0), 0)} / {allocation.totalHours}h approved
                                 </span>
                               </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                                 <div
                                   className={`h-2 rounded-full ${
-                                    planningStatus.status === 'complete' ? 'bg-green-500' :
-                                    planningStatus.status === 'over' ? 'bg-red-500' :
-                                    planningStatus.status === 'pending_weekly' ? 'bg-blue-500' : 'bg-yellow-500'
+                                    planningStatus.status === 'complete' ? 'bg-green-500 dark:bg-green-400' :
+                                    planningStatus.status === 'over' ? 'bg-red-500 dark:bg-red-400' :
+                                    planningStatus.status === 'pending_weekly' ? 'bg-blue-500 dark:bg-blue-400' : 'bg-yellow-500 dark:bg-yellow-400'
                                   }`}
                                   style={{
                                     width: `${Math.min((allocation.weeklyAllocations.reduce((sum, week) => sum + (week.approvedHours || 0), 0) / allocation.totalHours) * 100, 100)}%`
@@ -570,7 +570,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                                 />
                               </div>
                               {allocation.weeklyAllocations.some(week => week.planningStatus === 'PENDING') && (
-                                <div className="text-xs text-blue-600 mt-1">
+                                <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                                   {allocation.weeklyAllocations.filter(week => week.planningStatus === 'PENDING').length} week(s) pending Growth Team approval
                                 </div>
                               )}
@@ -580,11 +580,11 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                           {/* Work Progress (always show for approved phases) */}
                           {allocation.approvalStatus === 'APPROVED' && (
                             <div>
-                              <div className="flex justify-between text-xs mb-1">
+                              <div className="flex justify-between text-xs mb-1 text-gray-700 dark:text-gray-300">
                                 <span>Work Progress</span>
                                 <span>{enhancedPhaseStatus.details.work.workCompletionPercentage}%</span>
                               </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                                 <div
                                   className={`h-2 rounded-full ${getProgressBarColor(enhancedPhaseStatus.status, enhancedPhaseStatus.details.overall.isOnTrack)}`}
                                   style={{
@@ -593,7 +593,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                                 />
                               </div>
                               {enhancedPhaseStatus.details.work.currentWeekProgress && (
-                                <div className="text-xs text-gray-500 mt-1">
+                                <div className="text-xs text-muted-foreground mt-1">
                                   {enhancedPhaseStatus.details.work.currentWeekProgress.sprintNumber && enhancedPhaseStatus.details.work.currentWeekProgress.sprintWeek ? (
                                     <>Current: {Math.round(enhancedPhaseStatus.details.work.currentWeekProgress.weekProgress * 100)}% through Sprint {enhancedPhaseStatus.details.work.currentWeekProgress.sprintNumber}, Week {enhancedPhaseStatus.details.work.currentWeekProgress.sprintWeek}</>
                                   ) : (
@@ -605,14 +605,14 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                           )}
 
                           {/* Phase Timeline Info */}
-                          <div className="text-xs text-gray-500 flex justify-between">
+                          <div className="text-xs text-muted-foreground flex justify-between">
                             <span>
                               {formatDate(new Date(allocation.phase.startDate))} - {formatDate(new Date(allocation.phase.endDate))}
                             </span>
                             <span className={`font-medium ${
-                              allocation.approvalStatus === 'APPROVED' && enhancedPhaseStatus.details.overall.riskLevel === 'high' ? 'text-red-600' :
-                              allocation.approvalStatus === 'APPROVED' && enhancedPhaseStatus.details.overall.riskLevel === 'medium' ? 'text-yellow-600' :
-                              allocation.approvalStatus === 'APPROVED' ? 'text-green-600' : 'text-gray-600'
+                              allocation.approvalStatus === 'APPROVED' && enhancedPhaseStatus.details.overall.riskLevel === 'high' ? 'text-red-600 dark:text-red-400' :
+                              allocation.approvalStatus === 'APPROVED' && enhancedPhaseStatus.details.overall.riskLevel === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
+                              allocation.approvalStatus === 'APPROVED' ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'
                             }`}>
                               {allocation.approvalStatus === 'APPROVED'
                                 ? `Risk: ${enhancedPhaseStatus.details.overall.riskLevel}`
@@ -624,8 +624,8 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
 
                         {/* Show message for non-approved phases */}
                         {allocation.approvalStatus !== 'APPROVED' && (
-                          <div className="mt-3 p-3 rounded-lg bg-gray-100">
-                            <div className="text-sm text-gray-600">
+                          <div className="mt-3 p-3 rounded-lg bg-gray-100 dark:bg-gray-800">
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
                               {allocation.approvalStatus === 'PENDING'
                                 ? 'This phase allocation is pending Growth Team approval. Weekly planning will be available once approved.'
                                 : 'This phase allocation was rejected and cannot be used for weekly planning.'
@@ -641,8 +641,8 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
             </div>
 
             {/* Upcoming Week Allocations */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 flex flex-col overflow-hidden">
-              <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 flex flex-col overflow-hidden">
+              <div className="bg-gradient-to-r from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 p-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-white/20 rounded-lg">
                     <FaCalendar className="w-6 h-6 text-white" />
@@ -653,52 +653,52 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                   </div>
                 </div>
               </div>
-              <div className="p-4 space-y-3 flex-1 overflow-y-auto" style={{ minHeight: '400px', maxHeight: 'calc(100vh - 400px)' }}>
+              <div className="p-4 space-y-3 flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-800/50" style={{ minHeight: '400px', maxHeight: 'calc(100vh - 400px)' }}>
                 {nextWeekAllocations.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
-                      <FaCalendar className="w-8 h-8 text-purple-500" />
+                    <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center mb-4">
+                      <FaCalendar className="w-8 h-8 text-purple-500 dark:text-purple-400" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-800 mb-2">No Upcoming Work</h3>
-                    <p className="text-gray-500 text-sm">You have no scheduled allocations for the next 7 weeks.</p>
+                    <h3 className="text-lg font-medium text-foreground mb-2">No Upcoming Work</h3>
+                    <p className="text-muted-foreground text-sm">You have no scheduled allocations for the next 7 weeks.</p>
                   </div>
                 ) : (
                   nextWeekAllocations.map((allocation, index) => (
-                    <div key={allocation.id} className="bg-gradient-to-r from-gray-50 to-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all">
+                    <div key={allocation.id} className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-700 rounded-xl shadow-sm border border-gray-100 dark:border-gray-600 p-4 hover:shadow-md transition-all">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white ${
-                            index === 0 ? 'bg-blue-500' :
-                            index === 1 ? 'bg-green-500' :
-                            index === 2 ? 'bg-purple-500' : 'bg-gray-500'
+                            index === 0 ? 'bg-blue-500 dark:bg-blue-600' :
+                            index === 1 ? 'bg-green-500 dark:bg-green-600' :
+                            index === 2 ? 'bg-purple-500 dark:bg-purple-600' : 'bg-gray-500 dark:bg-gray-600'
                           }`}>
                             W{allocation.weekNumber}
                           </div>
                           <div>
-                            <div className="font-semibold text-gray-800">
+                            <div className="font-semibold text-foreground">
                               Week {allocation.weekNumber}, {allocation.year}
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-muted-foreground">
                               {formatDate(new Date(allocation.weekStartDate))} - {formatDate(new Date(allocation.weekEndDate))}
                             </div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-2xl font-bold text-blue-600">
+                          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                             {formatHours(allocation.approvedHours || allocation.proposedHours || 0)}
                           </div>
-                          <div className="text-xs text-gray-500">hours</div>
+                          <div className="text-xs text-muted-foreground">hours</div>
                         </div>
                       </div>
 
-                      <div className="bg-white rounded-lg p-3 border border-gray-100">
+                      <div className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-100 dark:border-gray-700">
                         <div className="flex items-center gap-2 mb-1">
-                          <FaProjectDiagram className="w-4 h-4 text-blue-500" />
-                          <span className="font-medium text-gray-800 text-sm">
+                          <FaProjectDiagram className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                          <span className="font-medium text-foreground text-sm">
                             {allocation.phaseAllocation.phase.project.title}
                           </span>
                         </div>
-                        <div className="text-sm text-gray-600 ml-6">
+                        <div className="text-sm text-gray-600 dark:text-gray-400 ml-6">
                           Phase: {allocation.phaseAllocation.phase.name}
                         </div>
                       </div>

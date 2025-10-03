@@ -537,15 +537,15 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
   return (
     <div className="space-y-6">
         {/* Professional Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 rounded-xl shadow-lg overflow-hidden">
           <div className="p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-lg">
+              <div className="p-2 bg-white/20 dark:bg-white/10 rounded-lg">
                 <FaClock className="w-6 h-6 text-white" />
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">Weekly Hour Planner</h2>
-                <p className="text-blue-100 text-sm">Distribute your allocated hours across weeks</p>
+                <p className="text-blue-100 dark:text-blue-200 text-sm">Distribute your allocated hours across weeks</p>
               </div>
             </div>
           </div>
@@ -574,26 +574,26 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
       
       {/* Description Modal */}
       {showDescriptionModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-8 w-full max-w-lg transform transition-all duration-300 scale-100">
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8 w-full max-w-lg transform transition-all duration-300 scale-100">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700 rounded-xl flex items-center justify-center">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-900">
+                <h3 className="text-xl font-bold text-foreground">
                   Phase Description Required
                 </h3>
-                <p className="text-sm text-gray-500">Define your work plan</p>
+                <p className="text-sm text-muted-foreground">Define your work plan</p>
               </div>
             </div>
-            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
               Please provide a brief description of what you plan to accomplish during this phase. This helps the Growth Team understand your planned work.
             </p>
             <textarea
-              className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-200 text-sm leading-relaxed"
+              className="w-full p-4 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-200 text-sm leading-relaxed bg-white dark:bg-gray-800 text-foreground"
               rows={4}
               placeholder="Describe your planned work for this phase..."
               value={unsavedDescriptions.get(showDescriptionModal) || ''}
@@ -613,7 +613,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                   newUnsaved.delete(showDescriptionModal);
                   setUnsavedDescriptions(newUnsaved);
                 }}
-                className="px-6 py-3 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all duration-200 font-medium"
+                className="px-6 py-3 text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 font-medium"
               >
                 Cancel
               </button>
@@ -622,7 +622,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                   const description = unsavedDescriptions.get(showDescriptionModal) || '';
                   handleDescriptionSave(showDescriptionModal, description);
                 }}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-700 dark:to-purple-700 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 dark:hover:from-blue-800 dark:hover:to-purple-800 transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
               >
                 Save & Continue
               </button>
@@ -633,24 +633,24 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
 
       {/* Enhanced Project Filter - Matching Approvals Dashboard Style */}
       <div className="mb-8">
-        <div className="bg-gradient-to-r from-gray-50 to-white rounded-xl shadow-lg border border-gray-200/60 overflow-hidden">
+        <div className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-lg border border-gray-200/60 dark:border-gray-700/60 overflow-hidden">
           {/* Header Section */}
-          <div className="bg-white border-b border-gray-100 px-6 py-4">
+          <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-blue-500 dark:bg-blue-600 rounded-lg flex items-center justify-center">
                   <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Project Filter</h3>
-                  <p className="text-sm text-gray-500">Focus on specific project allocations</p>
+                  <h3 className="text-lg font-semibold text-foreground">Project Filter</h3>
+                  <p className="text-sm text-muted-foreground">Focus on specific project allocations</p>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedProject('all')}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-card-foreground bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -661,20 +661,20 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
           </div>
 
           {/* Filter Section */}
-          <div className="px-6 py-5 bg-white">
+          <div className="px-6 py-5 bg-white dark:bg-gray-900">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-card-foreground mb-2">
                 Select Project
               </label>
               <div className="relative">
-                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
                 <select
                   id="projectFilter"
                   value={selectedProject}
                   onChange={(e) => setSelectedProject(e.target.value)}
-                  className="w-full pl-10 pr-8 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                  className="w-full pl-10 pr-8 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 appearance-none [&>option]:bg-white [&>option]:dark:bg-gray-800 [&>option]:text-gray-900 [&>option]:dark:text-gray-100"
                 >
                   <option value="all">All Projects</option>
                   {uniqueProjects.map((project) => (
@@ -688,15 +688,15 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
           </div>
 
           {/* Results Summary */}
-          <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-t border-blue-100">
+          <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-t border-blue-100 dark:border-blue-800">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <p className="text-sm font-medium text-gray-700">
-                  <span className="text-blue-600 font-bold">{Object.keys(filteredProjectGroups).length}</span>
-                  <span className="text-gray-500 mx-1">of</span>
+                <div className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full"></div>
+                <p className="text-sm font-medium text-card-foreground">
+                  <span className="text-blue-600 dark:text-blue-400 font-bold">{Object.keys(filteredProjectGroups).length}</span>
+                  <span className="text-muted-foreground mx-1">of</span>
                   <span className="font-bold">{Object.keys(projectGroups).length}</span>
-                  <span className="text-gray-600 ml-1">
+                  <span className="text-gray-600 dark:text-gray-400 ml-1">
                     project{Object.keys(projectGroups).length !== 1 ? 's' : ''} shown
                   </span>
                 </p>
@@ -705,7 +705,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
-                    <span className="text-xs font-medium text-amber-700 uppercase tracking-wide">
+                    <span className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wide">
                       Filtered
                     </span>
                   </div>
@@ -719,31 +719,31 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
       {/* Allocations by Project */}
       <div className="space-y-8">
         {Object.keys(filteredProjectGroups).length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-12 text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-gray-300 to-gray-400 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-6">
               <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Phase Allocations</h3>
-            <p className="text-gray-500 max-w-md mx-auto">
+            <h3 className="text-xl font-semibold text-foreground mb-2">No Phase Allocations</h3>
+            <p className="text-muted-foreground max-w-md mx-auto">
               Contact your Product Manager to assign you to project phases and start planning your weekly hours.
             </p>
           </div>
         ) : (
           Object.values(filteredProjectGroups).map((group: any) => (
-            <div key={group.project.id} className="bg-white border border-gray-200 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+            <div key={group.project.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
               {/* Project Header */}
               <div
-                className="bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 px-8 py-6 border-b border-gray-200 cursor-pointer hover:from-slate-100 hover:via-blue-100 hover:to-indigo-100 transition-all duration-300 group"
+                className="bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-800 dark:via-blue-900/30 dark:to-indigo-900/30 px-8 py-6 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:from-slate-100 hover:via-blue-100 hover:to-indigo-100 dark:hover:from-slate-700 dark:hover:via-blue-900/40 dark:hover:to-indigo-900/40 transition-all duration-300 group"
                 onClick={() => toggleProjectCollapse(group.project.id)}
               >
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center p-2 rounded-xl bg-white shadow-sm group-hover:shadow-md transition-shadow">
+                  <div className="flex items-center p-2 rounded-xl bg-white dark:bg-gray-800 shadow-sm group-hover:shadow-md transition-shadow">
                     {collapsedProjects.has(group.project.id) ? (
-                      <FaChevronRight className="text-gray-600 w-4 h-4" />
+                      <FaChevronRight className="text-gray-600 dark:text-gray-400 w-4 h-4" />
                     ) : (
-                      <FaChevronDown className="text-gray-600 w-4 h-4" />
+                      <FaChevronDown className="text-gray-600 dark:text-gray-400 w-4 h-4" />
                     )}
                   </div>
                   <div
@@ -752,13 +752,13 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-1">
-                      <h3 className="text-2xl font-bold text-gray-900">{group.project.title}</h3>
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                      <h3 className="text-2xl font-bold text-foreground">{group.project.title}</h3>
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700">
                         {group.phases.length} phase{group.phases.length !== 1 ? 's' : ''}
                       </span>
                     </div>
                     {group.project.description && (
-                      <p className="text-gray-600 leading-relaxed">{group.project.description}</p>
+                      <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{group.project.description}</p>
                     )}
                   </div>
                 </div>
@@ -766,20 +766,20 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
 
               {/* Phases within Project */}
               {!collapsedProjects.has(group.project.id) && (
-                <div className="p-8 space-y-8 bg-gradient-to-br from-gray-50/50 to-transparent">
+                <div className="p-8 space-y-8 bg-gradient-to-br from-gray-50/50 to-transparent dark:from-gray-800/30">
                   {group.phases.map((phaseAlloc: any) => {
                   const status = getPhaseAllocationStatus(phaseAlloc);
 
                   return (
-                    <div key={phaseAlloc.id} className="border border-gray-200 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 bg-white">
+                    <div key={phaseAlloc.id} className="border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-900">
                       {/* Phase Header */}
                       <div
                         className={`relative px-6 py-5 cursor-pointer transition-all duration-300 group ${
                           phaseAlloc.approvalStatus === 'PENDING'
-                            ? 'bg-gradient-to-r from-orange-50 to-yellow-50 border-b border-orange-200 hover:from-orange-100 hover:to-yellow-100'
+                            ? 'bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/30 dark:to-yellow-900/30 border-b border-orange-200 dark:border-orange-700 hover:from-orange-100 hover:to-yellow-100 dark:hover:from-orange-900/40 dark:hover:to-yellow-900/40'
                             : phaseAlloc.approvalStatus === 'APPROVED'
-                            ? 'bg-gradient-to-r from-emerald-50 to-green-50 border-b border-emerald-200 hover:from-emerald-100 hover:to-green-100'
-                            : 'bg-gradient-to-r from-gray-50 to-slate-50 border-b border-gray-200 hover:from-gray-100 hover:to-slate-100'
+                            ? 'bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 border-b border-emerald-200 dark:border-emerald-700 hover:from-emerald-100 hover:to-green-100 dark:hover:from-emerald-900/40 dark:hover:to-green-900/40'
+                            : 'bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800 dark:to-slate-800 border-b border-gray-200 dark:border-gray-700 hover:from-gray-100 hover:to-slate-100 dark:hover:from-gray-700 dark:hover:to-slate-700'
                         }`}
                         onClick={() => togglePhaseCollapse(phaseAlloc.id)}
                       >
@@ -808,10 +808,10 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                             </div>
                             <div>
                               <div className="flex items-center gap-3 flex-wrap mb-2">
-                                <h3 className="text-xl font-bold text-gray-900">
+                                <h3 className="text-xl font-bold text-foreground">
                                   {phaseAlloc.phase.name}
                                 </h3>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-700">
                                   <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                   </svg>
@@ -820,19 +820,19 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
 
                                 {/* Phase Allocation Approval Status */}
                                 {phaseAlloc.approvalStatus === 'PENDING' && (
-                                  <span className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-100 to-yellow-100 border border-orange-300 text-orange-800 rounded-full text-xs font-semibold shadow-sm">
-                                    <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse shadow-sm"></span>
+                                  <span className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-100 to-yellow-100 dark:from-orange-900/40 dark:to-yellow-900/40 border border-orange-300 dark:border-orange-700 text-orange-800 dark:text-orange-200 rounded-full text-xs font-semibold shadow-sm">
+                                    <span className="w-2 h-2 bg-orange-500 dark:bg-orange-400 rounded-full animate-pulse shadow-sm"></span>
                                     Allocation Pending
                                   </span>
                                 )}
                                 {phaseAlloc.approvalStatus === 'REJECTED' && (
-                                  <span className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-100 to-rose-100 border border-red-300 text-red-800 rounded-full text-xs font-semibold shadow-sm">
+                                  <span className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-100 to-rose-100 dark:from-red-900/40 dark:to-rose-900/40 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-200 rounded-full text-xs font-semibold shadow-sm">
                                     <FaTimes className="w-3 h-3" />
                                     Allocation Rejected
                                   </span>
                                 )}
                                 {phaseAlloc.approvalStatus === 'APPROVED' && (
-                                  <span className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-100 to-green-100 border border-emerald-300 text-emerald-800 rounded-full text-xs font-semibold shadow-sm">
+                                  <span className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-100 to-green-100 dark:from-emerald-900/40 dark:to-green-900/40 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200 rounded-full text-xs font-semibold shadow-sm">
                                     <FaCheckCircle className="w-3 h-3" />
                                     Allocation Approved
                                   </span>
@@ -914,7 +914,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                               </div>
                               <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
                                 <span className="font-medium">{phaseAlloc.phase.project.title}</span>
-                                <span className="text-gray-400">•</span>
+                                <span className="text-muted-foreground">•</span>
                                 <span className="inline-flex items-center gap-1">
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -923,7 +923,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                                 </span>
                                 {phaseAlloc.phase.sprints.length > 0 && (
                                   <>
-                                    <span className="text-gray-400">•</span>
+                                    <span className="text-muted-foreground">•</span>
                                     <span>
                                       Sprint{phaseAlloc.phase.sprints.length > 1 ? 's' : ''} {
                                         phaseAlloc.phase.sprints
@@ -941,18 +941,18 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                             <div className="bg-white/70 rounded-xl p-4 shadow-sm border border-gray-200">
                               <div className="space-y-2">
                                 <div className="flex justify-between items-center">
-                                  <span className="text-xs font-medium text-gray-500">Allocated</span>
-                                  <span className="text-sm font-bold text-gray-900">{formatHours(status.allocated)}</span>
+                                  <span className="text-xs font-medium text-muted-foreground">Allocated</span>
+                                  <span className="text-sm font-bold text-foreground">{formatHours(status.allocated)}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                  <span className="text-xs font-medium text-gray-500">Distributed</span>
-                                  <span className="text-sm font-bold text-blue-600">{formatHours(status.distributed)}</span>
+                                  <span className="text-xs font-medium text-muted-foreground">Distributed</span>
+                                  <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{formatHours(status.distributed)}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                  <span className="text-xs font-medium text-gray-500">Status</span>
+                                  <span className="text-xs font-medium text-muted-foreground">Status</span>
                                   <span className={`text-sm font-bold ${
-                                    status.remaining === 0 ? 'text-emerald-600' :
-                                    status.remaining < 0 ? 'text-red-600' : 'text-amber-600'
+                                    status.remaining === 0 ? 'text-emerald-600 dark:text-emerald-400' :
+                                    status.remaining < 0 ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'
                                   }`}>
                                     {status.remaining === 0 ? 'Complete' :
                                      status.remaining < 0 ? `+${formatHours(Math.abs(status.remaining))}` :
@@ -967,15 +967,15 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                         {/* Enhanced Progress Bar */}
                         <div className="mt-4">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-medium text-gray-600">Distribution Progress</span>
-                            <span className="text-xs font-bold text-gray-800">{Math.round(status.percentage)}%</span>
+                            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Distribution Progress</span>
+                            <span className="text-xs font-bold text-foreground">{Math.round(status.percentage)}%</span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
+                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 shadow-inner">
                             <div
                               className={`h-3 rounded-full transition-all duration-500 shadow-sm ${
-                                status.percentage > 100 ? 'bg-gradient-to-r from-red-500 to-red-600' :
-                                status.percentage === 100 ? 'bg-gradient-to-r from-emerald-500 to-green-500' :
-                                'bg-gradient-to-r from-blue-500 to-indigo-500'
+                                status.percentage > 100 ? 'bg-gradient-to-r from-red-500 to-red-600 dark:from-red-600 dark:to-red-700' :
+                                status.percentage === 100 ? 'bg-gradient-to-r from-emerald-500 to-green-500 dark:from-emerald-600 dark:to-green-600' :
+                                'bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-600 dark:to-indigo-600'
                               }`}
                               style={{ width: `${Math.min(status.percentage, 100)}%` }}
                             />
@@ -985,15 +985,15 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
 
                       {/* Sprint-based Weekly Allocation */}
                       {!collapsedPhases.has(phaseAlloc.id) && (
-                        <div className="p-6 bg-gradient-to-br from-gray-50/30 to-transparent">
+                        <div className="p-6 bg-gradient-to-br from-gray-50/30 to-transparent dark:from-gray-800/20">
                           {/* Show planning interface only for approved allocations */}
                           {phaseAlloc.approvalStatus === 'APPROVED' ? (
                             <div>
                         {/* Enhanced Phase Description */}
-                        <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 shadow-sm">
+                        <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-6 shadow-sm">
                           <div className="flex items-start gap-4">
                             <div className="flex-shrink-0">
-                              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg">
                                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
@@ -1001,15 +1001,15 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                             </div>
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-3">
-                                <label className="text-lg font-bold text-blue-900">
+                                <label className="text-lg font-bold text-blue-900 dark:text-blue-100">
                                   Phase Description
                                 </label>
-                                <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded-lg">
+                                <span className="text-sm text-blue-600 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded-lg">
                                   What do you plan to accomplish?
                                 </span>
                               </div>
                               <textarea
-                                className="w-full p-4 text-sm border border-blue-200 rounded-xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm transition-all duration-200 shadow-sm"
+                                className="w-full p-4 text-sm border border-blue-200 dark:border-blue-700 rounded-xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm transition-all duration-200 shadow-sm text-foreground"
                                 rows={3}
                                 placeholder="Describe what you plan to accomplish during this phase..."
                                 value={(() => {
@@ -1025,7 +1025,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                                 }}
                               />
                               {unsavedDescriptions.has(phaseAlloc.id) && (
-                                <div className="mt-3 flex items-center gap-2 text-xs text-blue-700 bg-blue-100 px-3 py-2 rounded-lg">
+                                <div className="mt-3 flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/40 px-3 py-2 rounded-lg">
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                   </svg>
@@ -1040,7 +1040,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                           
                           if (sprintWeeks.length === 0) {
                             return (
-                              <p className="text-gray-500 text-center py-4">
+                              <p className="text-muted-foreground text-center py-4">
                                 No sprints assigned to this phase yet.
                               </p>
                             );
@@ -1052,19 +1052,19 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                                 const sprintTotal = getSprintTotal(phaseAlloc.id, sprint);
 
                                 return (
-                                  <div key={sprint.id} className="border border-gray-200 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-white">
+                                  <div key={sprint.id} className="border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-white dark:bg-gray-900">
                                     {/* Enhanced Sprint Header */}
-                                    <div className="bg-gradient-to-r from-slate-50 via-indigo-50 to-blue-50 px-6 py-4 border-b border-gray-200">
+                                    <div className="bg-gradient-to-r from-slate-50 via-indigo-50 to-blue-50 dark:from-slate-800 dark:via-indigo-900/30 dark:to-blue-900/30 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                                       <div className="flex justify-between items-center">
                                         <div className="flex items-center gap-3">
-                                          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                                          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-blue-600 dark:from-indigo-600 dark:to-blue-700 rounded-xl flex items-center justify-center shadow-md">
                                             <span className="text-white font-bold text-sm">{sprint.sprintNumber}</span>
                                           </div>
                                           <div>
-                                            <h5 className="text-lg font-bold text-gray-900">
+                                            <h5 className="text-lg font-bold text-foreground">
                                               Sprint {sprint.sprintNumber}
                                             </h5>
-                                            <p className="text-sm text-gray-600 flex items-center gap-2">
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
                                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                               </svg>
@@ -1073,11 +1073,11 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                                           </div>
                                         </div>
                                         <div className="text-right">
-                                          <div className="bg-white/80 rounded-xl px-4 py-2 shadow-sm border border-indigo-200">
-                                            <div className="text-lg font-bold text-indigo-600">
+                                          <div className="bg-white/80 dark:bg-gray-800/80 rounded-xl px-4 py-2 shadow-sm border border-indigo-200 dark:border-indigo-700">
+                                            <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
                                               {formatHours(sprintTotal)}
                                             </div>
-                                            <div className="text-xs font-medium text-gray-500">
+                                            <div className="text-xs font-medium text-muted-foreground">
                                               total hours
                                             </div>
                                           </div>
@@ -1132,16 +1132,16 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                         
                         {/* Enhanced Informational Message */}
                         {(Array.from(unsavedChanges).some(key => key.startsWith(`${phaseAlloc.id}-`)) || unsavedDescriptions.has(phaseAlloc.id)) && (
-                          <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl shadow-sm">
+                          <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl shadow-sm">
                             <div className="flex items-start gap-4">
-                              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 flex items-center justify-center shadow-lg">
                                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                               </div>
                               <div className="flex-1">
-                                <h4 className="text-lg font-bold text-blue-900 mb-1">Ready to Submit for Approval</h4>
-                                <p className="text-blue-700 leading-relaxed">
+                                <h4 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-1">Ready to Submit for Approval</h4>
+                                <p className="text-blue-700 dark:text-blue-300 leading-relaxed">
                                   Your weekly planning will be submitted to the Growth Team for review. You can make changes until it's approved.
                                 </p>
                               </div>
@@ -1156,11 +1156,11 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                             disabled={saving || (!Array.from(unsavedChanges).some(key => key.startsWith(`${phaseAlloc.id}-`)) && !unsavedDescriptions.has(phaseAlloc.id))}
                             className={`px-8 py-4 text-sm font-bold rounded-2xl flex items-center gap-3 transition-all duration-300 shadow-lg hover:shadow-xl ${
                               (Array.from(unsavedChanges).some(key => key.startsWith(`${phaseAlloc.id}-`)) || unsavedDescriptions.has(phaseAlloc.id)) && !saving
-                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105'
-                                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 text-white hover:from-blue-700 hover:to-indigo-700 dark:hover:from-blue-800 dark:hover:to-indigo-800 transform hover:scale-105'
+                                : 'bg-gray-200 dark:bg-gray-800 text-muted-foreground cursor-not-allowed'
                             }`}
                           >
-                            <div className="p-1 rounded-full bg-white/20">
+                            <div className="p-1 rounded-full bg-white/20 dark:bg-white/10">
                               <FaSave className="w-4 h-4" />
                             </div>
                             {saving ? 'Submitting...' : 'Request Approval'}
@@ -1213,7 +1213,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                                 {/* Show existing planned hours (read-only) */}
                                 {phaseAlloc.weeklyAllocations.length > 0 && (
                                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4">
-                                    <h4 className="text-sm font-medium text-gray-800 mb-3">Your Previous Planning</h4>
+                                    <h4 className="text-sm font-medium text-foreground mb-3">Your Previous Planning</h4>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                       {phaseAlloc.weeklyAllocations.map((weeklyAlloc: any) => {
                                         const weekStart = new Date(weeklyAlloc.weekStartDate);
@@ -1224,7 +1224,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
                                           <div key={weeklyAlloc.id} className="bg-white border border-gray-300 rounded-lg p-3">
                                             <div className="text-xs font-medium text-gray-600 mb-1">{weekLabel}</div>
                                             <div className="text-lg font-semibold text-blue-600">{formatHours(hours)}</div>
-                                            <div className="text-xs text-gray-500">
+                                            <div className="text-xs text-muted-foreground">
                                               {weeklyAlloc.planningStatus === 'APPROVED' ? 'Approved' :
                                                weeklyAlloc.planningStatus === 'PENDING' ? 'Pending' : 'Planned'}
                                             </div>

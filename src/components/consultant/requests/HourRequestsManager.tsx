@@ -76,7 +76,7 @@ export default function HourRequestsManager({ data, userId, userName }: HourRequ
       case 'REJECTED':
         return 'bg-red-100 text-red-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-foreground';
     }
   };
 
@@ -110,7 +110,7 @@ export default function HourRequestsManager({ data, userId, userName }: HourRequ
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Hour Change Requests</h1>
+          <h1 className="text-3xl font-bold text-foreground">Hour Change Requests</h1>
           <p className="text-lg text-gray-600">Manage your allocation change requests</p>
         </div>
         <button
@@ -128,7 +128,7 @@ export default function HourRequestsManager({ data, userId, userName }: HourRequ
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Pending Requests</p>
-              <p className="text-2xl font-bold text-gray-900">{pendingRequests.length}</p>
+              <p className="text-2xl font-bold text-foreground">{pendingRequests.length}</p>
             </div>
             <FaClock className="h-8 w-8 text-yellow-500" />
           </div>
@@ -138,7 +138,7 @@ export default function HourRequestsManager({ data, userId, userName }: HourRequ
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Requests</p>
-              <p className="text-2xl font-bold text-gray-900">{data.requests.length}</p>
+              <p className="text-2xl font-bold text-foreground">{data.requests.length}</p>
             </div>
             <FaExchangeAlt className="h-8 w-8 text-blue-500" />
           </div>
@@ -148,7 +148,7 @@ export default function HourRequestsManager({ data, userId, userName }: HourRequ
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Available Phases</p>
-              <p className="text-2xl font-bold text-gray-900">{data.phaseAllocations.length}</p>
+              <p className="text-2xl font-bold text-foreground">{data.phaseAllocations.length}</p>
             </div>
             <FaClock className="h-8 w-8 text-green-500" />
           </div>
@@ -159,7 +159,7 @@ export default function HourRequestsManager({ data, userId, userName }: HourRequ
       {pendingRequests.length > 0 && (
         <div className="bg-white rounded-lg shadow-md border mb-8">
           <div className="p-4 border-b">
-            <h2 className="text-xl font-semibold text-gray-800">Pending Requests</h2>
+            <h2 className="text-xl font-semibold text-foreground">Pending Requests</h2>
           </div>
           <div className="divide-y">
             {pendingRequests.map((request) => (
@@ -170,13 +170,13 @@ export default function HourRequestsManager({ data, userId, userName }: HourRequ
                       {getChangeTypeIcon(request.changeType)}
                     </div>
                     <div>
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-foreground">
                         {getChangeTypeLabel(request.changeType)}
                       </div>
                       <div className="text-sm text-gray-600">
                         {getChangeDescription(request)}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-muted-foreground mt-1">
                         Created {new Date(request.createdAt).toLocaleDateString()}
                       </div>
                     </div>
@@ -206,12 +206,12 @@ export default function HourRequestsManager({ data, userId, userName }: HourRequ
       {/* All Requests History */}
       <div className="bg-white rounded-lg shadow-md border">
         <div className="p-4 border-b">
-          <h2 className="text-xl font-semibold text-gray-800">Request History</h2>
+          <h2 className="text-xl font-semibold text-foreground">Request History</h2>
         </div>
         
         {data.requests.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-gray-500">No requests yet. Create your first hour change request to get started.</p>
+            <p className="text-muted-foreground">No requests yet. Create your first hour change request to get started.</p>
           </div>
         ) : (
           <div className="divide-y max-h-96 overflow-y-auto">
@@ -225,13 +225,13 @@ export default function HourRequestsManager({ data, userId, userName }: HourRequ
                       {getChangeTypeIcon(request.changeType)}
                     </div>
                     <div>
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-foreground">
                         {getChangeTypeLabel(request.changeType)}
                       </div>
                       <div className="text-sm text-gray-600">
                         {getChangeDescription(request)}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-muted-foreground mt-1">
                         {new Date(request.createdAt).toLocaleDateString()} • 
                         {request.approver && ` Reviewed by ${request.approver.name || request.approver.email}`}
                       </div>

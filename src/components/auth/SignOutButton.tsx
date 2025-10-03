@@ -17,7 +17,7 @@ export default function SignOutButton({ variant = 'default', className = '' }: S
     return (
       <button
         onClick={handleSignOut}
-        className={`p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors ${className}`}
+        className={`p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${className}`}
         title="Sign Out"
       >
         <FaSignOutAlt size={20} />
@@ -29,7 +29,7 @@ export default function SignOutButton({ variant = 'default', className = '' }: S
     return (
       <button
         onClick={handleSignOut}
-        className={`flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 ${className}`}
+        className={`flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-foreground ${className}`}
       >
         <FaSignOutAlt />
         Sign Out

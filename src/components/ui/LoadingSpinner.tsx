@@ -71,7 +71,7 @@ export default function LoadingSpinner({
         <div className="text-center">
           <p className={cn(
             "text-sm font-medium animate-pulse",
-            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'
           )}>
             {message}
           </p>

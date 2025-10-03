@@ -328,8 +328,8 @@ export default function WeeklyPlanApproval({
                 <FaFilter className="w-4 h-4 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Search & Filter</h3>
-                <p className="text-sm text-gray-500">Find specific weekly plans quickly</p>
+                <h3 className="text-lg font-semibold text-foreground">Search & Filter</h3>
+                <p className="text-sm text-muted-foreground">Find specific weekly plans quickly</p>
               </div>
             </div>
             <button
@@ -338,7 +338,7 @@ export default function WeeklyPlanApproval({
                 setWeeklyFilterBy({ consultant: '', project: '', hoursRange: null, timeRange: 'all' });
                 setWeeklySortBy('newest');
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-card-foreground bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
               <FaTimes className="w-3 h-3" />
               Clear All
@@ -351,33 +351,33 @@ export default function WeeklyPlanApproval({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Search Input */}
             <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-card-foreground mb-2">
                 Search Plans
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaSearch className="h-4 w-4 text-gray-400" />
+                  <FaSearch className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <input
                   type="text"
                   placeholder="Search by consultant, project, or phase..."
                   value={weeklySearchTerm}
                   onChange={(e) => setWeeklySearchTerm(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+                  className="block w-full pl-10 pr-3 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                 />
               </div>
             </div>
 
             {/* Sort Dropdown */}
             <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-card-foreground mb-2">
                 Sort By
               </label>
               <div className="relative">
                 <select
                   value={weeklySortBy}
                   onChange={(e) => setWeeklySortBy(e.target.value as any)}
-                  className="w-full pl-3 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                  className="w-full pl-3 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
                 >
                   <option value="newest">Newest First</option>
                   <option value="oldest">Oldest First</option>
@@ -388,9 +388,9 @@ export default function WeeklyPlanApproval({
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                   {weeklySortBy.includes('high') || weeklySortBy === 'newest' ? (
-                    <FaSortAmountDown className="h-3 w-3 text-gray-400" />
+                    <FaSortAmountDown className="h-3 w-3 text-muted-foreground" />
                   ) : (
-                    <FaSortAmountUp className="h-3 w-3 text-gray-400" />
+                    <FaSortAmountUp className="h-3 w-3 text-muted-foreground" />
                   )}
                 </div>
               </div>
@@ -398,13 +398,13 @@ export default function WeeklyPlanApproval({
 
             {/* Time Range Filter */}
             <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-card-foreground mb-2">
                 Time Range
               </label>
               <select
                 value={weeklyFilterBy.timeRange}
                 onChange={(e) => setWeeklyFilterBy(prev => ({ ...prev, timeRange: e.target.value as any }))}
-                className="w-full pl-3 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                className="w-full pl-3 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
               >
                 <option value="all">All Weeks</option>
                 <option value="this-week">This Week</option>
@@ -419,17 +419,17 @@ export default function WeeklyPlanApproval({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Consultant Filter */}
             <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-card-foreground mb-2">
                 Consultant
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaUser className="h-4 w-4 text-gray-400" />
+                  <FaUser className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <select
                   value={weeklyFilterBy.consultant}
                   onChange={(e) => setWeeklyFilterBy(prev => ({ ...prev, consultant: e.target.value }))}
-                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
                 >
                   <option value="">All Consultants</option>
                   {weeklyAvailableConsultants.map(consultant => (
@@ -441,17 +441,17 @@ export default function WeeklyPlanApproval({
 
             {/* Project Filter */}
             <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-card-foreground mb-2">
                 Project
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaCheckCircle className="h-4 w-4 text-gray-400" />
+                  <FaCheckCircle className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <select
                   value={weeklyFilterBy.project}
                   onChange={(e) => setWeeklyFilterBy(prev => ({ ...prev, project: e.target.value }))}
-                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
                 >
                   <option value="">All Projects</option>
                   {weeklyAvailableProjects.map(project => (
@@ -463,7 +463,7 @@ export default function WeeklyPlanApproval({
 
             {/* Hours Range Filter */}
             <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-card-foreground mb-2">
                 Hours Range
               </label>
               <select
@@ -476,7 +476,7 @@ export default function WeeklyPlanApproval({
                     setWeeklyFilterBy(prev => ({ ...prev, hoursRange: { min, max } }));
                   }
                 }}
-                className="w-full pl-3 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                className="w-full pl-3 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
               >
                 <option value="">All Hours</option>
                 <option value="0-10">0-10 hours</option>
@@ -494,7 +494,7 @@ export default function WeeklyPlanApproval({
             <div className="flex items-center gap-4">
               <p className="text-sm text-gray-600">
                 <span className="text-blue-600 font-bold">{getFilteredAndSortedWeeklyAllocations().length}</span>
-                <span className="text-gray-500 mx-1">of</span>
+                <span className="text-muted-foreground mx-1">of</span>
                 <span className="font-bold">{weeklyAllocations.raw.length}</span>
                 <span className="text-gray-600 ml-1">
                   request{weeklyAllocations.raw.length !== 1 ? 's' : ''} shown
@@ -521,7 +521,7 @@ export default function WeeklyPlanApproval({
           <div className="w-full border-t-2 border-gray-200"></div>
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-gray-50 px-6 py-2 text-sm font-medium text-gray-500 rounded-full border border-gray-200">
+          <span className="bg-gray-50 px-6 py-2 text-sm font-medium text-muted-foreground rounded-full border border-gray-200">
             Weekly Plan Requests
           </span>
         </div>
@@ -532,13 +532,13 @@ export default function WeeklyPlanApproval({
           {weeklyAllocations.raw.length === 0 ? (
             <>
               <FaCheck className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900">All caught up!</h3>
+              <h3 className="text-lg font-medium text-foreground">All caught up!</h3>
               <p className="text-gray-600">No weekly plans pending approval.</p>
             </>
           ) : (
             <>
-              <FaSearch className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900">No results found</h3>
+              <FaSearch className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground">No results found</h3>
               <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
             </>
           )}
@@ -588,10 +588,10 @@ export default function WeeklyPlanApproval({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between mb-3">
                             <div>
-                              <p className="text-sm text-gray-900 font-medium">
+                              <p className="text-sm text-foreground font-medium">
                                 <span className="font-bold">{allocation.phaseAllocation.phase.project.title}</span> • {allocation.phaseAllocation.phase.name}
                               </p>
-                              <p className="text-xs text-gray-500 mt-1">
+                              <p className="text-xs text-muted-foreground mt-1">
                                 Week of {formatDate(new Date(allocation.weekStartDate))} - {formatDate(new Date(allocation.weekEndDate))}
                               </p>
                             </div>
@@ -599,7 +599,7 @@ export default function WeeklyPlanApproval({
                               <div className="text-xl font-bold text-blue-600">
                                 {formatHoursForApproval(allocation.proposedHours || 0)}
                               </div>
-                              <div className="text-xs text-gray-500 uppercase tracking-wide mb-2">
+                              <div className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
                                 Hours
                               </div>
 
@@ -671,10 +671,10 @@ export default function WeeklyPlanApproval({
                                       </>
                                     ) : (
                                       <>
-                                        <h5 className="text-xs font-medium text-gray-500 mb-0.5">
+                                        <h5 className="text-xs font-medium text-muted-foreground mb-0.5">
                                           Other work this week: None
                                         </h5>
-                                        <div className="text-xs text-gray-400">
+                                        <div className="text-xs text-muted-foreground">
                                           No other approved allocations for this week
                                         </div>
                                       </>

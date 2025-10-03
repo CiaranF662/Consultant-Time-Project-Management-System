@@ -53,7 +53,7 @@ export default function BudgetOverview() {
 
   if (loading) return <PageLoader message="Loading Budget Overview…" />;
   if (error) return <div className={`p-8 text-red-600 ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>Error: {error}</div>;
-  if (!data) return <div className={`p-8 ${theme === 'dark' ? 'text-gray-400 bg-gray-900' : 'text-gray-500 bg-white'}`}>No budget data available</div>;
+  if (!data) return <div className={`p-8 ${theme === 'dark' ? 'text-muted-foreground bg-gray-900' : 'text-muted-foreground bg-white'}`}>No budget data available</div>;
 
   // 📊 Summary stats
   const totalBudget = data.projects.reduce((sum, p) => sum + p.budgetedHours, 0);
@@ -94,7 +94,7 @@ export default function BudgetOverview() {
   const CustomTooltip = ({ active, payload, label }: any) =>
     active && payload?.length ? (
       <div className="bg-white p-3 border border-gray-200 rounded-lg shadow">
-        <p className="font-semibold text-gray-800">{label}</p>
+        <p className="font-semibold text-foreground">{label}</p>
         {payload.map((entry: any, i: number) => (
           <p key={i} style={{ color: entry.color }}>
             {entry.name}: {entry.value}h
@@ -110,7 +110,7 @@ export default function BudgetOverview() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
               Budget Overview
             </h1>
             <p className={`text-lg ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -125,78 +125,78 @@ export default function BudgetOverview() {
 
         {/* Summary Cards - Enhanced to match system theme */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 rounded-xl shadow-sm border border-blue-200 dark:border-blue-800 p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-blue-500 rounded-lg">
+              <div className="p-3 bg-blue-500 dark:bg-blue-600 rounded-lg">
                 <DollarSign className="w-6 h-6 text-white" />
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-blue-900">{totalBudget}h</p>
-                <p className="text-sm text-blue-600">Total Budget</p>
+                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{totalBudget}h</p>
+                <p className="text-sm text-blue-600 dark:text-blue-400">Total Budget</p>
               </div>
             </div>
-            <div className="w-full bg-blue-200 rounded-full h-1.5">
-              <div className="bg-blue-500 h-1.5 rounded-full w-full"></div>
+            <div className="w-full bg-blue-200 dark:bg-blue-800/50 rounded-full h-1.5">
+              <div className="bg-blue-500 dark:bg-blue-400 h-1.5 rounded-full w-full"></div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-sm border border-green-200 p-6">
+          <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 rounded-xl shadow-sm border border-green-200 dark:border-green-800 p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-green-500 rounded-lg">
+              <div className="p-3 bg-green-500 dark:bg-green-600 rounded-lg">
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-green-900">{totalAllocated}h</p>
-                <p className="text-sm text-green-600">Total Allocated</p>
+                <p className="text-2xl font-bold text-green-900 dark:text-green-100">{totalAllocated}h</p>
+                <p className="text-sm text-green-600 dark:text-green-400">Total Allocated</p>
               </div>
             </div>
-            <div className="w-full bg-green-200 rounded-full h-1.5">
+            <div className="w-full bg-green-200 dark:bg-green-800/50 rounded-full h-1.5">
               <div
-                className="bg-green-500 h-1.5 rounded-full transition-all"
+                className="bg-green-500 dark:bg-green-400 h-1.5 rounded-full transition-all"
                 style={{ width: `${Math.min((totalAllocated / Math.max(totalBudget, 1)) * 100, 100)}%` }}
               ></div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-sm border border-purple-200 p-6">
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/20 rounded-xl shadow-sm border border-purple-200 dark:border-purple-800 p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-purple-500 rounded-lg">
+              <div className="p-3 bg-purple-500 dark:bg-purple-600 rounded-lg">
                 <Activity className="w-6 h-6 text-white" />
               </div>
               <div className="text-right">
                 <p className={`text-2xl font-bold ${
-                  parseFloat(overallUtilization) < 70 ? 'text-red-700' :
-                  parseFloat(overallUtilization) < 90 ? 'text-yellow-700' :
-                  parseFloat(overallUtilization) <= 100 ? 'text-green-700' : 'text-red-700'
+                  parseFloat(overallUtilization) < 70 ? 'text-red-700 dark:text-red-300' :
+                  parseFloat(overallUtilization) < 90 ? 'text-yellow-700 dark:text-yellow-300' :
+                  parseFloat(overallUtilization) <= 100 ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'
                 }`}>
                   {overallUtilization}%
                 </p>
-                <p className="text-sm text-purple-600">Utilization Rate</p>
+                <p className="text-sm text-purple-600 dark:text-purple-400">Utilization Rate</p>
               </div>
             </div>
-            <div className="w-full bg-purple-200 rounded-full h-1.5">
+            <div className="w-full bg-purple-200 dark:bg-purple-800/50 rounded-full h-1.5">
               <div
                 className={`h-1.5 rounded-full transition-all ${
-                  parseFloat(overallUtilization) < 70 ? 'bg-red-500' :
-                  parseFloat(overallUtilization) < 90 ? 'bg-yellow-500' :
-                  parseFloat(overallUtilization) <= 100 ? 'bg-green-500' : 'bg-red-500'
+                  parseFloat(overallUtilization) < 70 ? 'bg-red-500 dark:bg-red-400' :
+                  parseFloat(overallUtilization) < 90 ? 'bg-yellow-500 dark:bg-yellow-400' :
+                  parseFloat(overallUtilization) <= 100 ? 'bg-green-500 dark:bg-green-400' : 'bg-red-500 dark:bg-red-400'
                 }`}
                 style={{ width: `${Math.min(parseFloat(overallUtilization), 100)}%` }}
               ></div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl shadow-sm border border-orange-200 p-6">
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/20 rounded-xl shadow-sm border border-orange-200 dark:border-orange-800 p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-orange-500 rounded-lg">
+              <div className="p-3 bg-orange-500 dark:bg-orange-600 rounded-lg">
                 <FaUsers className="w-6 h-6 text-white" />
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-orange-900">{activeProjects}</p>
-                <p className="text-sm text-orange-600">Active Projects</p>
+                <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{activeProjects}</p>
+                <p className="text-sm text-orange-600 dark:text-orange-400">Active Projects</p>
               </div>
             </div>
-            <div className="text-xs text-orange-700">
+            <div className="text-xs text-orange-700 dark:text-orange-300">
               Tracking {activeProjects} {activeProjects === 1 ? 'project' : 'projects'}
             </div>
           </div>
@@ -207,7 +207,7 @@ export default function BudgetOverview() {
           {/* Budget vs Allocated */}
           <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-xl shadow-sm border border-gray-200 p-6`}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Budget vs Allocated</h3>
+              <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-foreground'}`}>Budget vs Allocated</h3>
               {/* Legend */}
               <div className="flex gap-4 text-sm">
                 <span className="flex items-center gap-1">
@@ -261,14 +261,14 @@ export default function BudgetOverview() {
                 </BarChart>
               </ResponsiveContainer>
               <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
-                <span className="text-xs font-bold text-gray-900 uppercase tracking-wide">PROJECTS</span>
+                <span className="text-xs font-bold text-foreground uppercase tracking-wide">PROJECTS</span>
               </div>
             </div>
           </div>
 
           {/* Pie Chart */}
           <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-xl shadow-sm border border-gray-200 p-6`}>
-            <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Allocation Distribution</h3>
+            <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-foreground'}`}>Allocation Distribution</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie data={utilizationChartData} cx="50%" cy="50%" outerRadius={100} dataKey="value">
@@ -290,7 +290,7 @@ export default function BudgetOverview() {
 
         {/* Trend */}
         <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-xl shadow-sm border border-gray-200 p-6`}>
-          <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Budget Trends Over Time</h3>
+          <h3 className={`text-lg font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-foreground'}`}>Budget Trends Over Time</h3>
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={monthlyTrendData}>
               <defs>
@@ -322,14 +322,14 @@ export default function BudgetOverview() {
           <table className="w-full">
             <thead className={`${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'} border-b-2 border-gray-200`}>
               <tr>
-                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider`}>Project</th>
-                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider`}>Budget</th>
-                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider`}>Allocated</th>
-                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider`}>Planned</th>
-                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider`}>Remaining</th>
-                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider`}>Utilization</th>
-                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider`}>Team</th>
-                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider`}>Actions</th>
+                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'} uppercase tracking-wider`}>Project</th>
+                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'} uppercase tracking-wider`}>Budget</th>
+                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'} uppercase tracking-wider`}>Allocated</th>
+                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'} uppercase tracking-wider`}>Planned</th>
+                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'} uppercase tracking-wider`}>Remaining</th>
+                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'} uppercase tracking-wider`}>Utilization</th>
+                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'} uppercase tracking-wider`}>Team</th>
+                <th className={`py-4 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'} uppercase tracking-wider`}>Actions</th>
               </tr>
             </thead>
             <tbody className={`${theme === 'dark' ? 'divide-gray-700' : 'divide-gray-100'} divide-y`}>
@@ -338,14 +338,14 @@ export default function BudgetOverview() {
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-2">
                       {getStatusIcon(parseFloat(p.utilizationRate))}
-                      <span className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{p.title}</span>
+                      <span className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-foreground'}`}>{p.title}</span>
                     </div>
                   </td>
                   <td className="py-4 px-6">
-                    <span className={`font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>{p.budgetedHours}h</span>
+                    <span className={`font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-foreground'}`}>{p.budgetedHours}h</span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className={`font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>{p.totalAllocated}h</span>
+                    <span className={`font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-foreground'}`}>{p.totalAllocated}h</span>
                     <div className="w-20 bg-gray-200 rounded-full h-1 mt-1">
                       <div
                         className="bg-blue-500 h-1 rounded-full"
@@ -353,7 +353,7 @@ export default function BudgetOverview() {
                       ></div>
                     </div>
                   </td>
-                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>{p.totalPlanned}h</td>
+                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-foreground'}`}>{p.totalPlanned}h</td>
                   <td className={`py-4 px-6 font-bold ${p.remaining >= 0 ? "text-green-600" : "text-red-600"}`}>
                     {p.remaining > 0 ? "+" : ""}{p.remaining}h
                   </td>
@@ -371,7 +371,7 @@ export default function BudgetOverview() {
                       <div className="p-1.5 bg-gray-100 rounded">
                         <FaUsers className="h-3 w-3 text-gray-600" />
                       </div>
-                      <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>{p.teamSize}</span>
+                      <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-foreground'}`}>{p.teamSize}</span>
                     </div>
                   </td>
                   <td className="py-4 px-6">

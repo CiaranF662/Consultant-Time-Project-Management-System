@@ -31,7 +31,7 @@ export default function PageLoader({ message = "Loading..." }: PageLoaderProps) 
           ))}
         </div>
 
-        <p className={`font-medium animate-pulse ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{message}</p>
+        <p className={`font-medium animate-pulse ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'}`}>{message}</p>
       </div>
     </div>
   );

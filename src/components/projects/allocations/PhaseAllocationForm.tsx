@@ -301,7 +301,7 @@ export default function PhaseAllocationForm({
                 <div className="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center">
                   <FaUsers className="w-4 h-4" />
                 </div>
-                <h2 className="text-lg font-bold text-gray-800">Consultant Hour Allocations</h2>
+                <h2 className="text-lg font-bold text-foreground">Consultant Hour Allocations</h2>
               </div>
               
               <p className="text-xs text-gray-600 mb-4">
@@ -349,7 +349,7 @@ export default function PhaseAllocationForm({
                       <div className="w-6 h-6 bg-orange-600 text-white rounded-lg flex items-center justify-center">
                         <FaClock className="w-3 h-3" />
                       </div>
-                      <div className="text-sm font-semibold text-gray-800">Phase Hour Allocation</div>
+                      <div className="text-sm font-semibold text-foreground">Phase Hour Allocation</div>
                     </div>
 
                     <div className="space-y-3">
@@ -416,7 +416,7 @@ export default function PhaseAllocationForm({
                                 </div>
                                 <div>
                                   <div className="flex items-center gap-2 mb-1">
-                                    <p className="font-semibold text-gray-900">{consultant?.name}</p>
+                                    <p className="font-semibold text-foreground">{consultant?.name}</p>
                                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                                       consultant?.role === 'PRODUCT_MANAGER'
                                         ? 'bg-purple-100 text-purple-800'
@@ -437,20 +437,20 @@ export default function PhaseAllocationForm({
                                       </span>
                                     )}
                                   </div>
-                                  <p className="text-sm text-gray-500 mb-2">{consultant?.email}</p>
+                                  <p className="text-sm text-muted-foreground mb-2">{consultant?.email}</p>
 
                                   {/* Project allocation summary */}
                                   <div className="flex items-center gap-4">
                                     <div className="text-xs">
-                                      <span className="text-gray-500">Project:</span>
+                                      <span className="text-muted-foreground">Project:</span>
                                       <span className="font-semibold text-blue-600 ml-1">{projectAllocated}h</span>
                                     </div>
                                     <div className="text-xs">
-                                      <span className="text-gray-500">Allocated:</span>
-                                      <span className="font-semibold text-gray-700 ml-1">{currentAllocatedToPhases}h</span>
+                                      <span className="text-muted-foreground">Allocated:</span>
+                                      <span className="font-semibold text-card-foreground ml-1">{currentAllocatedToPhases}h</span>
                                     </div>
                                     <div className="text-xs">
-                                      <span className="text-gray-500">Available:</span>
+                                      <span className="text-muted-foreground">Available:</span>
                                       <span className={`font-semibold ml-1 ${availableHours > 0 ? 'text-green-600' : 'text-red-600'}`}>
                                         {availableHours}h
                                       </span>
@@ -494,7 +494,7 @@ export default function PhaseAllocationForm({
                                 <button
                                   type="button"
                                   onClick={() => removeConsultant(consultantId)}
-                                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200"
+                                  className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200"
                                   title="Remove from phase"
                                   disabled={isSaving}
                                 >
@@ -524,13 +524,13 @@ export default function PhaseAllocationForm({
                     placeholder="Search and select consultants..."
                     disabled={isSaving}
                   />
-                  <FaSearch className="absolute right-3 top-3 h-3 w-3 text-gray-400" />
+                  <FaSearch className="absolute right-3 top-3 h-3 w-3 text-muted-foreground" />
                 </div>
 
                 {showConsultantDropdown && (
                   <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     {getFilteredConsultants().filter(c => !selectedConsultantIds.includes(c.id)).length === 0 ? (
-                      <div className="px-3 py-2 text-gray-500 text-sm">No available consultants found</div>
+                      <div className="px-3 py-2 text-muted-foreground text-sm">No available consultants found</div>
                     ) : (
                       getFilteredConsultants().filter(c => !selectedConsultantIds.includes(c.id)).map((consultant) => {
                         const projectAllocated = consultant.allocatedHours || 0;
@@ -552,7 +552,7 @@ export default function PhaseAllocationForm({
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
-                                  <div className="font-medium text-gray-800 text-sm">{consultant.name}</div>
+                                  <div className="font-medium text-foreground text-sm">{consultant.name}</div>
                                   {consultant.role === 'PRODUCT_MANAGER' && (
                                     <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full font-medium">
                                       PM
@@ -562,8 +562,8 @@ export default function PhaseAllocationForm({
                                 <div className="text-xs text-gray-600">{consultant.email}</div>
                               </div>
                               <div className="text-right">
-                                <div className="text-xs text-gray-500">Available</div>
-                                <div className={`text-sm font-semibold ${availableHours > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                                <div className="text-xs text-muted-foreground">Available</div>
+                                <div className={`text-sm font-semibold ${availableHours > 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
                                   {availableHours}h
                                 </div>
                               </div>
@@ -610,7 +610,7 @@ export default function PhaseAllocationForm({
           <button
             type="button"
             onClick={onClose}
-            className="py-2 px-4 border-2 border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition-all duration-200"
+            className="py-2 px-4 border-2 border-gray-300 rounded-lg text-sm font-medium text-card-foreground hover:bg-gray-100 hover:border-gray-400 transition-all duration-200"
             disabled={isSaving}
           >
             Cancel

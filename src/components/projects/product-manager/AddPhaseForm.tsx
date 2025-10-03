@@ -48,26 +48,26 @@ export default function AddPhaseForm({ projectId, isOpen, onClose }: AddPhaseFor
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center p-4">
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg z-50 p-6 relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+        <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-gray-600">
           <FaTimes size={20} />
         </button>
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Add New Phase</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-4">Add New Phase</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="phase-name" className="block text-sm font-medium text-gray-700">Phase Name</label>
+              <label htmlFor="phase-name" className="block text-sm font-medium text-card-foreground">Phase Name</label>
               <input id="phase-name" type="text" value={name} onChange={(e) => setName(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required placeholder="e.g., Phase 1: Discovery"/>
             </div>
             <div>
-              <label htmlFor="phase-description" className="block text-sm font-medium text-gray-700">Description</label>
+              <label htmlFor="phase-description" className="block text-sm font-medium text-card-foreground">Description</label>
               <textarea id="phase-description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="What is the goal of this phase?"/>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="phase-startDate" className="block text-sm font-medium text-gray-700">Start Date</label>
+                <label htmlFor="phase-startDate" className="block text-sm font-medium text-card-foreground">Start Date</label>
                 <input id="phase-startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required/>
               </div>
               <div>
-                <label htmlFor="phase-endDate" className="block text-sm font-medium text-gray-700">End Date</label>
+                <label htmlFor="phase-endDate" className="block text-sm font-medium text-card-foreground">End Date</label>
                 <input id="phase-endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required/>
               </div>
             </div>

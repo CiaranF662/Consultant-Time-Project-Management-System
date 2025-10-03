@@ -8,4 +8,9 @@ export const prisma = globalForPrisma.prisma || new PrismaClient({
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
+// Ensure connection on initialization
+prisma.$connect().catch((err) => {
+  console.error('Failed to connect to database:', err);
+});
+
 export default prisma;

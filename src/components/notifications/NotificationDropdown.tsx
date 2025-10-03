@@ -216,8 +216,8 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
       <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <FaBell className="text-gray-600" />
-            <h3 className="font-semibold text-gray-800">Notifications</h3>
+            <FaBell className="text-gray-600 dark:text-gray-300" />
+            <h3 className="font-semibold text-foreground">Notifications</h3>
             {unreadCount > 0 && (
               <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
                 {unreadCount}
@@ -240,17 +240,17 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
       <div className="max-h-96 overflow-y-auto">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <FaSpinner className="animate-spin text-gray-400" />
+            <FaSpinner className="animate-spin text-muted-foreground" />
           </div>
         ) : notifications.length === 0 ? (
           <div className="text-center py-8">
-            <FaBell className="mx-auto text-2xl text-gray-300 mb-2" />
-            <p className="text-sm text-gray-500">No notifications yet</p>
+            <FaBell className="mx-auto text-2xl text-gray-300 dark:text-gray-600 mb-2" />
+            <p className="text-sm text-muted-foreground">No notifications yet</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
             {notifications.map((notification) => {
-              const config = notificationTypeConfig[notification.type] || { icon: '📋', color: 'text-gray-600' };
+              const config = notificationTypeConfig[notification.type] || { icon: '📋', color: 'text-gray-600 dark:text-gray-300' };
               const actionUrl = getRoleAwareActionUrl(notification);
               
               const content = (
@@ -268,14 +268,14 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium ${!notification.isRead ? 'text-gray-900' : 'text-gray-700'}`}>
+                      <p className={`text-sm font-medium ${!notification.isRead ? 'text-foreground' : 'text-card-foreground'}`}>
                         {notification.title}
                       </p>
-                      <p className={`text-xs mt-1 line-clamp-2 ${!notification.isRead ? 'text-gray-700' : 'text-gray-500'}`}>
+                      <p className={`text-xs mt-1 line-clamp-2 ${!notification.isRead ? 'text-card-foreground' : 'text-muted-foreground'}`}>
                         {notification.message}
                       </p>
                       <div className="flex items-center justify-between mt-2">
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted-foreground">
                           {formatTimeAgo(notification.createdAt)}
                         </span>
                         
@@ -293,7 +293,7 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
                       
                       <button
                         onClick={(e) => handleMarkAsRead(notification.id, e)}
-                        className="ml-2 p-1 opacity-0 group-hover:opacity-100 hover:bg-gray-200 rounded text-gray-500 hover:text-gray-700"
+                        className="ml-2 p-1 opacity-0 group-hover:opacity-100 hover:bg-gray-200 rounded text-muted-foreground hover:text-card-foreground"
                         title="Mark as read"
                       >
                         <FaCheck className="text-xs" />

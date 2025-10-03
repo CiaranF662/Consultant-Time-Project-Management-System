@@ -125,7 +125,7 @@ export default function RejectionReasonModal({
           </div>
 
           <div>
-            <label htmlFor="rejection-reason" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="rejection-reason" className="block text-sm font-medium text-card-foreground mb-2">
               Rejection Reason <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -141,7 +141,7 @@ export default function RejectionReasonModal({
               disabled={isSubmitting}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed resize-none"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-muted-foreground">
               Minimum 10 characters. Be specific about what needs to change.
             </p>
           </div>
@@ -158,7 +158,7 @@ export default function RejectionReasonModal({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-card-foreground hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               Cancel
             </button>

@@ -93,7 +93,7 @@ export default function TeamAllocationsClient({ projects }: TeamAllocationsClien
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Team Allocations</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-4">Team Allocations</h1>
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
             <p className="text-yellow-800">
               You don't have any projects assigned as a Product Manager yet.
@@ -112,7 +112,7 @@ export default function TeamAllocationsClient({ projects }: TeamAllocationsClien
 
     return (
       <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+        <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center">
           {title}
           <span className="ml-2 bg-gray-100 text-gray-600 text-sm px-2 py-1 rounded-full">
             {projectList.length}
@@ -132,24 +132,24 @@ export default function TeamAllocationsClient({ projects }: TeamAllocationsClien
                   <div className="flex items-center space-x-4">
                     <div className="flex-shrink-0">
                       {isExpanded ? (
-                        <ChevronDownIcon className="h-5 w-5 text-gray-500" />
+                        <ChevronDownIcon className="h-5 w-5 text-muted-foreground" />
                       ) : (
-                        <ChevronRightIcon className="h-5 w-5 text-gray-500" />
+                        <ChevronRightIcon className="h-5 w-5 text-muted-foreground" />
                       )}
                     </div>
                     <div className="text-left">
-                      <h3 className="text-lg font-medium text-gray-900">{project.title}</h3>
+                      <h3 className="text-lg font-medium text-foreground">{project.title}</h3>
                       <div className="flex items-center space-x-4 mt-1">
                         <span className={`text-xs px-2 py-1 rounded-full border ${getStatusColor(status)}`}>
                           {getStatusLabel(status)}
                         </span>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-muted-foreground">
                           {project.phases.length} phases • {project.consultants.length} team members
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="text-sm text-gray-400">
+                  <div className="text-sm text-muted-foreground">
                     {new Date(project.startDate).toLocaleDateString()} - {' '}
                     {project.endDate ? new Date(project.endDate).toLocaleDateString() : 'Ongoing'}
                   </div>
@@ -159,7 +159,7 @@ export default function TeamAllocationsClient({ projects }: TeamAllocationsClien
                   <div className="px-6 pb-6 border-t border-gray-100">
                     {project.phases.length === 0 ? (
                       <div className="text-center py-8">
-                        <p className="text-gray-500">No phases created yet.</p>
+                        <p className="text-muted-foreground">No phases created yet.</p>
                         <a
                           href={`/dashboard/projects/${project.id}`}
                           className="text-blue-600 hover:text-blue-500 text-sm"
@@ -173,19 +173,19 @@ export default function TeamAllocationsClient({ projects }: TeamAllocationsClien
                           <div key={phase.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                             <div className="flex items-center justify-between mb-4">
                               <div>
-                                <h4 className="font-medium text-gray-900">{phase.name}</h4>
-                                <p className="text-sm text-gray-500">
+                                <h4 className="font-medium text-foreground">{phase.name}</h4>
+                                <p className="text-sm text-muted-foreground">
                                   {new Date(phase.startDate).toLocaleDateString()} - {new Date(phase.endDate).toLocaleDateString()}
                                 </p>
                               </div>
-                              <div className="text-sm text-gray-500">
+                              <div className="text-sm text-muted-foreground">
                                 {phase.allocations.length} allocations
                               </div>
                             </div>
 
                             {phase.allocations.length === 0 ? (
                               <div className="bg-white rounded p-4 text-center">
-                                <p className="text-gray-500 text-sm">No team members allocated to this phase yet.</p>
+                                <p className="text-muted-foreground text-sm">No team members allocated to this phase yet.</p>
                               </div>
                             ) : (
                               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -203,7 +203,7 @@ export default function TeamAllocationsClient({ projects }: TeamAllocationsClien
                                           {allocation.consultant.name?.charAt(0) || allocation.consultant.email?.charAt(0) || 'U'}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                          <p className="font-medium text-gray-900 text-sm truncate">
+                                          <p className="font-medium text-foreground text-sm truncate">
                                             {allocation.consultant.name || allocation.consultant.email}
                                           </p>
                                         </div>
@@ -262,7 +262,7 @@ export default function TeamAllocationsClient({ projects }: TeamAllocationsClien
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Team Allocations</h1>
+        <h1 className="text-3xl font-bold text-foreground">Team Allocations</h1>
         <p className="text-gray-600 mt-2">
           Manage resource allocations for your projects and teams. Click on projects to expand details.
         </p>
@@ -280,7 +280,7 @@ export default function TeamAllocationsClient({ projects }: TeamAllocationsClien
       {/* Empty state if no projects in any category */}
       {projects.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500">No projects found.</p>
+          <p className="text-muted-foreground">No projects found.</p>
         </div>
       )}
     </div>

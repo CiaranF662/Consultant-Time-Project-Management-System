@@ -53,7 +53,7 @@ export default function BudgetOverview() {
 
   if (loading) return <PageLoader message="Loading Budget Overview…" />;
   if (error) return <div className={`p-8 text-red-600 ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>Error: {error}</div>;
-  if (!data) return <div className={`p-8 ${theme === 'dark' ? 'text-gray-400 bg-gray-900' : 'text-gray-500 bg-white'}`}>No budget data available</div>;
+  if (!data) return <div className={`p-8 ${theme === 'dark' ? 'text-muted-foreground bg-gray-900' : 'text-muted-foreground bg-white'}`}>No budget data available</div>;
 
   // 📊 Summary stats
   const totalBudget = data.projects.reduce((sum, p) => sum + p.budgetedHours, 0);
@@ -94,7 +94,7 @@ export default function BudgetOverview() {
   const CustomTooltip = ({ active, payload, label }: any) =>
     active && payload?.length ? (
       <div className="bg-white p-3 border border-gray-200 rounded-lg shadow">
-        <p className="font-semibold text-gray-800">{label}</p>
+        <p className="font-semibold text-foreground">{label}</p>
         {payload.map((entry: any, i: number) => (
           <p key={i} style={{ color: entry.color }}>
             {entry.name}: {entry.value}h
@@ -151,7 +151,7 @@ export default function BudgetOverview() {
           {/* Budget vs Allocated */}
           <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl shadow p-6`}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Budget vs Allocated</h3>
+              <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-foreground'}`}>Budget vs Allocated</h3>
               {/* Legend */}
               <div className="flex gap-4 text-sm">
                 <span className="flex items-center gap-1">
@@ -205,14 +205,14 @@ export default function BudgetOverview() {
                 </BarChart>
               </ResponsiveContainer>
               <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
-                <span className="text-xs font-bold text-gray-900 uppercase tracking-wide">PROJECTS</span>
+                <span className="text-xs font-bold text-foreground uppercase tracking-wide">PROJECTS</span>
               </div>
             </div>
           </div>
 
           {/* Pie Chart */}
           <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl shadow p-6`}>
-            <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Allocation Distribution</h3>
+            <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-foreground'}`}>Allocation Distribution</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie data={utilizationChartData} cx="50%" cy="50%" outerRadius={100} dataKey="value">
@@ -234,7 +234,7 @@ export default function BudgetOverview() {
 
         {/* Trend */}
         <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl shadow p-6`}>
-          <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Budget Trends Over Time</h3>
+          <h3 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-foreground'}`}>Budget Trends Over Time</h3>
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={monthlyTrendData}>
               <defs>
@@ -260,19 +260,19 @@ export default function BudgetOverview() {
         {/* Project Table */}
         <div className={`${theme === 'dark' ? 'bg-gray-800 border border-gray-700' : 'bg-white'} rounded-2xl shadow overflow-hidden`}>
           <div className={`px-6 py-4 border-b ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-            <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>Project Budget Breakdown</h3>
+            <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-foreground'}`}>Project Budget Breakdown</h3>
           </div>
           <table className="w-full">
             <thead className={`${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}`}>
               <tr>
-                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Project</th>
-                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Budget</th>
-                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Allocated</th>
-                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Planned</th>
-                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Remaining</th>
-                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Utilization</th>
-                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Team</th>
-                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Actions</th>
+                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'}`}>Project</th>
+                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'}`}>Budget</th>
+                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'}`}>Allocated</th>
+                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'}`}>Planned</th>
+                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'}`}>Remaining</th>
+                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'}`}>Utilization</th>
+                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'}`}>Team</th>
+                <th className={`py-3 px-6 text-left text-xs font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'}`}>Actions</th>
               </tr>
             </thead>
             <tbody className={`${theme === 'dark' ? 'divide-gray-700' : 'divide-gray-200'} divide-y`}>
@@ -280,16 +280,16 @@ export default function BudgetOverview() {
                 <tr key={p.id} className={`${theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
                   <td className="py-4 px-6 flex items-center gap-2">
                     {getStatusIcon(parseFloat(p.utilizationRate))}
-                    <span className={`${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{p.title}</span>
+                    <span className={`${theme === 'dark' ? 'text-white' : 'text-foreground'}`}>{p.title}</span>
                   </td>
-                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{p.budgetedHours}h</td>
-                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{p.totalAllocated}h</td>
-                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{p.totalPlanned}h</td>
+                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'}`}>{p.budgetedHours}h</td>
+                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'}`}>{p.totalAllocated}h</td>
+                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'}`}>{p.totalPlanned}h</td>
                   <td className={`py-4 px-6 ${p.remaining >= 0 ? "text-green-600" : "text-red-600"}`}>
                     {p.remaining > 0 ? "+" : ""}{p.remaining}h
                   </td>
-                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{p.utilizationRate}%</td>
-                  <td className={`py-4 px-6 flex items-center ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}><FaUsers className="h-4 w-4 mr-1" />{p.teamSize}</td>
+                  <td className={`py-4 px-6 ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'}`}>{p.utilizationRate}%</td>
+                  <td className={`py-4 px-6 flex items-center ${theme === 'dark' ? 'text-gray-300' : 'text-card-foreground'}`}><FaUsers className="h-4 w-4 mr-1" />{p.teamSize}</td>
                   <td className="py-4 px-6">
                     <Link href={`/dashboard/budget/${p.id}`} className="flex items-center gap-1 text-blue-600 hover:text-blue-900">
                       <FaEye className="h-4 w-4" /> View Details

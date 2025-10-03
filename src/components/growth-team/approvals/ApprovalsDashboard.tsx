@@ -381,7 +381,7 @@ export default function ApprovalsDashboard({
     <div className="p-4 md:p-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Approvals Dashboard</h1>
+        <h1 className="text-3xl font-bold text-foreground">Approvals Dashboard</h1>
         <p className="text-lg text-gray-600">Review and approve phase allocations and weekly plans</p>
       </div>
 
@@ -394,7 +394,7 @@ export default function ApprovalsDashboard({
               className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
                 activeTab === 'phase'
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-muted-foreground hover:text-card-foreground hover:border-gray-300'
               }`}
             >
               <FaClock />
@@ -405,7 +405,7 @@ export default function ApprovalsDashboard({
               className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
                 activeTab === 'weekly'
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-muted-foreground hover:text-card-foreground hover:border-gray-300'
               }`}
             >
               <FaUser />
@@ -417,7 +417,7 @@ export default function ApprovalsDashboard({
                 className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
                   activeTab === 'hour-changes'
                     ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-muted-foreground hover:text-card-foreground hover:border-gray-300'
                 }`}
               >
                 <FaEdit />
@@ -486,12 +486,12 @@ export default function ApprovalsDashboard({
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
+                <h3 className="text-lg font-medium text-foreground">
                   Modify Hours
                 </h3>
                 <button
                   onClick={() => setModifyModal({ isOpen: false, type: 'phase' })}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-muted-foreground hover:text-gray-600"
                 >
                   <FaTimes className="w-5 h-5" />
                 </button>
@@ -499,13 +499,13 @@ export default function ApprovalsDashboard({
 
               {modifyModal.allocation && (
                 <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-foreground">
                     {modifyModal.allocation.phase.project.title} - {modifyModal.allocation.phase.name}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     Consultant: {modifyModal.allocation.consultant.name || modifyModal.allocation.consultant.email}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     Original Request: {formatHours(modifyModal.allocation.totalHours)}
                   </p>
                 </div>
@@ -513,7 +513,7 @@ export default function ApprovalsDashboard({
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-card-foreground mb-2">
                     Modified Hours
                   </label>
                   <input
@@ -528,7 +528,7 @@ export default function ApprovalsDashboard({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-card-foreground mb-2">
                     Reason for Modification
                   </label>
                   <textarea
@@ -544,7 +544,7 @@ export default function ApprovalsDashboard({
               <div className="flex items-center justify-end gap-3 mt-6">
                 <button
                   onClick={() => setModifyModal({ isOpen: false, type: 'phase' })}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                  className="px-4 py-2 text-sm font-medium text-card-foreground bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                 >
                   Cancel
                 </button>

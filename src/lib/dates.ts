@@ -236,14 +236,14 @@ import {
   }
   
   /**
-   * Get week color based on utilization - opaque colors with black text for better readability
+   * Get week color based on utilization - opaque colors with proper text contrast for light and dark modes
    */
   export function getUtilizationColor(hours: number): string {
-    if (hours === 0) return 'bg-gray-50 text-gray-400';
-    if (hours <= 20) return 'bg-green-100 text-black'; // Low utilization (0-20h)
-    if (hours <= 35) return 'bg-yellow-100 text-black'; // Medium utilization (20-35h)
-    if (hours <= 40) return 'bg-orange-100 text-black'; // High utilization (35-40h)
-    return 'bg-red-100 text-black'; // Over utilization (40h+)
+    if (hours === 0) return 'bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500';
+    if (hours <= 20) return 'bg-green-100 dark:bg-green-900/40 text-gray-900 dark:text-gray-100'; // Low utilization (0-20h)
+    if (hours <= 35) return 'bg-yellow-100 dark:bg-yellow-900/40 text-gray-900 dark:text-gray-100'; // Medium utilization (20-35h)
+    if (hours <= 40) return 'bg-orange-100 dark:bg-orange-900/40 text-gray-900 dark:text-gray-100'; // High utilization (35-40h)
+    return 'bg-red-100 dark:bg-red-900/40 text-gray-900 dark:text-gray-100'; // Over utilization (40h+)
   }
   
   /**

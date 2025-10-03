@@ -43,7 +43,7 @@ export default function HourChangeApproval({
       {hourChangeRequests.length === 0 ? (
         <div className="bg-white rounded-lg shadow-md p-8 text-center">
           <FaCheck className="h-12 w-12 text-green-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900">All caught up!</h3>
+          <h3 className="text-lg font-medium text-foreground">All caught up!</h3>
           <p className="text-gray-600">No hour change requests pending approval.</p>
         </div>
       ) : (
@@ -54,7 +54,7 @@ export default function HourChangeApproval({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 truncate">
+                      <h3 className="text-lg font-semibold text-foreground truncate">
                         {request.phaseAllocation?.phase?.project?.title || 'Unknown Project'}
                       </h3>
                       <p className="text-sm text-gray-600 mt-1">
@@ -67,13 +67,13 @@ export default function HourChangeApproval({
                       }`}>
                         {formatHours(request.requestedHours)}
                       </div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wide">
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide">
                         {request.changeType} Request
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                     <span>
                       <span className="font-medium">Consultant:</span> {request.requester.name || request.requester.email}
                     </span>
@@ -83,7 +83,7 @@ export default function HourChangeApproval({
                   </div>
 
                   <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm text-card-foreground">
                       <span className="font-medium">Reason:</span> {request.reason}
                     </p>
                   </div>

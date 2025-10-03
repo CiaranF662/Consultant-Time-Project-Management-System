@@ -7,10 +7,10 @@ export default function PendingApprovalPage() {
         <h1 className="text-2xl font-bold text-green-600">
           Registration Successful!
         </h1>
-        <p className="mt-4 text-gray-700">
+        <p className="mt-4 text-card-foreground">
           Your account has been created and is now pending approval from an administrator.
         </p>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-muted-foreground">
           You will be unable to log in until your account has been approved. Please check back later.
         </p>
         <div className="mt-8">

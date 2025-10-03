@@ -12,8 +12,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: 'AgilePM',
-  description: 'Project Management System',
+  title: 'Agility',
+  description: 'Consultant Resource & Progress Insight System',
 };
 
 export default function RootLayout({

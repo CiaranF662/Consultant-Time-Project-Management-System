@@ -56,21 +56,21 @@ export default function ApprovalsSummaryCard() {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-600">Pending Approvals</p>
-          <p className="text-2xl font-bold text-gray-900">{summary.totalPending}</p>
+          <p className="text-2xl font-bold text-foreground">{summary.totalPending}</p>
           {summary.totalPending > 0 && (
             <div className="mt-2 space-y-1">
               {summary.pendingPhaseAllocations > 0 && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {summary.pendingPhaseAllocations} phase allocation{summary.pendingPhaseAllocations !== 1 ? 's' : ''}
                 </p>
               )}
               {summary.pendingWeeklyPlans > 0 && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {summary.pendingWeeklyPlans} weekly plan{summary.pendingWeeklyPlans !== 1 ? 's' : ''}
                 </p>
               )}
               {summary.pendingHourChanges > 0 && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {summary.pendingHourChanges} hour change{summary.pendingHourChanges !== 1 ? 's' : ''}
                 </p>
               )}

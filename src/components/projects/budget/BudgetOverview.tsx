@@ -89,7 +89,7 @@ export default function BudgetOverview() {
     return (
       <div className="p-8">
         <div className="text-center py-8">
-          <p className="text-gray-500">No budget data available</p>
+          <p className="text-muted-foreground">No budget data available</p>
         </div>
       </div>
     );
@@ -106,7 +106,7 @@ export default function BudgetOverview() {
     <div className="p-4 md:p-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Budget Overview</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-2">Budget Overview</h1>
         <p className="text-lg text-gray-600">Track resource allocation and budget utilization across all projects</p>
       </div>
 
@@ -116,7 +116,7 @@ export default function BudgetOverview() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Budget</p>
-              <p className="text-2xl font-bold text-gray-900">{totalBudget}h</p>
+              <p className="text-2xl font-bold text-foreground">{totalBudget}h</p>
             </div>
             <FaMoneyBillWave className="h-8 w-8 text-blue-500" />
           </div>
@@ -126,7 +126,7 @@ export default function BudgetOverview() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Allocated</p>
-              <p className="text-2xl font-bold text-gray-900">{totalAllocated}h</p>
+              <p className="text-2xl font-bold text-foreground">{totalAllocated}h</p>
             </div>
             <FaClock className="h-8 w-8 text-green-500" />
           </div>
@@ -148,7 +148,7 @@ export default function BudgetOverview() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Active Projects</p>
-              <p className="text-2xl font-bold text-gray-900">{data.projects.length}</p>
+              <p className="text-2xl font-bold text-foreground">{data.projects.length}</p>
             </div>
             <FaProjectDiagram className="h-8 w-8 text-orange-500" />
           </div>
@@ -158,40 +158,40 @@ export default function BudgetOverview() {
       {/* Projects Table */}
       <div className="bg-white rounded-lg shadow-md border overflow-hidden">
         <div className="p-4 border-b bg-gray-50">
-          <h2 className="text-xl font-semibold text-gray-800">Project Budget Breakdown</h2>
+          <h2 className="text-xl font-semibold text-foreground">Project Budget Breakdown</h2>
         </div>
         
         {data.projects.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-gray-500">No projects found</p>
+            <p className="text-muted-foreground">No projects found</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Project
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Budget
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Allocated
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Planned
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Remaining
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Utilization
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Team
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -201,17 +201,17 @@ export default function BudgetOverview() {
                   <tr key={project.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{project.title}</div>
-                        <div className="text-sm text-gray-500">{project.phaseCount} phases</div>
+                        <div className="text-sm font-medium text-foreground">{project.title}</div>
+                        <div className="text-sm text-muted-foreground">{project.phaseCount} phases</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                       {project.budgetedHours}h
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                       {project.totalAllocated}h
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                       {project.totalPlanned}h
                     </td>
                     <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getRemainingColor(project.remaining)}`}>
@@ -223,8 +223,8 @@ export default function BudgetOverview() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-gray-900">
-                        <FaUsers className="h-4 w-4 mr-1 text-gray-400" />
+                      <div className="flex items-center text-sm text-foreground">
+                        <FaUsers className="h-4 w-4 mr-1 text-muted-foreground" />
                         {project.teamSize}
                       </div>
                     </td>

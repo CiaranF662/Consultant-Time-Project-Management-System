@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Project Brief: Consultant Resource & Progress Insight System
+Project Brief: Agility - Consultant Resource & Progress Insight System
 Generated on: 2025-08-28
 1. Project Vision & Core Concept
 To create a specialized, web-based insight tool that serves as a strategic layer on top of Jira. The system's primary goal is to automate and enhance the Growth Team's resource planning and progress tracking, replacing their manual Airtable process.

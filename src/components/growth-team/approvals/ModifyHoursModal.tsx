@@ -154,7 +154,7 @@ export default function ModifyHoursModal({
           </div>
 
           <div>
-            <label htmlFor="modified-hours" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="modified-hours" className="block text-sm font-medium text-card-foreground mb-2">
               Approved Hours <span className="text-red-500">*</span>
             </label>
             <input
@@ -173,7 +173,7 @@ export default function ModifyHoursModal({
               disabled={isSubmitting}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-muted-foreground">
               {maxHours !== undefined
                 ? `Enter hours between 0 and ${maxHours}h (phase allocation limit). Must be different from original request.`
                 : 'Enter the hours you want to approve. Must be different from original request.'
@@ -212,7 +212,7 @@ export default function ModifyHoursModal({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-card-foreground hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               Cancel
             </button>

@@ -76,9 +76,12 @@ async function getInitialNotifications(): Promise<NotificationsResponse> {
     console.log('Found notifications:', { count: notifications.length, total, unreadCount });
     
     await prisma.$disconnect();
-    
+
     return {
-      notifications,
+      notifications: notifications.map(n => ({
+        ...n,
+        createdAt: n.createdAt.toISOString()
+      })),
       pagination: {
         total,
         offset: 0,

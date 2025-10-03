@@ -101,7 +101,7 @@ export const PhaseEndDateAlertEmail = ({
 
           <Section style={footer}>
             <Text style={footerText}>
-              AgilePM - Project Management System
+              Agility - Consultant Resource & Progress Insight System
             </Text>
           </Section>
         </Container>

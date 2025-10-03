@@ -159,8 +159,8 @@ export default function PhaseAllocationApproval({
                 <FaFilter className="w-4 h-4 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Search & Filter</h3>
-                <p className="text-sm text-gray-500">Find specific approvals quickly</p>
+                <h3 className="text-lg font-semibold text-foreground">Search & Filter</h3>
+                <p className="text-sm text-muted-foreground">Find specific approvals quickly</p>
               </div>
             </div>
             <button
@@ -169,7 +169,7 @@ export default function PhaseAllocationApproval({
                 setFilterBy({ consultant: '', project: '', hoursRange: null });
                 setSortBy('newest');
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-card-foreground bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
               <FaTimes className="w-3 h-3" />
               Clear All
@@ -182,22 +182,22 @@ export default function PhaseAllocationApproval({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Enhanced Search Input */}
             <div className="lg:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-card-foreground mb-2">
                 Search Approvals
               </label>
               <div className="relative group">
-                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
+                <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
                 <input
                   type="text"
                   placeholder="Search by consultant, project, or phase..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-foreground placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
                 />
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm('')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-gray-600 transition-colors"
                   >
                     <FaTimes className="w-4 h-4" />
                   </button>
@@ -207,15 +207,15 @@ export default function PhaseAllocationApproval({
 
             {/* Enhanced Sort Dropdown */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-card-foreground mb-2">
                 Sort By
               </label>
               <div className="relative">
-                <FaSortAmountDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <FaSortAmountDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="w-full pl-10 pr-8 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                  className="w-full pl-10 pr-8 py-3 border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
                 >
                   <option value="newest">Newest First</option>
                   <option value="oldest">Oldest First</option>
@@ -232,7 +232,7 @@ export default function PhaseAllocationApproval({
         {/* Advanced Filters Section */}
         <div className="px-6 py-5 bg-gradient-to-r from-gray-50/50 to-blue-50/30 border-t border-gray-100">
           <div className="mb-3">
-            <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <FaFilter className="w-3 h-3 text-blue-500" />
               Advanced Filters
             </h4>
@@ -240,15 +240,15 @@ export default function PhaseAllocationApproval({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Consultant Filter */}
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+              <label className="block text-xs font-semibold text-card-foreground mb-2 uppercase tracking-wide">
                 Consultant
               </label>
               <div className="relative">
-                <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
+                <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-3 h-3" />
                 <select
                   value={filterBy.consultant}
                   onChange={(e) => setFilterBy(prev => ({ ...prev, consultant: e.target.value }))}
-                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
                 >
                   <option value="">All Consultants</option>
                   {availableConsultants.map(consultant => (
@@ -260,15 +260,15 @@ export default function PhaseAllocationApproval({
 
             {/* Project Filter */}
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+              <label className="block text-xs font-semibold text-card-foreground mb-2 uppercase tracking-wide">
                 Project
               </label>
               <div className="relative">
-                <FaClock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
+                <FaClock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-3 h-3" />
                 <select
                   value={filterBy.project}
                   onChange={(e) => setFilterBy(prev => ({ ...prev, project: e.target.value }))}
-                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
                 >
                   <option value="">All Projects</option>
                   {availableProjects.map(project => (
@@ -280,11 +280,11 @@ export default function PhaseAllocationApproval({
 
             {/* Hours Range Filter */}
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+              <label className="block text-xs font-semibold text-card-foreground mb-2 uppercase tracking-wide">
                 Hours Range
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs font-bold">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-xs font-bold">
                   H
                 </span>
                 <select
@@ -297,7 +297,7 @@ export default function PhaseAllocationApproval({
                       setFilterBy(prev => ({ ...prev, hoursRange: { min, max } }));
                     }
                   }}
-                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
                 >
                   <option value="">All Hours</option>
                   <option value="0-10">0-10 hours</option>
@@ -316,9 +316,9 @@ export default function PhaseAllocationApproval({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <p className="text-sm font-medium text-gray-700">
+              <p className="text-sm font-medium text-card-foreground">
                 <span className="text-blue-600 font-bold">{getFilteredAndSortedAllocations().length}</span>
-                <span className="text-gray-500 mx-1">of</span>
+                <span className="text-muted-foreground mx-1">of</span>
                 <span className="font-bold">{phaseAllocations.length}</span>
                 <span className="text-gray-600 ml-1">
                   allocation{phaseAllocations.length !== 1 ? 's' : ''} shown
@@ -345,7 +345,7 @@ export default function PhaseAllocationApproval({
           <div className="w-full border-t-2 border-gray-200"></div>
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-gray-50 px-6 py-2 text-sm font-medium text-gray-500 rounded-full border border-gray-200">
+          <span className="bg-gray-50 px-6 py-2 text-sm font-medium text-muted-foreground rounded-full border border-gray-200">
             Phase Allocation Requests
           </span>
         </div>
@@ -356,13 +356,13 @@ export default function PhaseAllocationApproval({
           {phaseAllocations.length === 0 ? (
             <>
               <FaCheck className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900">All caught up!</h3>
+              <h3 className="text-lg font-medium text-foreground">All caught up!</h3>
               <p className="text-gray-600">No phase allocations pending approval.</p>
             </>
           ) : (
             <>
-              <FaSearch className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900">No results found</h3>
+              <FaSearch className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground">No results found</h3>
               <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
             </>
           )}
@@ -388,7 +388,7 @@ export default function PhaseAllocationApproval({
                           {allocation.phase.description}
                         </p>
                       )}
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         Phase: {formatDate(new Date(allocation.phase.startDate))} - {formatDate(new Date(allocation.phase.endDate))}
                       </p>
                     </div>
@@ -396,7 +396,7 @@ export default function PhaseAllocationApproval({
                       <div className="text-2xl font-bold text-blue-600">
                         {formatHours(allocation.totalHours)}
                       </div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wide mb-3">
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide mb-3">
                         Hours Requested
                       </div>
                       <div className="flex items-center justify-end gap-2">
@@ -421,7 +421,7 @@ export default function PhaseAllocationApproval({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                     <span>
                       <span className="font-medium">Requested:</span> {formatDate(new Date(allocation.createdAt))}
                     </span>

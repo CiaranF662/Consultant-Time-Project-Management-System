@@ -33,14 +33,14 @@ export default function GanttPage() {
   }
 
   return (
-    
-      <div className="px-4 py-6 md:px-8 md:py-8 min-h-screen">
+
+      <div className="px-4 py-6 md:px-8 md:py-8 min-h-screen bg-background">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Portfolio Timeline View</h1>
-          <p className="text-lg text-gray-600">Visual timeline of all projects</p>
+          <h1 className="text-3xl font-bold text-foreground">Portfolio Timeline View</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400">Visual timeline of all projects</p>
         </div>
         <GrowthTeamGanttChart projects={projects} />
       </div>
-    
+
   );
 }

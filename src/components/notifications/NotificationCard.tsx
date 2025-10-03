@@ -141,7 +141,7 @@ export default function NotificationCard({
     icon: '📋',
     color: 'gray',
     bgColor: 'bg-gray-50 border-gray-200',
-    iconColor: 'text-gray-600'
+    iconColor: 'text-gray-600 dark:text-gray-300'
   };
   const timeAgo = new Date(notification.createdAt).toLocaleString();
 
@@ -204,7 +204,7 @@ export default function NotificationCard({
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <h3 className={`font-semibold text-sm ${notification.isRead ? 'text-gray-800' : 'text-gray-900'}`}>
+            <h3 className={`font-semibold text-sm ${notification.isRead ? 'text-foreground' : 'text-foreground'}`}>
               {notification.title}
             </h3>
             
@@ -213,12 +213,12 @@ export default function NotificationCard({
             )}
           </div>
 
-          <p className={`mt-1 text-sm ${notification.isRead ? 'text-gray-600' : 'text-gray-800'}`}>
+          <p className={`mt-1 text-sm ${notification.isRead ? 'text-gray-600 dark:text-gray-300' : 'text-foreground'}`}>
             {notification.message}
           </p>
 
           <div className="mt-2 flex items-center justify-between">
-            <span className="text-xs text-gray-500">{timeAgo}</span>
+            <span className="text-xs text-muted-foreground">{timeAgo}</span>
             
             {notification.actionUrl && (
               <div className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800">
@@ -235,8 +235,8 @@ export default function NotificationCard({
             <button
               onClick={handleMarkAsRead}
               className={`p-1.5 rounded transition-colors ${
-                notification.isRead 
-                  ? 'text-gray-400 hover:text-gray-600 hover:bg-gray-100' 
+                notification.isRead
+                  ? 'text-muted-foreground hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   : 'text-blue-500 hover:text-blue-700 hover:bg-blue-100'
               }`}
               title={notification.isRead ? 'Mark as unread' : 'Mark as read'}
@@ -247,7 +247,7 @@ export default function NotificationCard({
             
             <button
               onClick={handleDelete}
-              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded transition-colors"
+              className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-100 rounded transition-colors"
               title="Delete notification"
               disabled={isLoading}
             >

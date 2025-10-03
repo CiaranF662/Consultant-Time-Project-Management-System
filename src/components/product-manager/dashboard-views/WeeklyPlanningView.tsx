@@ -77,7 +77,7 @@ export default function WeeklyPlanningView() {
   };
 
   if (loading) {
-    return <SectionLoader text="Loading weekly planning data..." />;
+    return <SectionLoader message="Loading weekly planning data..." />;
   }
 
   const currentWeekTotal = currentWeekAllocations.reduce((sum, alloc) => sum + (alloc.proposedHours || 0), 0);
@@ -128,7 +128,7 @@ export default function WeeklyPlanningView() {
       {currentWeekAllocations.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-800">This Week's Schedule</h3>
+            <h3 className="text-lg font-semibold text-foreground">This Week's Schedule</h3>
             <p className="text-sm text-gray-600">
               {formatDate(new Date())} - Week of {formatDate(currentWeekAllocations[0]?.weekStartDate || new Date())}
             </p>
@@ -139,8 +139,8 @@ export default function WeeklyPlanningView() {
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <FaProjectDiagram className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm font-medium text-gray-900">
+                      <FaProjectDiagram className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">
                         {allocation.phaseAllocation.phase.project.title}
                       </span>
                     </div>
@@ -150,10 +150,10 @@ export default function WeeklyPlanningView() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <div className="text-sm font-semibold text-gray-900">
+                      <div className="text-sm font-semibold text-foreground">
                         {formatHours(allocation.proposedHours)}
                       </div>
-                      <div className="text-xs text-gray-500">planned</div>
+                      <div className="text-xs text-muted-foreground">planned</div>
                     </div>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       allocation.planningStatus === 'APPROVED'
@@ -176,15 +176,15 @@ export default function WeeklyPlanningView() {
       {/* Phase Allocations */}
       <div className="bg-white rounded-lg border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800">My Phase Allocations</h3>
+          <h3 className="text-lg font-semibold text-foreground">My Phase Allocations</h3>
           <p className="text-sm text-gray-600">All phases where you're allocated as a consultant</p>
         </div>
         <div className="divide-y divide-gray-200">
           {phaseAllocations.length === 0 ? (
             <div className="px-6 py-8 text-center">
-              <FaCalendarWeek className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+              <FaCalendarWeek className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
               <p className="text-sm text-gray-600">No phase allocations assigned</p>
-              <p className="text-xs text-gray-500 mt-1">You haven't been allocated to any project phases as a consultant</p>
+              <p className="text-xs text-muted-foreground mt-1">You haven't been allocated to any project phases as a consultant</p>
             </div>
           ) : (
             phaseAllocations.map((allocation) => {
@@ -196,7 +196,7 @@ export default function WeeklyPlanningView() {
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <FaProjectDiagram className="w-4 h-4 text-gray-400" />
+                        <FaProjectDiagram className="w-4 h-4 text-muted-foreground" />
                         <Link
                           href={`/dashboard/projects/${allocation.phase.project.id}`}
                           className="text-sm font-medium text-blue-600 hover:text-blue-800"
@@ -213,10 +213,10 @@ export default function WeeklyPlanningView() {
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <div className="text-sm font-semibold text-gray-900">
+                        <div className="text-sm font-semibold text-foreground">
                           {formatHours(allocation.totalHours)} allocated
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-muted-foreground">
                           {formatHours(totalPlanned)} planned • {formatHours(remainingHours)} remaining
                         </div>
                         <div className="w-20 bg-gray-200 rounded-full h-1.5 mt-1">

@@ -73,7 +73,7 @@ export default function StatusBadge({
           text: 'Unknown',
           bgClass: 'bg-gray-100',
           borderClass: 'border-gray-300',
-          textClass: 'text-gray-800',
+          textClass: 'text-foreground',
           iconClass: 'text-gray-600',
           dotClass: 'bg-gray-500',
           animate: false
