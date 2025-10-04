@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { requireAuth, isAuthError } from '@/lib/api-auth';
 import { ProjectRole, NotificationType } from '@prisma/client';
 import { getGrowthTeamMemberIds, createNotificationsForUsers, NotificationTemplates } from '@/lib/notifications';
+import { createPhaseAllocationSchema, bulkUpdatePhaseAllocationsSchema, safeValidateRequestBody, formatValidationErrors } from '@/lib/validation-schemas';
+import { logError, logApiRequest, logValidationError, logAuthorizationFailure } from '@/lib/error-logger';
 
 import { prisma } from "@/lib/prisma";
 
@@ -10,11 +12,12 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ phaseId: string }> }
 ) {
+  const { phaseId } = await params;
+  logApiRequest('GET', `/api/phases/${phaseId}/allocations`);
+
   const auth = await requireAuth();
   if (isAuthError(auth)) return auth;
   const { session, user } = auth;
-
-  const { phaseId } = await params;
 
   try {
     const allocations = await prisma.phaseAllocation.findMany({
@@ -31,7 +34,11 @@ export async function GET(
 
     return NextResponse.json(allocations);
   } catch (error) {
-    console.error('Error fetching phase allocations:', error);
+    logError('Failed to fetch phase allocations', error as Error, {
+      userId: session.user.id,
+      phaseId,
+      endpoint: `/api/phases/${phaseId}/allocations`
+    });
     return new NextResponse(JSON.stringify({ error: 'Failed to fetch allocations' }), { status: 500 });
   }
 }
@@ -41,20 +48,21 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ phaseId: string }> }
 ) {
+  const { phaseId } = await params;
+  logApiRequest('POST', `/api/phases/${phaseId}/allocations`);
+
   const auth = await requireAuth();
   if (isAuthError(auth)) return auth;
-  const { session, user } = auth;
-
-  const { phaseId } = await params;
+  const { session } = auth;
 
   // Check if user is Growth Team or PM for this project
   const phase = await prisma.phase.findUnique({
     where: { id: phaseId },
-    include: { 
+    include: {
       project: {
         include: {
           consultants: {
-            where: { 
+            where: {
               userId: session.user.id,
               role: ProjectRole.PRODUCT_MANAGER
             }
@@ -65,17 +73,30 @@ export async function POST(
   });
 
   if (!phase) {
+    logError('Phase not found', undefined, { userId: session.user.id, phaseId });
     return new NextResponse(JSON.stringify({ error: 'Phase not found' }), { status: 404 });
   }
 
   const isPM = phase.project.consultants.length > 0;
   if (!isPM) {
+    logAuthorizationFailure(session.user.id, 'create phase allocation', `phase:${phaseId}`);
     return new NextResponse(JSON.stringify({ error: 'Only Product Managers can create phase allocations' }), { status: 403 });
   }
 
   try {
     const body = await request.json();
-    const { consultantId, totalHours } = body;
+
+    // Validate request body with Zod
+    const validation = safeValidateRequestBody(createPhaseAllocationSchema, body);
+    if (!validation.success) {
+      logValidationError(`/api/phases/${phaseId}/allocations`, formatValidationErrors(validation.error).details);
+      return new NextResponse(
+        JSON.stringify(formatValidationErrors(validation.error)),
+        { status: 400 }
+      );
+    }
+
+    const { consultantId, totalHours } = validation.data;
 
     // Check if allocation already exists
     const existing = await prisma.phaseAllocation.findUnique({

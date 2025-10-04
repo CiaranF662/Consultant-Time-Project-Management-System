@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { requireAuth, isAuthError } from '@/lib/api-auth';
 import { UserRole } from '@prisma/client';
+import { updateProjectSchema, safeValidateRequestBody, formatValidationErrors } from '@/lib/validation-schemas';
+import { logError, logApiRequest, logValidationError, logAuthorizationFailure } from '@/lib/error-logger';
 
 import { prisma } from "@/lib/prisma";
 
@@ -8,11 +10,12 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
+  const { projectId } = await params;
+  logApiRequest('GET', `/api/projects/${projectId}`);
+
   const auth = await requireAuth();
   if (isAuthError(auth)) return auth;
   const { session, user } = auth;
-
-  const { projectId } = await params;
   const { id: userId, role } = session.user;
   const userRole = role as UserRole;
 
@@ -138,7 +141,11 @@ export async function GET(
 
     return NextResponse.json(transformedProject);
   } catch (error) {
-    console.error('Failed to fetch project details:', error);
+    logError('Failed to fetch project details', error as Error, {
+      userId: session.user.id,
+      projectId,
+      endpoint: `/api/projects/${projectId}`
+    });
     return new NextResponse(JSON.stringify({ error: 'Internal server error' }), { status: 500 });
   }
 }
@@ -147,32 +154,38 @@ export async function PATCH(
     request: Request,
     { params }: { params: Promise<{ projectId: string }> }
 ) {
+    const { projectId } = await params;
+    logApiRequest('PATCH', `/api/projects/${projectId}`);
+
     const auth = await requireAuth();
     if (isAuthError(auth)) return auth;
     const { session } = auth;
 
     if (session.user.role !== 'GROWTH_TEAM') {
+        logAuthorizationFailure(session.user.id, 'update project', `project:${projectId}`);
         return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
     }
 
     try {
         const { projectId } = await params;
         const body = await request.json();
-        const { title, description, budgetedHours, startDate, endDate } = body;
 
-        // Validate required fields
-        if (!title?.trim()) {
-            return new NextResponse(JSON.stringify({ error: 'Project title is required' }), { status: 400 });
+        // Validate request body with Zod
+        const validation = safeValidateRequestBody(updateProjectSchema, body);
+        if (!validation.success) {
+            logValidationError(`/api/projects/${projectId}`, formatValidationErrors(validation.error).details);
+            return new NextResponse(
+                JSON.stringify(formatValidationErrors(validation.error)),
+                { status: 400 }
+            );
         }
 
-        // Validate dates if provided
+        const { title, description, budgetedHours, startDate, endDate } = validation.data;
+
+        // Additional business validation for dates
         if (startDate && endDate) {
             const start = new Date(startDate);
             const end = new Date(endDate);
-
-            if (start >= end) {
-                return new NextResponse(JSON.stringify({ error: 'End date must be after start date' }), { status: 400 });
-            }
 
             const diffTime = Math.abs(end.getTime() - start.getTime());
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -182,19 +195,19 @@ export async function PATCH(
             }
         }
 
-        // Validate budget hours
-        if (budgetedHours !== undefined && (budgetedHours <= 0 || !Number.isInteger(Number(budgetedHours)))) {
-            return new NextResponse(JSON.stringify({ error: 'Budget hours must be a positive integer' }), { status: 400 });
+        // Build update data object dynamically
+        const updateData: any = {};
+
+        if (title !== undefined) {
+            updateData.title = title.trim();
         }
 
-        // Build update data object dynamically
-        const updateData: any = {
-            title: title.trim(),
-            description: description?.trim() || null,
-        };
+        if (description !== undefined) {
+            updateData.description = description?.trim() || null;
+        }
 
         if (budgetedHours !== undefined) {
-            updateData.budgetedHours = parseInt(budgetedHours);
+            updateData.budgetedHours = budgetedHours;
         }
 
         if (startDate) {
@@ -212,7 +225,11 @@ export async function PATCH(
 
         return NextResponse.json(updatedProject);
     } catch (error) {
-        console.error('Error updating project:', error);
+        logError('Failed to update project', error as Error, {
+            userId: session.user.id,
+            projectId,
+            endpoint: `/api/projects/${projectId}`
+        });
         return new NextResponse(JSON.stringify({ error: 'Failed to update project' }), { status: 500 });
     }
 }
@@ -221,11 +238,15 @@ export async function DELETE(
     request: Request,
     { params }: { params: Promise<{ projectId: string }> }
 ) {
+    const { projectId } = await params;
+    logApiRequest('DELETE', `/api/projects/${projectId}`);
+
     const auth = await requireAuth();
     if (isAuthError(auth)) return auth;
     const { session } = auth;
 
     if (session.user.role !== 'GROWTH_TEAM') {
+        logAuthorizationFailure(session.user.id, 'delete project', `project:${projectId}`);
         return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
     }
 
@@ -310,10 +331,14 @@ export async function DELETE(
 
         return new NextResponse(null, { status: 204 });
     } catch (error) {
-        console.error('Error deleting project:', error);
-        return new NextResponse(JSON.stringify({ 
-            error: 'Failed to delete project', 
-            details: error instanceof Error ? error.message : 'Unknown error' 
+        logError('Failed to delete project', error as Error, {
+            userId: session.user.id,
+            projectId,
+            endpoint: `/api/projects/${projectId}`
+        });
+        return new NextResponse(JSON.stringify({
+            error: 'Failed to delete project',
+            details: error instanceof Error ? error.message : 'Unknown error'
         }), { status: 500 });
     }
 }

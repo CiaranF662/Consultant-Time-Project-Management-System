@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { FaTimes, FaPlus, FaTrash, FaSave, FaUsers, FaClock, FaInfoCircle, FaUser, FaHourglassHalf, FaSearch, FaTimesCircle } from 'react-icons/fa';
 import { generateColorFromString } from '@/lib/colors';
+import ConsultantScheduleView from './ConsultantScheduleView';
 
 interface Consultant {
   id: string;
@@ -576,6 +577,16 @@ export default function PhaseAllocationForm({
                 )}
               </div>
             </div>
+
+            {/* Consultant Workload Schedule */}
+            {selectedConsultantIds.length > 0 && (
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 p-6 rounded-lg border border-indigo-100 dark:border-indigo-800">
+                <ConsultantScheduleView
+                  phaseId={phaseId}
+                  selectedConsultantIds={selectedConsultantIds}
+                />
+              </div>
+            )}
 
             {/* Summary Section */}
             {selectedConsultantIds.length > 0 && (

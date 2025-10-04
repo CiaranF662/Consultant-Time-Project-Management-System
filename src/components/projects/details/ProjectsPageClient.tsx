@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { FaPlus, FaChartBar } from 'react-icons/fa';
 import ProjectCard from './ProjectCard';
 import CreateProjectModal from '../growth-team/CreateProjectModal';
+import ProjectSearchFilter, { ProjectFilters } from '../ProjectSearchFilter';
+import { categorizeProjects, filterAndSortProjects } from '@/lib/project-filters';
 import type { Project, Phase, Sprint, ConsultantsOnProjects, PhaseAllocation } from '@prisma/client';
 
 type ProjectWithDetails = Project & {
@@ -23,65 +25,61 @@ type ProjectWithDetails = Project & {
 interface ProjectsPageClientProps {
   projects: ProjectWithDetails[];
   isGrowthTeam: boolean;
+  hideHeader?: boolean;
+  hideStats?: boolean;
+  hideCreateButton?: boolean;
 }
 
-export default function ProjectsPageClient({ projects, isGrowthTeam }: ProjectsPageClientProps) {
+export default function ProjectsPageClient({
+  projects,
+  isGrowthTeam,
+  hideHeader = false,
+  hideStats = false,
+  hideCreateButton = false
+}: ProjectsPageClientProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [filters, setFilters] = useState<ProjectFilters>({
+    search: '',
+    status: 'all',
+    sortBy: 'startDate',
+    sortOrder: 'desc'
+  });
 
-  // Helper function to categorize projects based on dates
-  const categorizeProjects = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  // Apply filters and sorting
+  const filteredProjects = filterAndSortProjects(projects, filters);
 
-    const current: ProjectWithDetails[] = [];
-    const upcoming: ProjectWithDetails[] = [];
-    const past: ProjectWithDetails[] = [];
-
-    projects.forEach(project => {
-      const startDate = new Date(project.startDate);
-      const endDate = project.endDate ? new Date(project.endDate) : null;
-
-      startDate.setHours(0, 0, 0, 0);
-      if (endDate) {
-        endDate.setHours(23, 59, 59, 999);
-      }
-
-      if (startDate > today) {
-        // Project hasn't started yet
-        upcoming.push(project);
-      } else if (endDate && endDate < today) {
-        // Project has ended
-        past.push(project);
-      } else {
-        // Project is currently active
-        current.push(project);
-      }
-    });
-
-    return { current, upcoming, past };
-  };
-
-  const { current, upcoming, past } = categorizeProjects();
+  // Categorize filtered projects
+  const { current, upcoming, past } = categorizeProjects(filteredProjects);
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-semibold text-foreground">
-          {isGrowthTeam ? 'All Projects' : 'Your Projects'}
-        </h1>
-        {isGrowthTeam && (
-          <button 
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center gap-2 py-3 px-6 text-sm font-semibold rounded-lg text-white bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all duration-200"
-          >
-            <FaPlus />
-            Create New Project
-          </button>
-        )}
-      </div>
+    <div className={hideHeader ? '' : 'p-4 md:p-8'}>
+      {!hideHeader && (
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-semibold text-foreground">
+            {isGrowthTeam ? 'All Projects' : 'Your Projects'}
+          </h1>
+          {isGrowthTeam && !hideCreateButton && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="inline-flex items-center gap-2 py-3 px-6 text-sm font-semibold rounded-lg text-white bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              <FaPlus />
+              Create New Project
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Search and Filter */}
+      <ProjectSearchFilter
+        filters={filters}
+        onFiltersChange={setFilters}
+        showStatusFilter={true}
+      />
 
       {/* Summary Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      {!hideStats && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 rounded-xl shadow-sm border border-green-200 dark:border-green-800 p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-green-500 dark:bg-green-600 rounded-lg">
@@ -93,10 +91,10 @@ export default function ProjectsPageClient({ projects, isGrowthTeam }: ProjectsP
             </div>
           </div>
           <div className="w-full bg-green-200 dark:bg-green-800/50 rounded-full h-1.5">
-            <div className="bg-green-500 dark:bg-green-400 h-1.5 rounded-full" style={{ width: `${projects.length > 0 ? (current.length / projects.length) * 100 : 0}%` }}></div>
+            <div className="bg-green-500 dark:bg-green-400 h-1.5 rounded-full" style={{ width: `${filteredProjects.length > 0 ? (current.length / filteredProjects.length) * 100 : 0}%` }}></div>
           </div>
           <p className="text-xs text-green-700 dark:text-green-300 mt-2">
-            {projects.length > 0 ? Math.round((current.length / projects.length) * 100) : 0}% of all projects
+            {filteredProjects.length > 0 ? Math.round((current.length / filteredProjects.length) * 100) : 0}% of filtered projects
           </p>
         </div>
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 rounded-xl shadow-sm border border-blue-200 dark:border-blue-800 p-6">
@@ -110,10 +108,10 @@ export default function ProjectsPageClient({ projects, isGrowthTeam }: ProjectsP
             </div>
           </div>
           <div className="w-full bg-blue-200 dark:bg-blue-800/50 rounded-full h-1.5">
-            <div className="bg-blue-500 dark:bg-blue-400 h-1.5 rounded-full" style={{ width: `${projects.length > 0 ? (upcoming.length / projects.length) * 100 : 0}%` }}></div>
+            <div className="bg-blue-500 dark:bg-blue-400 h-1.5 rounded-full" style={{ width: `${filteredProjects.length > 0 ? (upcoming.length / filteredProjects.length) * 100 : 0}%` }}></div>
           </div>
           <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
-            {projects.length > 0 ? Math.round((upcoming.length / projects.length) * 100) : 0}% of all projects
+            {filteredProjects.length > 0 ? Math.round((upcoming.length / filteredProjects.length) * 100) : 0}% of filtered projects
           </p>
         </div>
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -127,16 +125,17 @@ export default function ProjectsPageClient({ projects, isGrowthTeam }: ProjectsP
             </div>
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-            <div className="bg-gray-500 dark:bg-gray-400 h-1.5 rounded-full" style={{ width: `${projects.length > 0 ? (past.length / projects.length) * 100 : 0}%` }}></div>
+            <div className="bg-gray-500 dark:bg-gray-400 h-1.5 rounded-full" style={{ width: `${filteredProjects.length > 0 ? (past.length / filteredProjects.length) * 100 : 0}%` }}></div>
           </div>
           <p className="text-xs text-gray-700 dark:text-gray-300 mt-2">
-            {projects.length > 0 ? Math.round((past.length / projects.length) * 100) : 0}% of all projects
+            {filteredProjects.length > 0 ? Math.round((past.length / filteredProjects.length) * 100) : 0}% of filtered projects
           </p>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Projects by Status */}
-      {projects.length > 0 ? (
+      {filteredProjects.length > 0 ? (
         <div className="space-y-8">
           {/* Current Projects */}
           {current.length > 0 && (
@@ -192,10 +191,14 @@ export default function ProjectsPageClient({ projects, isGrowthTeam }: ProjectsP
       ) : (
         <div className="text-center py-12">
           <FaChartBar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-xl font-semibold text-foreground mb-2">No Projects Yet</h3>
+          <h3 className="text-xl font-semibold text-foreground mb-2">
+            {filters.search || filters.status !== 'all' ? 'No Projects Match Your Filters' : 'No Projects Yet'}
+          </h3>
           <p className="text-muted-foreground mb-6">
-            {isGrowthTeam 
-              ? 'Get started by creating your first project.' 
+            {filters.search || filters.status !== 'all'
+              ? 'Try adjusting your search or filter criteria.'
+              : isGrowthTeam
+              ? 'Get started by creating your first project.'
               : 'You have not been assigned to any projects yet.'}
           </p>
           {isGrowthTeam && (

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { FaCheck, FaTimes, FaUser, FaClock, FaSearch, FaFilter, FaSortAmountDown } from 'react-icons/fa';
+import { FaCheck, FaTimes, FaUser, FaClock, FaSearch, FaFilter, FaSortAmountDown, FaChevronDown, FaChevronUp, FaCalendarWeek } from 'react-icons/fa';
 import { formatHours, formatDate } from '@/lib/dates';
 import { generateColorFromString } from '@/lib/colors';
 import RejectionReasonModal from './RejectionReasonModal';
+import ConsultantScheduleView from '@/components/projects/allocations/ConsultantScheduleView';
 
 interface PhaseAllocation {
   id: string;
@@ -25,6 +26,11 @@ interface PhaseAllocation {
       id: string;
       title: string;
     };
+    sprints: Array<{
+      id: string;
+      startDate: Date;
+      endDate: Date;
+    }>;
   };
 }
 
@@ -57,6 +63,9 @@ export default function PhaseAllocationApproval({
   const [rejectionAllocationId, setRejectionAllocationId] = useState<string | null>(null);
   const [rejectionAllocationName, setRejectionAllocationName] = useState('');
   const [isSubmittingRejection, setIsSubmittingRejection] = useState(false);
+
+  // Expanded schedule view state
+  const [expandedScheduleId, setExpandedScheduleId] = useState<string | null>(null);
 
   // Filter and sort phase allocations
   const getFilteredAndSortedAllocations = () => {
@@ -145,6 +154,28 @@ export default function PhaseAllocationApproval({
     setRejectionAllocationId(allocation.id);
     setRejectionAllocationName(itemName);
     setRejectionModalOpen(true);
+  };
+
+  // Calculate number of weeks from sprints or date range
+  const calculateWeeks = (phase: PhaseAllocation['phase']) => {
+    // Try to calculate from sprints first
+    if (phase.sprints && phase.sprints.length > 0) {
+      // Each sprint is 2 weeks
+      return phase.sprints.length * 2;
+    }
+
+    // Fallback: calculate from date range
+    const start = new Date(phase.startDate);
+    const end = new Date(phase.endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const weeks = Math.ceil(diffDays / 7);
+    return weeks;
+  };
+
+  // Toggle schedule view
+  const toggleScheduleView = (allocationId: string) => {
+    setExpandedScheduleId(expandedScheduleId === allocationId ? null : allocationId);
   };
 
   return (
@@ -388,9 +419,15 @@ export default function PhaseAllocationApproval({
                           {allocation.phase.description}
                         </p>
                       )}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Phase: {formatDate(new Date(allocation.phase.startDate))} - {formatDate(new Date(allocation.phase.endDate))}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-xs text-muted-foreground">
+                          Phase: {formatDate(new Date(allocation.phase.startDate))} - {formatDate(new Date(allocation.phase.endDate))}
+                        </p>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-md text-xs font-medium">
+                          <FaCalendarWeek className="w-3 h-3" />
+                          {calculateWeeks(allocation.phase)} weeks
+                        </span>
+                      </div>
                     </div>
                     <div className="text-right ml-4">
                       <div className="text-2xl font-bold text-blue-600">
@@ -426,6 +463,32 @@ export default function PhaseAllocationApproval({
                       <span className="font-medium">Requested:</span> {formatDate(new Date(allocation.createdAt))}
                     </span>
                   </div>
+
+                  {/* View Consultant Schedule Button */}
+                  <div className="mt-4">
+                    <button
+                      onClick={() => toggleScheduleView(allocation.id)}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-700 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    >
+                      <FaCalendarWeek className="w-4 h-4" />
+                      {expandedScheduleId === allocation.id ? 'Hide' : 'View'} Consultant Schedule
+                      {expandedScheduleId === allocation.id ? (
+                        <FaChevronUp className="w-3 h-3" />
+                      ) : (
+                        <FaChevronDown className="w-3 h-3" />
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Expandable Consultant Schedule View */}
+                  {expandedScheduleId === allocation.id && (
+                    <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-lg border border-indigo-100 dark:border-indigo-800">
+                      <ConsultantScheduleView
+                        phaseId={allocation.phase.id}
+                        selectedConsultantIds={[allocation.consultant.id]}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 

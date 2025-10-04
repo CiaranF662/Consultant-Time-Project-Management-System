@@ -4,11 +4,15 @@ import { UserRole, ProjectRole, NotificationType } from '@prisma/client';
 import { sendEmail, renderEmailTemplate } from '@/lib/email';
 import { createNotification, createNotificationsForUsers, NotificationTemplates } from '@/lib/notifications';
 import ProjectAssignmentEmail from '@/emails/ProjectAssignmentEmail';
+import { createProjectSchema, safeValidateRequestBody, formatValidationErrors } from '@/lib/validation-schemas';
+import { logError, logApiRequest, logValidationError, logAuthorizationFailure } from '@/lib/error-logger';
 
 import { prisma } from "@/lib/prisma";
 
 // GET all projects the user is involved in (either as consultant or PM)
 export async function GET(request: Request) {
+  logApiRequest('GET', '/api/projects');
+
   const auth = await requireAuth();
   if (isAuthError(auth)) return auth;
   const { session, user } = auth;
@@ -85,23 +89,40 @@ export async function GET(request: Request) {
 
     return NextResponse.json(enrichedProjects);
   } catch (error) {
-    console.error('Error fetching projects:', error);
+    logError('Failed to fetch projects', error as Error, {
+      userId: session.user.id,
+      endpoint: '/api/projects'
+    });
     return new NextResponse(JSON.stringify({ error: 'Failed to fetch projects' }), { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
+  logApiRequest('POST', '/api/projects');
+
   const auth = await requireAuth();
   if (isAuthError(auth)) return auth;
   const { session, user } = auth;
 
   // Only Growth Team can create projects
   if (session.user.role !== UserRole.GROWTH_TEAM) {
+    logAuthorizationFailure(session.user.id, 'create project', 'projects');
     return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
   }
 
   try {
     const body = await request.json();
+
+    // Validate request body with Zod
+    const validation = safeValidateRequestBody(createProjectSchema, body);
+    if (!validation.success) {
+      logValidationError('/api/projects', formatValidationErrors(validation.error).details);
+      return new NextResponse(
+        JSON.stringify(formatValidationErrors(validation.error)),
+        { status: 400 }
+      );
+    }
+
     const {
       title,
       description,
@@ -111,20 +132,11 @@ export async function POST(request: Request) {
       productManagerId,
       budgetedHours,
       consultantAllocations
-    } = body;
+    } = validation.data;
 
-    // Validation
-    if (!title || !startDate || !durationInWeeks || !consultantIds || consultantIds.length === 0) {
-      return new NextResponse(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
-    }
-
-    if (!budgetedHours || budgetedHours <= 0) {
-      return new NextResponse(JSON.stringify({ error: 'Valid budget hours required' }), { status: 400 });
-    }
-
-    // Validate consultant allocations if provided
+    // Additional business validation for consultant allocations
     if (consultantAllocations) {
-      const totalAllocatedHours = Object.values(consultantAllocations).reduce((sum: number, hours: any) => sum + (hours || 0), 0);
+      const totalAllocatedHours = Object.values(consultantAllocations).reduce((sum: number, hours: number) => sum + hours, 0);
       if (totalAllocatedHours === 0) {
         return new NextResponse(JSON.stringify({ error: 'At least one consultant must have allocated hours' }), { status: 400 });
       }
@@ -134,10 +146,6 @@ export async function POST(request: Request) {
       if (consultantsWithoutAllocations.length > 0) {
         return new NextResponse(JSON.stringify({ error: 'All selected consultants must have allocated hours greater than 0' }), { status: 400 });
       }
-    }
-
-    if (isNaN(parseInt(durationInWeeks, 10)) || parseInt(durationInWeeks, 10) <= 0) {
-      return new NextResponse(JSON.stringify({ error: 'Duration must be a positive number.' }), { status: 400 });
     }
 
     // Ensure project starts on a Monday
@@ -201,7 +209,7 @@ export async function POST(request: Request) {
         description,
         startDate: projectStartDate,
         endDate: projectEndDate,
-        budgetedHours: parseInt(budgetedHours, 10),
+        budgetedHours: budgetedHours,
         productManagerId,
         consultants: {
           create: consultantsData
@@ -313,7 +321,10 @@ export async function POST(request: Request) {
     return NextResponse.json(newProject, { status: 201 });
 
   } catch (error) {
-    console.error('Error creating project:', error);
+    logError('Failed to create project', error as Error, {
+      userId: session.user.id,
+      endpoint: '/api/projects'
+    });
     return new NextResponse(JSON.stringify({ error: 'Failed to create project' }), { status: 500 });
   }
 }

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { Sprint } from '@prisma/client';
 import axios from 'axios';
 import { FaTimes, FaSave, FaProjectDiagram, FaCalendarAlt, FaInfoCircle, FaCheckCircle, FaExclamationTriangle, FaUsers, FaClock, FaUser, FaSearch, FaCalculator } from 'react-icons/fa';
+import ConsultantScheduleView from '../allocations/ConsultantScheduleView';
 
 interface Consultant {
   id: string;
@@ -803,6 +804,17 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                   </div>
                 )}
               </div>
+
+              {/* Consultant Workload Schedule */}
+              {selectedConsultantIds.length > 0 && selectedSprintIds.length > 0 && (
+                <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-lg border border-indigo-100 dark:border-indigo-800">
+                  <ConsultantScheduleView
+                    sprintIds={selectedSprintIds}
+                    projectId={project.id}
+                    selectedConsultantIds={selectedConsultantIds}
+                  />
+                </div>
+              )}
 
               {/* Allocation Summary */}
               {selectedConsultantIds.length > 0 && (

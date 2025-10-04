@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { FaPlus, FaUsers, FaChartBar, FaExclamationCircle, FaClock, FaProjectDiagram, FaTh, FaCheckCircle, FaBell } from 'react-icons/fa';
 import ResourceTimeline from '../timeline/ResourceTimeline';
 import CreateProjectModal from '@/components/projects/growth-team/CreateProjectModal';
-import ProjectCard from '@/components/projects/details/ProjectCard';
 import GrowthTeamGanttChart from '../gantt/GrowthTeamGanttChart';
+import ProjectsPageClient from '@/components/projects/details/ProjectsPageClient';
+import { categorizeProjects } from '@/lib/project-filters';
 
 import type { Project, Phase, Sprint, ConsultantsOnProjects, PhaseAllocation } from '@prisma/client';
 
@@ -112,40 +113,8 @@ export default function GrowthTeamDashboard({ data, userRole }: GrowthTeamDashbo
     return () => clearInterval(interval);
   }, []);
 
-  // Helper function to categorize projects based on dates
-  const categorizeProjects = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const current: ProjectWithDetails[] = [];
-    const upcoming: ProjectWithDetails[] = [];
-    const past: ProjectWithDetails[] = [];
-
-    data.projects.forEach(project => {
-      const startDate = new Date(project.startDate);
-      const endDate = project.endDate ? new Date(project.endDate) : null;
-
-      startDate.setHours(0, 0, 0, 0);
-      if (endDate) {
-        endDate.setHours(23, 59, 59, 999);
-      }
-
-      if (startDate > today) {
-        // Project hasn't started yet
-        upcoming.push(project);
-      } else if (endDate && endDate < today) {
-        // Project has ended
-        past.push(project);
-      } else {
-        // Project is currently active
-        current.push(project);
-      }
-    });
-
-    return { current, upcoming, past };
-  };
-
-  const { current, upcoming, past } = categorizeProjects();
+  // Categorize projects for summary stats
+  const { current, upcoming, past } = categorizeProjects(data.projects);
 
   return (
     <div className="p-4 md:p-8">
@@ -458,86 +427,15 @@ export default function GrowthTeamDashboard({ data, userRole }: GrowthTeamDashbo
         </div>
       )}
 
-      {/* Projects View */}
+      {/* Projects View - Reuse ProjectsPageClient */}
       {activeView === 'projects' && (
-        <div className="space-y-8">
-          {/* Current Projects */}
-          {current.length > 0 && (
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <h2 className="text-xl font-semibold text-foreground">Current Projects</h2>
-                <span className="bg-green-100 text-green-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
-                  {current.length} active
-                </span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {current.map((project) => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Upcoming Projects */}
-          {upcoming.length > 0 && (
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <h2 className="text-xl font-semibold text-foreground">Upcoming Projects</h2>
-                <span className="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
-                  {upcoming.length} scheduled
-                </span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {upcoming.map((project) => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Past Projects */}
-          {past.length > 0 && (
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <h2 className="text-xl font-semibold text-foreground">Past Projects</h2>
-                <span className="bg-gray-100 text-foreground text-sm font-medium px-2.5 py-0.5 rounded-full">
-                  {past.length} completed
-                </span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {past.slice(0, 6).map((project) => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
-              </div>
-              {past.length > 6 && (
-                <div className="text-center mt-4">
-                  <Link
-                    href="/dashboard/projects"
-                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-                  >
-                    View all {past.length} past projects
-                  </Link>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* No Projects Message */}
-          {current.length === 0 && upcoming.length === 0 && past.length === 0 && (
-            <div className="text-center py-12">
-              <FaChartBar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">No projects found</h3>
-              <p className="text-muted-foreground mb-6">Get started by creating your first project.</p>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="inline-flex items-center gap-2 py-2 px-4 text-sm font-semibold rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-              >
-                <FaPlus />
-                Create New Project
-              </button>
-            </div>
-          )}
-        </div>
+        <ProjectsPageClient
+          projects={data.projects}
+          isGrowthTeam={true}
+          hideHeader={true}
+          hideStats={true}
+          hideCreateButton={true}
+        />
       )}
 
 

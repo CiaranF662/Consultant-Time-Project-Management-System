@@ -23,6 +23,10 @@ export async function GET(request: Request) {
           include: {
             project: {
               select: { id: true, title: true }
+            },
+            sprints: {
+              select: { id: true, startDate: true, endDate: true },
+              orderBy: { startDate: 'asc' }
             }
           }
         }

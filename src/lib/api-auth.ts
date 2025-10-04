@@ -144,3 +144,85 @@ export async function checkIsGrowthTeam(userId: string): Promise<boolean> {
 
   return user?.role === UserRole.GROWTH_TEAM;
 }
+
+/**
+ * Check if user is assigned to a specific project (as any role)
+ *
+ * @param userId - User ID to check
+ * @param projectId - Project ID to check against
+ * @returns boolean - True if user is assigned to project
+ */
+export async function checkIsProjectMember(
+  userId: string,
+  projectId: string
+): Promise<boolean> {
+  const assignment = await prisma.consultantsOnProjects.findUnique({
+    where: {
+      userId_projectId: {
+        userId,
+        projectId
+      }
+    }
+  });
+
+  return !!assignment;
+}
+
+/**
+ * Require user to be assigned to a specific project
+ *
+ * @param userId - User ID to check
+ * @param projectId - Project ID to check against
+ * @returns true if authorized, NextResponse if not
+ */
+export async function requireProjectMember(
+  userId: string,
+  projectId: string
+): Promise<true | NextResponse> {
+  const isMember = await checkIsProjectMember(userId, projectId);
+
+  if (!isMember) {
+    return new NextResponse(
+      JSON.stringify({ error: 'Not authorized to access this project' }),
+      { status: 403 }
+    );
+  }
+
+  return true;
+}
+
+/**
+ * Check if user owns a specific phase allocation
+ *
+ * @param userId - User ID to check
+ * @param allocationId - Phase allocation ID
+ * @returns boolean - True if user owns the allocation
+ */
+export async function checkOwnsPhaseAllocation(
+  userId: string,
+  allocationId: string
+): Promise<boolean> {
+  const allocation = await prisma.phaseAllocation.findUnique({
+    where: { id: allocationId },
+    select: { consultantId: true }
+  });
+
+  return allocation?.consultantId === userId;
+}
+
+/**
+ * Check if user is Growth Team OR owns the allocation
+ *
+ * @param userId - User ID to check
+ * @param allocationId - Phase allocation ID
+ * @returns boolean - True if authorized
+ */
+export async function checkCanAccessAllocation(
+  userId: string,
+  allocationId: string
+): Promise<boolean> {
+  const isGrowthTeam = await checkIsGrowthTeam(userId);
+  if (isGrowthTeam) return true;
+
+  return checkOwnsPhaseAllocation(userId, allocationId);
+}
