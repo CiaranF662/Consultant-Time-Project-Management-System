@@ -75,40 +75,56 @@ o	All requests require a reason and are sent to the Growth Team for formal appro
 
 ### Tech Stack
 - **Frontend**: Next.js 15 with App Router, React 19, TypeScript
-- **Styling**: Tailwind CSS with shadcn/ui components
-- **Authentication**: NextAuth.js with JWT strategy (15-minute sessions)
+- **Styling**: Tailwind CSS with shadcn/ui components, Dark mode support
+- **Authentication**: NextAuth.js with JWT strategy (4-hour sessions with 15-minute inactivity timeout)
 - **Database**: PostgreSQL with Prisma ORM
-- **State Management**: Zustand for client-side state
+- **Email**: React Email for transactional emails (notifications, approvals)
 
 ### Database Schema
 The application uses a sophisticated schema centered around:
 - **Users**: Role-based (GROWTH_TEAM, CONSULTANT) with approval status
-- **Projects**: Managed by Product Managers with consultant assignments
-- **Phases**: Project phases with resource allocation
-- **Sprints**: 2-week sprint cycles assignable to phases
-- **Allocations**: Weekly resource planning (PhaseAllocation → WeeklyAllocation)
-- **Hour Change Requests**: System for requesting allocation adjustments
+- **Projects**: Managed by Product Managers with consultant assignments and budget tracking
+- **Phases**: Project phases with resource allocation and sprint assignment
+- **Sprints**: Auto-generated 2-week sprint cycles assignable to phases
+- **Allocations**: Two-tier system (PhaseAllocation → WeeklyAllocation) with approval workflow
+- **Hour Change Requests**: System for requesting allocation adjustments with approval workflow
+- **Notifications**: Real-time notification system with email integration
 
 ### Application Structure
 
 ```
 src/
 ├── app/
-│   ├── (dashboard)/dashboard/    # Protected dashboard routes
-│   │   ├── projects/            # Project management
-│   │   ├── allocations/         # Resource allocation
-│   │   ├── hour-requests/       # Hour change management
-│   │   └── create-project/      # Project creation
-│   ├── api/                     # API routes
-│   ├── components/
-│   │   ├── dashboards/          # Role-specific dashboards
-│   │   └── ui/                  # shadcn/ui components
-│   ├── login/ & register/       # Authentication pages
-│   └── pending-approval/        # Approval workflow
+│   ├── (dashboard)/dashboard/       # Protected dashboard routes
+│   │   ├── projects/               # Project management & detail views
+│   │   ├── gantt/                  # Portfolio timeline (Gantt chart)
+│   │   ├── weekly-planner/         # Consultant weekly allocation planner
+│   │   ├── hour-approvals/         # Growth Team approval dashboard
+│   │   ├── budget/                 # Budget overview
+│   │   ├── notifications/          # Notification center
+│   │   ├── admin/                  # Admin routes (user management, approvals)
+│   │   └── team-allocations/       # PM team allocation view
+│   ├── api/                        # API routes
+│   │   ├── projects/               # Project CRUD
+│   │   ├── phases/                 # Phase management
+│   │   ├── notifications/          # Notification system
+│   │   └── current-user/           # User session data
+│   ├── components/                 # Renamed from app/components
+│   │   ├── consultant/             # Consultant-specific components
+│   │   ├── growth-team/            # Growth Team components
+│   │   ├── product-manager/        # Product Manager components
+│   │   ├── projects/               # Project management components
+│   │   ├── notifications/          # Notification UI
+│   │   └── ui/                     # shadcn/ui components
+│   ├── login/ & register/          # Authentication pages
+│   └── pending-approval/           # User approval workflow
 ├── lib/
-│   └── auth.ts                  # NextAuth configuration
-├── types/                       # TypeScript definitions
-└── middleware.ts                # Route protection
+│   ├── auth.ts                     # NextAuth configuration
+│   ├── prisma.ts                   # Prisma client singleton
+│   └── dates.ts                    # Date utility functions
+├── emails/                          # React Email templates
+├── types/                           # TypeScript definitions
+└── middleware.ts                    # Route protection
 ```
 
 ### Authentication & Authorization
@@ -117,15 +133,20 @@ src/
 - **Role-based access**: Growth Team vs Consultant permissions
 - **Product Manager detection**: Based on project role assignments
 - **Middleware protection**: Auto-redirects for auth routes
-- **Session management**: JWT with 15-minute expiration
+- **Session management**: JWT with 4-hour expiration and 15-minute inactivity timeout
 
 ### Key Features
 
-1. **Dashboard System**: Role-specific views (GrowthTeamDashboard vs ConsultantDashboard)
-2. **Resource Allocation**: Weekly planning with phase-based budgeting
-3. **Sprint Management**: 2-week cycles with phase assignment
-4. **Hour Change Requests**: Approval workflow for allocation adjustments
-5. **Project Management**: Full CRUD with consultant assignment
+1. **Dashboard System**: Role-specific views (Growth Team, Product Manager, Consultant)
+2. **Resource Allocation**: Two-tier system (Phase Allocations → Weekly Allocations) with approval workflow
+3. **Sprint Management**: Auto-generated 2-week cycles with phase assignment
+4. **Hour Change Requests**: Approval workflow for allocation adjustments with reason tracking
+5. **Project Management**: Full CRUD with consultant assignment, budget tracking, and availability indicators
+6. **Portfolio Timeline**: Gantt chart view showing all consultants' weekly allocations across projects
+7. **Notification System**: Real-time notifications with email integration and approval workflows
+8. **Budget Tracking**: Real-time budget vs. allocated hours tracking with visual indicators
+9. **User Management**: Approval system for Growth Team members
+10. **Dark Mode**: Full dark mode support throughout the application
 
 ### Database Connections
 

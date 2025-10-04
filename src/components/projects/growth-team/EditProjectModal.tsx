@@ -330,10 +330,10 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div 
+    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+      <div
         ref={modalRef}
-        className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
       >
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 flex items-center justify-between text-white">
@@ -356,11 +356,11 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
 
         {/* Budget Progress Indicator - Fixed at top */}
         {budgetedHours && parseInt(budgetedHours) > 0 && Object.keys(consultantAllocations).length > 0 && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200 p-4">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-800/20 border-b border-blue-200 dark:border-blue-700 p-4">
             <div className="space-y-3">
               <div className="flex justify-between items-center text-sm">
-                <span className="font-semibold text-blue-800">Budget Allocation Progress</span>
-                <span className="font-bold text-blue-900">
+                <span className="font-semibold text-blue-800 dark:text-blue-300">Budget Allocation Progress</span>
+                <span className="font-bold text-blue-900 dark:text-blue-200">
                   {getTotalAllocatedHours()} / {budgetedHours} hours
                   <span className="ml-2 text-xs">
                     ({Math.round((getTotalAllocatedHours() / parseInt(budgetedHours)) * 100)}%)
@@ -384,12 +384,12 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
               <div className="flex justify-between items-center text-xs">
                 <span className={`font-medium ${
                   parseInt(budgetedHours) >= getTotalAllocatedHours()
-                    ? 'text-green-700'
-                    : 'text-red-700'
+                    ? 'text-green-700 dark:text-green-400'
+                    : 'text-red-700 dark:text-red-400'
                 }`}>
                   Remaining: {parseInt(budgetedHours) - getTotalAllocatedHours()} hours
                 </span>
-                <span className="text-gray-600">
+                <span className="text-gray-600 dark:text-gray-400">
                   Team Members: {[selectedProductManagerId, ...selectedConsultantIds].filter(id => id).length}
                 </span>
               </div>
@@ -403,7 +403,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
             
             {/* Important Notice */}
             {hasDurationChanged() && (
-              <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg">
+              <div className="bg-amber-50 dark:bg-amber-900/30 border-l-4 border-amber-400 dark:border-amber-600 p-4 rounded-lg">
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0">
                     <svg className="w-5 h-5 text-amber-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -411,8 +411,8 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                     </svg>
                   </div>
                   <div className="text-sm">
-                    <h3 className="font-medium text-amber-800 mb-1">Duration Change Impact</h3>
-                    <p className="text-amber-700">
+                    <h3 className="font-medium text-amber-800 dark:text-amber-300 mb-1">Duration Change Impact</h3>
+                    <p className="text-amber-700 dark:text-amber-400">
                       Changing project duration will adjust the end date and may require updating existing sprints, phases, and resource allocations.
                       Please review all project components after saving these changes.
                     </p>
@@ -422,7 +422,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
             )}
 
             {/* Basic Project Information */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-100">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-800/20 p-6 rounded-lg border border-blue-100 dark:border-blue-800">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center">
                   <FaBriefcase className="w-4 h-4" />
@@ -443,7 +443,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                       id="title"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
+                      className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:placeholder-gray-400 rounded-lg focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
                       placeholder="Enter project name..."
                       required
                     />
@@ -458,7 +458,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       rows={4}
-                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
+                      className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:placeholder-gray-400 rounded-lg focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
                       placeholder="Describe the project goals and scope..."
                     />
                   </div>
@@ -964,7 +964,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
           <button
             type="button"
             onClick={handleDelete}

@@ -211,24 +211,24 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
   };
 
   return (
-    <div className="w-80 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden max-w-[calc(100vw-2rem)]">
+    <div className="w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden max-w-[calc(100vw-2rem)]">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FaBell className="text-gray-600 dark:text-gray-300" />
             <h3 className="font-semibold text-foreground">Notifications</h3>
             {unreadCount > 0 && (
-              <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
+              <span className="px-2 py-1 bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200 text-xs font-medium rounded-full">
                 {unreadCount}
               </span>
             )}
           </div>
-          
+
           {unreadCount > 0 && (
             <button
               onClick={handleMarkAllAsRead}
-              className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+              className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
             >
               Mark all read
             </button>
@@ -248,15 +248,15 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
             <p className="text-sm text-muted-foreground">No notifications yet</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {notifications.map((notification) => {
               const config = notificationTypeConfig[notification.type] || { icon: '📋', color: 'text-gray-600 dark:text-gray-300' };
               const actionUrl = getRoleAwareActionUrl(notification);
-              
+
               const content = (
                 <div
-                  className={`p-3 hover:bg-gray-50 transition-colors cursor-pointer ${
-                    !notification.isRead ? 'bg-blue-50' : ''
+                  className={`p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer ${
+                    !notification.isRead ? 'bg-blue-50 dark:bg-blue-900/30' : ''
                   }`}
                   onClick={() => handleNotificationClick(notification)}
                 >
@@ -278,9 +278,9 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
                         <span className="text-xs text-muted-foreground">
                           {formatTimeAgo(notification.createdAt)}
                         </span>
-                        
+
                         {actionUrl && (
-                          <FaExternalLinkAlt className="text-xs text-blue-500" />
+                          <FaExternalLinkAlt className="text-xs text-blue-500 dark:text-blue-400" />
                         )}
                       </div>
                     </div>
@@ -288,12 +288,12 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
                     {/* Read indicator */}
                     <div className="flex-shrink-0 flex items-center">
                       {!notification.isRead && (
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <div className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full"></div>
                       )}
-                      
+
                       <button
                         onClick={(e) => handleMarkAsRead(notification.id, e)}
-                        className="ml-2 p-1 opacity-0 group-hover:opacity-100 hover:bg-gray-200 rounded text-muted-foreground hover:text-card-foreground"
+                        className="ml-2 p-1 opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-muted-foreground hover:text-card-foreground"
                         title="Mark as read"
                       >
                         <FaCheck className="text-xs" />

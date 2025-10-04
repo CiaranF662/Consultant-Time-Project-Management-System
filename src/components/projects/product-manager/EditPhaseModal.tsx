@@ -186,9 +186,9 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
   return (
     <div
       ref={modalRef}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4"
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -213,8 +213,8 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
         <div className="flex-1 overflow-y-auto">
           <form onSubmit={handleSubmit} className="space-y-6 p-6">
             {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-center gap-2 text-red-700">
+              <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+                <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
                   <FaExclamationTriangle className="w-4 h-4" />
                   <span className="text-sm font-medium">{error}</span>
                 </div>
@@ -222,7 +222,7 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
             )}
 
             {/* Phase Details Section */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-100">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-800/20 p-6 rounded-lg border border-blue-100 dark:border-blue-800">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center">
                   <FaProjectDiagram className="w-4 h-4" />
@@ -240,7 +240,7 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
                     id="phaseName"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
+                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:placeholder-gray-400 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
                     placeholder="Enter a descriptive phase name..."
                     required
                     disabled={isLoading}
@@ -256,7 +256,7 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
+                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:placeholder-gray-400 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
                     placeholder="Describe the objectives and scope of this phase..."
                     disabled={isLoading}
                   />
@@ -265,7 +265,7 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
             </div>
 
             {/* Sprint Selection Section */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg border border-green-100">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-800/20 p-6 rounded-lg border border-green-100 dark:border-green-800">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-8 h-8 bg-green-600 text-white rounded-lg flex items-center justify-center">
                   <FaCalendarAlt className="w-4 h-4" />
@@ -273,11 +273,11 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
                 <h2 className="text-lg font-bold text-foreground">Sprint Assignment</h2>
               </div>
 
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 Select the sprints that will be part of this phase. Sprints must be consecutive.
               </p>
 
-              <div className="space-y-3 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-white">
+              <div className="space-y-3 max-h-60 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900">
                 {availableSprints.map((sprint) => {
                   const isAvailable = isSprintAvailableForSelection(sprint);
                   const isSelected = selectedSprintIds.includes(sprint.id);
@@ -288,10 +288,10 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
                       key={sprint.id}
                       className={`p-3 rounded-lg border transition-all duration-200 ${
                         isSelected
-                          ? 'border-green-300 bg-green-50'
+                          ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/30'
                           : isAvailable
-                          ? 'border-gray-200 hover:border-green-300 hover:bg-green-50'
-                          : 'border-gray-100 bg-gray-50'
+                          ? 'border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/30'
+                          : 'border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900'
                       }`}
                     >
                       <div className="flex items-center">
@@ -311,12 +311,12 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
                             <div>
                               <span className="font-medium">Sprint {sprint.sprintNumber}</span>
                               {sprint.sprintNumber === 0 && (
-                                <span className="ml-2 text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
+                                <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 px-2 py-0.5 rounded-full">
                                   Project Kickoff
                                 </span>
                               )}
                               {isPastSprint && !isSelected && (
-                                <span className="text-red-500 text-sm ml-2">(Past sprint)</span>
+                                <span className="text-red-500 dark:text-red-400 text-sm ml-2">(Past sprint)</span>
                               )}
                             </div>
                             <div className="text-sm text-muted-foreground">
@@ -330,12 +330,12 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
                 })}
               </div>
 
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-start gap-2 text-blue-700">
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
+                <div className="flex items-start gap-2 text-blue-700 dark:text-blue-300">
                   <FaInfoCircle className="w-4 h-4 mt-0.5" />
                   <div className="text-sm">
                     <p className="font-medium mb-1">Sprint Selection Rules:</p>
-                    <ul className="text-xs space-y-1 text-blue-600">
+                    <ul className="text-xs space-y-1 text-blue-600 dark:text-blue-400">
                       <li>• Selected sprints must be consecutive (no gaps)</li>
                       <li>• Sprint 0 is reserved for the Project Kickoff phase only</li>
                       <li>• Past sprints can be kept if already assigned</li>
@@ -349,38 +349,38 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
             {summary && (
               <div className={`p-6 rounded-lg border ${
                 summary.isConsecutive
-                  ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200'
-                  : 'bg-gradient-to-r from-red-50 to-pink-50 border-red-200'
+                  ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-800/20 border-green-200 dark:border-green-700'
+                  : 'bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/30 dark:to-pink-800/20 border-red-200 dark:border-red-700'
               }`}>
                 <div className="flex items-center gap-2 mb-4">
                   {summary.isConsecutive ? (
-                    <FaCheckCircle className="w-5 h-5 text-green-600" />
+                    <FaCheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                   ) : (
-                    <FaExclamationTriangle className="w-5 h-5 text-red-600" />
+                    <FaExclamationTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
                   )}
-                  <h3 className={`font-semibold ${summary.isConsecutive ? 'text-green-800' : 'text-red-800'}`}>
+                  <h3 className={`font-semibold ${summary.isConsecutive ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}`}>
                     Updated Phase Summary
                   </h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center p-3 bg-white rounded-lg border border-gray-200">
+                  <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                     <div className="text-2xl font-bold text-card-foreground">{summary.count}</div>
-                    <div className="text-sm text-gray-600">Sprints Selected</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Sprints Selected</div>
                   </div>
-                  <div className="text-center p-3 bg-white rounded-lg border border-gray-200">
+                  <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                     <div className="text-sm font-medium text-card-foreground">{formatDate(summary.startDate)}</div>
-                    <div className="text-sm text-gray-600">Start Date</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Start Date</div>
                   </div>
-                  <div className="text-center p-3 bg-white rounded-lg border border-gray-200">
+                  <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                     <div className="text-sm font-medium text-card-foreground">{formatDate(summary.endDate)}</div>
-                    <div className="text-sm text-gray-600">End Date</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">End Date</div>
                   </div>
                 </div>
 
                 {!summary.isConsecutive && (
-                  <div className="mt-3 p-3 bg-red-100 border border-red-200 rounded-lg">
-                    <p className="text-sm text-red-700">
+                  <div className="mt-3 p-3 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+                    <p className="text-sm text-red-700 dark:text-red-300">
                       ⚠️ Selected sprints are not consecutive. Please ensure there are no gaps between selected sprints.
                     </p>
                   </div>
@@ -389,7 +389,7 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
             )}
 
             {/* Action Buttons */}
-            <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+            <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
               <button
                 type="button"
                 onClick={handleDelete}
@@ -404,7 +404,7 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-6 py-3 text-sm font-medium text-card-foreground bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200"
+                  className="px-6 py-3 text-sm font-medium text-card-foreground bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200"
                   disabled={isLoading}
                 >
                   Cancel

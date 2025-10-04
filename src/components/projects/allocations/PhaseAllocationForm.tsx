@@ -268,23 +268,23 @@ export default function PhaseAllocationForm({
   return (
     <div
       ref={modalRef}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4"
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-700 dark:to-purple-700 text-white p-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-white dark:bg-gray-900 bg-opacity-20 dark:bg-opacity-30 rounded-lg flex items-center justify-center">
               <FaClock className="w-6 h-6" />
             </div>
             <div>
               <h1 className="text-2xl font-bold">Phase Hour Allocation</h1>
-              <p className="text-indigo-100">Manage consultant hours for: <strong>{phaseName}</strong></p>
+              <p className="text-indigo-100 dark:text-indigo-200">Manage consultant hours for: <strong>{phaseName}</strong></p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg flex items-center justify-center transition-all duration-200"
+            className="w-8 h-8 bg-white dark:bg-gray-900 bg-opacity-20 dark:bg-opacity-30 hover:bg-opacity-30 dark:hover:bg-opacity-40 rounded-lg flex items-center justify-center transition-all duration-200"
             disabled={isSaving}
           >
             <FaTimes className="w-4 h-4" />
@@ -296,22 +296,22 @@ export default function PhaseAllocationForm({
           <div className="space-y-6 p-6">
             
             {/* Hour Allocation Section */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-100">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 p-6 rounded-lg border border-blue-100 dark:border-blue-800">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-blue-600 dark:bg-blue-700 text-white rounded-lg flex items-center justify-center">
                   <FaUsers className="w-4 h-4" />
                 </div>
                 <h2 className="text-lg font-bold text-foreground">Consultant Hour Allocations</h2>
               </div>
-              
-              <p className="text-xs text-gray-600 mb-4">
+
+              <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">
                 Assign specific hour allocations to consultants for this phase.
               </p>
 
               {/* Pending Approvals Notice */}
               {existingAllocations.some(ea => ea.approvalStatus === 'PENDING') && (
-                <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                  <div className="flex items-center gap-2 text-orange-700">
+                <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 rounded-lg">
+                  <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
                     <FaHourglassHalf className="w-4 h-4" />
                     <span className="text-sm font-medium">
                       Some allocations are pending Growth Team approval
@@ -322,8 +322,8 @@ export default function PhaseAllocationForm({
 
               {/* Rejected Allocations Notice */}
               {existingAllocations.some(ea => ea.approvalStatus === 'REJECTED') && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <div className="flex items-center gap-2 text-red-700 mb-2">
+                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+                  <div className="flex items-center gap-2 text-red-700 dark:text-red-300 mb-2">
                     <FaTimesCircle className="w-4 h-4" />
                     <span className="text-sm font-medium">
                       Some allocations were rejected by Growth Team
@@ -333,7 +333,7 @@ export default function PhaseAllocationForm({
                     {existingAllocations
                       .filter(ea => ea.approvalStatus === 'REJECTED' && ea.rejectionReason)
                       .map((ea, index) => (
-                        <div key={index} className="text-xs text-red-600">
+                        <div key={index} className="text-xs text-red-600 dark:text-red-400">
                           <span className="font-semibold">{ea.consultantName}:</span> {ea.rejectionReason}
                         </div>
                       ))}
@@ -344,9 +344,9 @@ export default function PhaseAllocationForm({
               {/* Selected Team Members with Professional Hour Allocation */}
               {selectedConsultantIds.length > 0 && (
                 <div className="mb-4">
-                  <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg border border-orange-100 p-4">
+                  <div className="bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/30 dark:to-yellow-900/30 rounded-lg border border-orange-100 dark:border-orange-800 p-4">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-6 h-6 bg-orange-600 text-white rounded-lg flex items-center justify-center">
+                      <div className="w-6 h-6 bg-orange-600 dark:bg-orange-700 text-white rounded-lg flex items-center justify-center">
                         <FaClock className="w-3 h-3" />
                       </div>
                       <div className="text-sm font-semibold text-foreground">Phase Hour Allocation</div>
@@ -369,13 +369,13 @@ export default function PhaseAllocationForm({
                         return (
                           <div key={consultantId} className={`relative p-4 rounded-lg border shadow-sm transition-all duration-200 ${
                             isRejected
-                              ? 'bg-gradient-to-r from-red-50 to-pink-50 border-red-200'
+                              ? 'bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/30 dark:to-pink-900/30 border-red-200 dark:border-red-700'
                               : isPending
-                              ? 'bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-200'
+                              ? 'bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/30 dark:to-yellow-900/30 border-orange-200 dark:border-orange-700'
                               : consultant?.role === 'PRODUCT_MANAGER'
-                              ? 'bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200'
-                              : 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200'
-                          } ${isOverAllocated ? 'ring-2 ring-red-200' : ''}`}>
+                              ? 'bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30 border-purple-200 dark:border-purple-700'
+                              : 'bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 border-blue-200 dark:border-blue-700'
+                          } ${isOverAllocated ? 'ring-2 ring-red-200 dark:ring-red-700' : ''}`}>
 
                             {/* Pending approval diagonal stripes */}
                             {isPending && (
@@ -410,7 +410,7 @@ export default function PhaseAllocationForm({
                             <div className="flex items-center justify-between relative z-10">
                               <div className="flex items-center">
                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium mr-4 ${
-                                  consultant?.role === 'PRODUCT_MANAGER' ? 'bg-purple-600' : 'bg-blue-600'
+                                  consultant?.role === 'PRODUCT_MANAGER' ? 'bg-purple-600 dark:bg-purple-700' : 'bg-blue-600 dark:bg-blue-700'
                                 }`}>
                                   <FaUser className="w-4 h-4" />
                                 </div>
@@ -419,19 +419,19 @@ export default function PhaseAllocationForm({
                                     <p className="font-semibold text-foreground">{consultant?.name}</p>
                                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                                       consultant?.role === 'PRODUCT_MANAGER'
-                                        ? 'bg-purple-100 text-purple-800'
-                                        : 'bg-blue-100 text-blue-800'
+                                        ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200'
+                                        : 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200'
                                     }`}>
                                       {consultant?.role === 'PRODUCT_MANAGER' ? 'Product Manager' : 'Team Member'}
                                     </span>
                                     {isPending && (
-                                      <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-200 text-orange-800 rounded-full text-xs font-medium">
+                                      <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-200 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200 rounded-full text-xs font-medium">
                                         <FaHourglassHalf className="w-2 h-2" />
                                         Pending
                                       </span>
                                     )}
                                     {isRejected && (
-                                      <span className="flex items-center gap-1 px-2 py-0.5 bg-red-200 text-red-800 rounded-full text-xs font-medium">
+                                      <span className="flex items-center gap-1 px-2 py-0.5 bg-red-200 dark:bg-red-900/50 text-red-800 dark:text-red-200 rounded-full text-xs font-medium">
                                         <FaTimesCircle className="w-2 h-2" />
                                         Rejected
                                       </span>
@@ -443,7 +443,7 @@ export default function PhaseAllocationForm({
                                   <div className="flex items-center gap-4">
                                     <div className="text-xs">
                                       <span className="text-muted-foreground">Project:</span>
-                                      <span className="font-semibold text-blue-600 ml-1">{projectAllocated}h</span>
+                                      <span className="font-semibold text-blue-600 dark:text-blue-400 ml-1">{projectAllocated}h</span>
                                     </div>
                                     <div className="text-xs">
                                       <span className="text-muted-foreground">Allocated:</span>
@@ -451,7 +451,7 @@ export default function PhaseAllocationForm({
                                     </div>
                                     <div className="text-xs">
                                       <span className="text-muted-foreground">Available:</span>
-                                      <span className={`font-semibold ml-1 ${availableHours > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                      <span className={`font-semibold ml-1 ${availableHours > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                         {availableHours}h
                                       </span>
                                     </div>
@@ -469,23 +469,23 @@ export default function PhaseAllocationForm({
                                       max={availableHours}
                                       value={consultantHours[consultantId] ? consultantHours[consultantId] : ''}
                                       onChange={(e) => updateConsultantHours(consultantId, parseFloat(e.target.value) || 0)}
-                                      className={`w-20 px-3 py-2 text-sm border-2 rounded-lg focus:ring-2 focus:ring-opacity-50 text-center transition-all duration-200 ${
+                                      className={`w-20 px-3 py-2 text-sm border-2 rounded-lg focus:ring-2 focus:ring-opacity-50 text-center transition-all duration-200 bg-white dark:bg-gray-900 text-foreground ${
                                         isOverAllocated
-                                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500 bg-red-50'
+                                          ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500 bg-red-50 dark:bg-red-900/30'
                                           : consultant?.role === 'PRODUCT_MANAGER'
-                                          ? 'border-purple-200 focus:border-purple-500 focus:ring-purple-500'
-                                          : 'border-blue-200 focus:border-blue-500 focus:ring-blue-500'
+                                          ? 'border-purple-200 dark:border-purple-700 focus:border-purple-500 focus:ring-purple-500'
+                                          : 'border-blue-200 dark:border-blue-700 focus:border-blue-500 focus:ring-blue-500'
                                       }`}
                                       placeholder="0"
                                       disabled={isSaving}
                                     />
                                     <span className={`text-sm font-medium ${
-                                      consultant?.role === 'PRODUCT_MANAGER' ? 'text-purple-700' : 'text-blue-700'
+                                      consultant?.role === 'PRODUCT_MANAGER' ? 'text-purple-700 dark:text-purple-300' : 'text-blue-700 dark:text-blue-300'
                                     }`}>hours</span>
                                   </div>
 
                                   {isOverAllocated && (
-                                    <div className="text-xs text-red-600">
+                                    <div className="text-xs text-red-600 dark:text-red-400">
                                       ⚠️ Over by {phaseHours - availableHours}h
                                     </div>
                                   )}
@@ -494,7 +494,7 @@ export default function PhaseAllocationForm({
                                 <button
                                   type="button"
                                   onClick={() => removeConsultant(consultantId)}
-                                  className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200"
+                                  className="p-2 text-muted-foreground hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all duration-200"
                                   title="Remove from phase"
                                   disabled={isSaving}
                                 >
@@ -520,7 +520,7 @@ export default function PhaseAllocationForm({
                       setShowConsultantDropdown(true);
                     }}
                     onFocus={() => setShowConsultantDropdown(true)}
-                    className="block w-full px-3 py-2 pr-8 rounded-lg border-2 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
+                    className="block w-full px-3 py-2 pr-8 rounded-lg border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-foreground shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
                     placeholder="Search and select consultants..."
                     disabled={isSaving}
                   />
@@ -528,7 +528,7 @@ export default function PhaseAllocationForm({
                 </div>
 
                 {showConsultantDropdown && (
-                  <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  <div className="absolute z-20 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     {getFilteredConsultants().filter(c => !selectedConsultantIds.includes(c.id)).length === 0 ? (
                       <div className="px-3 py-2 text-muted-foreground text-sm">No available consultants found</div>
                     ) : (
@@ -546,7 +546,7 @@ export default function PhaseAllocationForm({
                               setConsultantSearchQuery('');
                               setShowConsultantDropdown(false);
                             }}
-                            className="w-full text-left px-3 py-3 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none border-b border-gray-100 last:border-b-0"
+                            className="w-full text-left px-3 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-50 dark:focus:bg-blue-900/30 focus:outline-none border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                             disabled={isSaving}
                           >
                             <div className="flex items-center justify-between">
@@ -554,16 +554,16 @@ export default function PhaseAllocationForm({
                                 <div className="flex items-center gap-2">
                                   <div className="font-medium text-foreground text-sm">{consultant.name}</div>
                                   {consultant.role === 'PRODUCT_MANAGER' && (
-                                    <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full font-medium">
+                                    <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200 text-xs px-2 py-0.5 rounded-full font-medium">
                                       PM
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-xs text-gray-600">{consultant.email}</div>
+                                <div className="text-xs text-gray-600 dark:text-gray-400">{consultant.email}</div>
                               </div>
                               <div className="text-right">
                                 <div className="text-xs text-muted-foreground">Available</div>
-                                <div className={`text-sm font-semibold ${availableHours > 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
+                                <div className={`text-sm font-semibold ${availableHours > 0 ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
                                   {availableHours}h
                                 </div>
                               </div>
@@ -579,38 +579,38 @@ export default function PhaseAllocationForm({
 
             {/* Summary Section */}
             {selectedConsultantIds.length > 0 && (
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg border border-green-100">
-                <div className="flex items-center gap-2 text-sm text-green-800 font-semibold mb-4">
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 p-6 rounded-lg border border-green-100 dark:border-green-800">
+                <div className="flex items-center gap-2 text-sm text-green-800 dark:text-green-300 font-semibold mb-4">
                   <FaInfoCircle className="w-4 h-4" />
                   Allocation Summary
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 bg-white rounded-lg border border-green-200">
-                    <div className="text-2xl font-bold text-green-600">{getTotalHours()}</div>
-                    <div className="text-sm text-green-700">Total Hours</div>
+                  <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-green-200 dark:border-green-700">
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">{getTotalHours()}</div>
+                    <div className="text-sm text-green-700 dark:text-green-300">Total Hours</div>
                   </div>
-                  <div className="text-center p-3 bg-white rounded-lg border border-green-200">
-                    <div className="text-2xl font-bold text-green-600">{selectedConsultantIds.length}</div>
-                    <div className="text-sm text-green-700">Consultants</div>
+                  <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-green-200 dark:border-green-700">
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">{selectedConsultantIds.length}</div>
+                    <div className="text-sm text-green-700 dark:text-green-300">Consultants</div>
                   </div>
                 </div>
               </div>
             )}
 
             {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-500 text-sm">{error}</p>
+              <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+                <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Modal Footer */}
-        <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">
+        <div className="bg-gray-50 dark:bg-gray-900 px-6 py-4 flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700">
           <button
             type="button"
             onClick={onClose}
-            className="py-2 px-4 border-2 border-gray-300 rounded-lg text-sm font-medium text-card-foreground hover:bg-gray-100 hover:border-gray-400 transition-all duration-200"
+            className="py-2 px-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-card-foreground bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-200"
             disabled={isSaving}
           >
             Cancel
@@ -619,7 +619,7 @@ export default function PhaseAllocationForm({
             type="button"
             onClick={handleSave}
             disabled={isSaving || selectedConsultantIds.length === 0}
-            className="py-2 px-6 border-2 border-transparent rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl inline-flex items-center gap-2"
+            className="py-2 px-6 border-2 border-transparent rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl inline-flex items-center gap-2"
           >
             <FaSave className="w-4 h-4" />
             {isSaving ? 'Saving...' : 'Save Allocations'}

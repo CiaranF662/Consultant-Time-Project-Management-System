@@ -150,8 +150,8 @@ export default function CreateHourRequestModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[95vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-3xl max-h-[95vh] overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
           <div className="flex justify-between items-center">
@@ -179,10 +179,10 @@ export default function CreateHourRequestModal({
 
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {error && (
-              <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-400 rounded-r-lg">
+              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-400 dark:border-red-700 rounded-r-lg">
                 <div className="flex items-center">
                   <FaInfoCircle className="text-red-400 mr-3" />
-                  <p className="text-sm text-red-700">{error}</p>
+                  <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
                 </div>
               </div>
             )}
@@ -199,9 +199,9 @@ export default function CreateHourRequestModal({
               
               <div className="grid md:grid-cols-2 gap-4">
                 <label className={`relative flex items-start p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                  requestType === 'ADJUSTMENT' 
-                    ? 'border-blue-500 bg-blue-50 shadow-md' 
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  requestType === 'ADJUSTMENT'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 shadow-md'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                 }`}>
                   <input
                     type="radio"
@@ -213,13 +213,13 @@ export default function CreateHourRequestModal({
                   />
                   <div className="flex items-start gap-3 w-full">
                     <div className={`p-2 rounded-lg ${
-                      requestType === 'ADJUSTMENT' ? 'bg-blue-100' : 'bg-gray-100'
+                      requestType === 'ADJUSTMENT' ? 'bg-blue-100 dark:bg-blue-800' : 'bg-gray-100 dark:bg-gray-700'
                     }`}>
-                      <FaPlus className={requestType === 'ADJUSTMENT' ? 'text-blue-600' : 'text-muted-foreground'} />
+                      <FaPlus className={requestType === 'ADJUSTMENT' ? 'text-blue-600 dark:text-blue-300' : 'text-muted-foreground'} />
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-foreground">Hour Adjustment</div>
-                      <div className="text-sm text-gray-600 mt-1">
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         Increase or decrease your allocated hours for a specific phase
                       </div>
                     </div>
@@ -232,9 +232,9 @@ export default function CreateHourRequestModal({
                 </label>
                 
                 <label className={`relative flex items-start p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                  requestType === 'SHIFT' 
-                    ? 'border-blue-500 bg-blue-50 shadow-md' 
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  requestType === 'SHIFT'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 shadow-md'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                 }`}>
                   <input
                     type="radio"
@@ -246,13 +246,13 @@ export default function CreateHourRequestModal({
                   />
                   <div className="flex items-start gap-3 w-full">
                     <div className={`p-2 rounded-lg ${
-                      requestType === 'SHIFT' ? 'bg-blue-100' : 'bg-gray-100'
+                      requestType === 'SHIFT' ? 'bg-blue-100 dark:bg-blue-800' : 'bg-gray-100 dark:bg-gray-700'
                     }`}>
-                      <FaExchangeAlt className={requestType === 'SHIFT' ? 'text-blue-600' : 'text-muted-foreground'} />
+                      <FaExchangeAlt className={requestType === 'SHIFT' ? 'text-blue-600 dark:text-blue-300' : 'text-muted-foreground'} />
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-foreground">Hour Transfer</div>
-                      <div className="text-sm text-gray-600 mt-1">
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         Transfer some of your hours to another team member
                       </div>
                     </div>
@@ -285,7 +285,7 @@ export default function CreateHourRequestModal({
                   <select
                     value={selectedProjectId}
                     onChange={(e) => handleProjectChange(e.target.value)}
-                    className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-900 text-foreground [&>option]:bg-white [&>option]:dark:bg-gray-800 [&>option]:text-gray-900 [&>option]:dark:text-gray-100"
                     disabled={isSubmitting}
                     required
                   >
@@ -306,7 +306,7 @@ export default function CreateHourRequestModal({
                   <select
                     value={selectedAllocationId}
                     onChange={(e) => setSelectedAllocationId(e.target.value)}
-                    className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-900 text-foreground [&>option]:bg-white [&>option]:dark:bg-gray-800 [&>option]:text-gray-900 [&>option]:dark:text-gray-100"
                     disabled={isSubmitting || !selectedProjectId}
                     required
                   >
@@ -323,31 +323,31 @@ export default function CreateHourRequestModal({
               </div>
                 
               {selectedAllocation && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-xl">
                   <div className="flex items-center gap-2 mb-3">
-                    <FaClock className="text-blue-600" />
-                    <span className="font-medium text-blue-800">Selected Allocation Details</span>
+                    <FaClock className="text-blue-600 dark:text-blue-400" />
+                    <span className="font-medium text-blue-800 dark:text-blue-200">Selected Allocation Details</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-600 block">Project:</span>
+                      <span className="text-gray-600 dark:text-gray-400 block">Project:</span>
                       <span className="font-medium text-foreground">{selectedAllocation.phase.project.title}</span>
                     </div>
                     <div>
-                      <span className="text-gray-600 block">Phase:</span>
+                      <span className="text-gray-600 dark:text-gray-400 block">Phase:</span>
                       <span className="font-medium text-foreground">{selectedAllocation.phase.name}</span>
                     </div>
                     <div>
-                      <span className="text-gray-600 block">Current Hours:</span>
-                      <span className="font-semibold text-blue-700">{formatHours(selectedAllocation.totalHours)}</span>
+                      <span className="text-gray-600 dark:text-gray-400 block">Current Hours:</span>
+                      <span className="font-semibold text-blue-700 dark:text-blue-300">{formatHours(selectedAllocation.totalHours)}</span>
                     </div>
                   </div>
                   {otherConsultants.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-blue-200">
-                      <span className="text-gray-600 text-sm block mb-1">Team Members:</span>
+                    <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+                      <span className="text-gray-600 dark:text-gray-400 text-sm block mb-1">Team Members:</span>
                       <div className="flex flex-wrap gap-2">
                         {otherConsultants.map((consultant: any) => (
-                          <span key={consultant.userId} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                          <span key={consultant.userId} className="text-xs bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 px-2 py-1 rounded-full">
                             {consultant.user.name || consultant.user.email}
                           </span>
                         ))}
@@ -369,7 +369,7 @@ export default function CreateHourRequestModal({
                   <span className="text-red-500">*</span>
                 </div>
                 
-                <div className="bg-gray-50 p-4 rounded-xl">
+                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-xl">
                   <div className="flex items-center gap-4">
                     <div className="flex-1">
                       <label htmlFor="adjustmentHours" className="block text-sm font-medium text-card-foreground mb-2">
@@ -381,7 +381,7 @@ export default function CreateHourRequestModal({
                         value={adjustmentHours}
                         onChange={(e) => setAdjustmentHours(parseFloat(e.target.value) || 0)}
                         step="0.5"
-                        className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-900 text-foreground placeholder-gray-500 dark:placeholder-gray-400"
                         placeholder="0"
                         disabled={isSubmitting}
                         required
@@ -439,7 +439,7 @@ export default function CreateHourRequestModal({
                       id="shiftToConsultant"
                       value={shiftToConsultantId}
                       onChange={(e) => setShiftToConsultantId(e.target.value)}
-                      className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                      className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-900 text-foreground [&>option]:bg-white [&>option]:dark:bg-gray-800 [&>option]:text-gray-900 [&>option]:dark:text-gray-100"
                       disabled={isSubmitting || !selectedAllocation}
                       required
                     >
@@ -464,7 +464,7 @@ export default function CreateHourRequestModal({
                       min="0.5"
                       max={selectedAllocation?.totalHours || 0}
                       step="0.5"
-                      className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-900 text-foreground placeholder-gray-500 dark:placeholder-gray-400"
                       placeholder="0"
                       disabled={isSubmitting}
                       required
@@ -473,23 +473,23 @@ export default function CreateHourRequestModal({
                 </div>
                 
                 {selectedAllocation && shiftHours > 0 && (
-                  <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                  <div className="p-4 bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 rounded-xl">
                     <div className="flex items-center gap-2 mb-2">
-                      <FaExchangeAlt className="text-orange-600" />
-                      <span className="font-medium text-orange-800">Transfer Preview</span>
+                      <FaExchangeAlt className="text-orange-600 dark:text-orange-400" />
+                      <span className="font-medium text-orange-800 dark:text-orange-200">Transfer Preview</span>
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="text-gray-600">Available Hours:</span>
-                        <span className="ml-2 font-medium">{formatHours(selectedAllocation.totalHours)}</span>
+                        <span className="text-gray-600 dark:text-gray-400">Available Hours:</span>
+                        <span className="ml-2 font-medium text-foreground">{formatHours(selectedAllocation.totalHours)}</span>
                       </div>
                       <div>
-                        <span className="text-gray-600">Transferring:</span>
-                        <span className="ml-2 font-semibold text-orange-700">{formatHours(shiftHours)}</span>
+                        <span className="text-gray-600 dark:text-gray-400">Transferring:</span>
+                        <span className="ml-2 font-semibold text-orange-700 dark:text-orange-300">{formatHours(shiftHours)}</span>
                       </div>
                       <div>
-                        <span className="text-gray-600">Your Remaining:</span>
-                        <span className="ml-2 font-semibold text-blue-700">
+                        <span className="text-gray-600 dark:text-gray-400">Your Remaining:</span>
+                        <span className="ml-2 font-semibold text-blue-700 dark:text-blue-300">
                           {formatHours(selectedAllocation.totalHours - shiftHours)}
                         </span>
                       </div>
@@ -514,7 +514,7 @@ export default function CreateHourRequestModal({
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 rows={4}
-                className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-900 text-foreground placeholder-gray-500 dark:placeholder-gray-400 resize-none"
                 placeholder="Please provide a detailed explanation for why this hour change is needed. This helps with approval decisions..."
                 disabled={isSubmitting}
                 required
@@ -525,11 +525,11 @@ export default function CreateHourRequestModal({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
+            <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-6 py-3 text-sm font-medium text-card-foreground bg-white border border-gray-300 rounded-xl shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 disabled={isSubmitting}
               >
                 Cancel
