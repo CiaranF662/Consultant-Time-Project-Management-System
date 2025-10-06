@@ -39,10 +39,10 @@ export default function ApprovalsSummaryCard() {
 
   if (loading) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-md border">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
         <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-          <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
         </div>
       </div>
     );
@@ -51,11 +51,11 @@ export default function ApprovalsSummaryCard() {
   return (
     <Link
       href="/dashboard/hour-approvals"
-      className="block bg-white p-6 rounded-lg shadow-md border hover:border-blue-500 transition-colors"
+      className="block bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-600">Pending Approvals</p>
+          <p className="text-sm font-medium text-muted-foreground">Pending Approvals</p>
           <p className="text-2xl font-bold text-foreground">{summary.totalPending}</p>
           {summary.totalPending > 0 && (
             <div className="mt-2 space-y-1">
@@ -79,9 +79,9 @@ export default function ApprovalsSummaryCard() {
         </div>
         <div className="flex items-center">
           {summary.totalPending > 0 ? (
-            <FaExclamationCircle className="h-8 w-8 text-orange-500" />
+            <FaExclamationCircle className="h-8 w-8 text-orange-500 dark:text-orange-400" />
           ) : (
-            <FaCheckCircle className="h-8 w-8 text-green-500" />
+            <FaCheckCircle className="h-8 w-8 text-green-500 dark:text-green-400" />
           )}
         </div>
       </div>

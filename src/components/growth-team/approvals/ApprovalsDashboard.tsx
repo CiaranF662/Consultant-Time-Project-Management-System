@@ -369,7 +369,7 @@ export default function ApprovalsDashboard({
   if (userRole !== 'GROWTH_TEAM') {
     return (
       <div className="p-8">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded">
           <FaExclamationTriangle className="inline mr-2" />
           Access denied. This dashboard is only available to Growth Team members.
         </div>
@@ -382,19 +382,19 @@ export default function ApprovalsDashboard({
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground">Approvals Dashboard</h1>
-        <p className="text-lg text-gray-600">Review and approve phase allocations and weekly plans</p>
+        <p className="text-lg text-muted-foreground">Review and approve phase allocations and weekly plans</p>
       </div>
 
       {/* Tab Switcher */}
       <div className="mb-6">
-        <div className="border-b border-gray-200">
+        <div className="border-b border-gray-200 dark:border-gray-700">
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab('phase')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
                 activeTab === 'phase'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-muted-foreground hover:text-card-foreground hover:border-gray-300'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-muted-foreground hover:text-card-foreground hover:border-gray-300 dark:hover:border-gray-600'
               }`}
             >
               <FaClock />
@@ -402,10 +402,10 @@ export default function ApprovalsDashboard({
             </button>
             <button
               onClick={() => setActiveTab('weekly')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
                 activeTab === 'weekly'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-muted-foreground hover:text-card-foreground hover:border-gray-300'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-muted-foreground hover:text-card-foreground hover:border-gray-300 dark:hover:border-gray-600'
               }`}
             >
               <FaUser />
@@ -414,10 +414,10 @@ export default function ApprovalsDashboard({
             {showFullInterface && (
               <button
                 onClick={() => setActiveTab('hour-changes')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
                   activeTab === 'hour-changes'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-muted-foreground hover:text-card-foreground hover:border-gray-300'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-muted-foreground hover:text-card-foreground hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
                 <FaEdit />
@@ -466,14 +466,14 @@ export default function ApprovalsDashboard({
       {notification.show && (
         <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ${
           notification.type === 'success'
-            ? 'bg-green-500 text-white'
-            : 'bg-red-500 text-white'
+            ? 'bg-green-500 dark:bg-green-600 text-white'
+            : 'bg-red-500 dark:bg-red-600 text-white'
         }`}>
           {notification.type === 'success' ? <FaCheckCircle /> : <FaTimes />}
           <span>{notification.message}</span>
           <button
             onClick={() => setNotification(prev => ({ ...prev, show: false }))}
-            className="ml-2 hover:opacity-70"
+            className="ml-2 hover:opacity-70 transition-opacity"
           >
             <FaTimes />
           </button>
@@ -482,8 +482,8 @@ export default function ApprovalsDashboard({
 
       {/* Modify Modal */}
       {modifyModal.isOpen && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border border-gray-200 dark:border-gray-700 w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-foreground">
@@ -491,14 +491,14 @@ export default function ApprovalsDashboard({
                 </h3>
                 <button
                   onClick={() => setModifyModal({ isOpen: false, type: 'phase' })}
-                  className="text-muted-foreground hover:text-gray-600"
+                  className="text-muted-foreground hover:text-card-foreground transition-colors"
                 >
                   <FaTimes className="w-5 h-5" />
                 </button>
               </div>
 
               {modifyModal.allocation && (
-                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
                   <p className="text-sm font-medium text-foreground">
                     {modifyModal.allocation.phase.project.title} - {modifyModal.allocation.phase.name}
                   </p>
@@ -522,7 +522,7 @@ export default function ApprovalsDashboard({
                     step="0.5"
                     value={modifyValues.hours}
                     onChange={(e) => setModifyValues(prev => ({ ...prev, hours: parseFloat(e.target.value) || 0 }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                     placeholder="Enter modified hours"
                   />
                 </div>
@@ -535,7 +535,7 @@ export default function ApprovalsDashboard({
                     value={modifyValues.reason}
                     onChange={(e) => setModifyValues(prev => ({ ...prev, reason: e.target.value }))}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
                     placeholder="Explain why you're modifying the hours..."
                   />
                 </div>
@@ -544,7 +544,7 @@ export default function ApprovalsDashboard({
               <div className="flex items-center justify-end gap-3 mt-6">
                 <button
                   onClick={() => setModifyModal({ isOpen: false, type: 'phase' })}
-                  className="px-4 py-2 text-sm font-medium text-card-foreground bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                  className="px-4 py-2 text-sm font-medium text-card-foreground bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors"
                 >
                   Cancel
                 </button>
@@ -563,7 +563,7 @@ export default function ApprovalsDashboard({
                     }
                   }}
                   disabled={!modifyValues.hours || modifyValues.hours <= 0}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-700 border border-transparent rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Apply Changes
                 </button>

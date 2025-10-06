@@ -128,20 +128,20 @@ export default function HourChangeApprovalsManager({ requests, userId }: HourCha
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Hour Change Requests</h1>
-            <p className="text-lg text-gray-600">Review and approve consultant hour change requests</p>
+            <p className="text-lg text-gray-600 dark:text-gray-400">Review and approve consultant hour change requests</p>
           </div>
-          <div className="bg-blue-100 px-4 py-2 rounded-lg">
-            <div className="text-sm text-blue-600">Pending Requests</div>
-            <div className="text-2xl font-bold text-blue-800">{pendingRequests.length}</div>
+          <div className="bg-blue-100 dark:bg-blue-900/30 px-4 py-2 rounded-lg">
+            <div className="text-sm text-blue-600 dark:text-blue-400">Pending Requests</div>
+            <div className="text-2xl font-bold text-blue-800 dark:text-blue-300">{pendingRequests.length}</div>
           </div>
         </div>
       </div>
 
       {/* Requests List */}
-      <div className="bg-white rounded-lg shadow-md border">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border">
         {pendingRequests.length === 0 ? (
           <div className="p-12 text-center">
-            <FaCheck className="mx-auto h-12 w-12 text-green-400 mb-4" />
+            <FaCheck className="mx-auto h-12 w-12 text-green-400 dark:text-green-500 mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-2">All caught up!</h3>
             <p className="text-muted-foreground">No pending hour change requests at this time.</p>
           </div>
@@ -151,10 +151,10 @@ export default function HourChangeApprovalsManager({ requests, userId }: HourCha
               const isProcessing = processingRequests.has(request.id);
               
               return (
-                <div key={request.id} className="p-6 hover:bg-gray-50">
+                <div key={request.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">
-                      <div className="p-3 bg-blue-100 rounded-full text-blue-600">
+                      <div className="p-3 bg-blue-100 rounded-full text-blue-600 dark:text-blue-400">
                         {getChangeTypeIcon(request.changeType)}
                       </div>
                       
@@ -163,12 +163,12 @@ export default function HourChangeApprovalsManager({ requests, userId }: HourCha
                           <h3 className="text-lg font-semibold text-foreground">
                             {getChangeTypeLabel(request.changeType)}
                           </h3>
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:text-yellow-300">
                             PENDING
                           </span>
                         </div>
                         
-                        <div className="space-y-2 text-sm text-gray-600">
+                        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                           <div>
                             <strong>Requested by:</strong> {request.requester.name || request.requester.email}
                           </div>
@@ -202,7 +202,7 @@ export default function HourChangeApprovalsManager({ requests, userId }: HourCha
                         
                         <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                           <div className="text-sm font-medium text-card-foreground mb-1">Reason:</div>
-                          <div className="text-sm text-gray-600">{request.reason}</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">{request.reason}</div>
                         </div>
                       </div>
                     </div>

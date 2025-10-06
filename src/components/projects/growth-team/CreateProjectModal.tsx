@@ -108,9 +108,28 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
           }
         });
 
-        // Convert array to object keyed by consultant ID
-        const availabilityMap = response.data.reduce((acc: any, item: any) => {
-          acc[item.consultant.id] = item;
+        // Convert array to object keyed by consultant ID with calculated status
+        const availabilityMap = response.data.consultants.reduce((acc: any, item: any) => {
+          // Calculate status and color based on averageHoursPerWeek
+          let availabilityStatus = 'available';
+          let availabilityColor = 'bg-green-100 text-green-800';
+
+          if (item.averageHoursPerWeek > 40) {
+            availabilityStatus = 'overloaded';
+            availabilityColor = 'bg-red-100 text-red-800';
+          } else if (item.averageHoursPerWeek > 30) {
+            availabilityStatus = 'busy';
+            availabilityColor = 'bg-orange-100 text-orange-800';
+          } else if (item.averageHoursPerWeek > 15) {
+            availabilityStatus = 'partially-busy';
+            availabilityColor = 'bg-yellow-100 text-yellow-800';
+          }
+
+          acc[item.consultant.id] = {
+            ...item,
+            availabilityStatus,
+            availabilityColor
+          };
           return acc;
         }, {});
 
@@ -123,7 +142,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
       }
     };
 
-    const timeoutId = setTimeout(fetchAvailability, 300); // Debounce API calls
+    const timeoutId = setTimeout(fetchAvailability, 300);
     return () => clearTimeout(timeoutId);
   }, [isOpen, startDate, durationInWeeks]);
 
@@ -187,7 +206,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
     setPmSearchQuery(selectedConsultant?.name || selectedConsultant?.email || '');
     setShowPmDropdown(false);
 
-    // Initialize PM allocation if not already set
+   
     if (!(consultantId in consultantAllocations)) {
       setConsultantAllocations(prev => ({
         ...prev,
@@ -813,14 +832,23 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                               <div className="w-10 h-10 bg-purple-600 dark:bg-purple-700 rounded-full flex items-center justify-center text-white text-sm font-medium mr-4">
                                 <FaUser className="w-4 h-4" />
                               </div>
-                              <div>
+                              <div className="flex-1">
                                 <p className="font-semibold text-foreground flex items-center gap-2">
                                   {consultants.find(c => c.id === selectedProductManagerId)?.name}
                                   <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200 text-xs px-2 py-1 rounded-full font-medium">
                                     Product Manager
                                   </span>
                                 </p>
-                                <p className="text-sm text-muted-foreground">{consultants.find(c => c.id === selectedProductManagerId)?.email}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <p className="text-sm text-muted-foreground">{consultants.find(c => c.id === selectedProductManagerId)?.email}</p>
+                                  {consultantAvailability[selectedProductManagerId] && (
+                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                      consultantAvailability[selectedProductManagerId].availabilityColor
+                                    }`}>
+                                      {consultantAvailability[selectedProductManagerId].averageHoursPerWeek}h/wk avg
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -841,6 +869,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                       {/* Team Consultants Allocation */}
                       {selectedConsultantIds.map(consultantId => {
                         const consultant = consultants.find(c => c.id === consultantId);
+                        const availability = consultantAvailability[consultantId];
                         if (!consultant) return null;
 
                         return (
@@ -849,9 +878,18 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                               <div className="w-10 h-10 bg-blue-500 dark:bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium mr-4">
                                 {consultant.name?.charAt(0) || consultant.email?.charAt(0) || 'U'}
                               </div>
-                              <div>
+                              <div className="flex-1">
                                 <p className="font-semibold text-foreground">{consultant.name}</p>
-                                <p className="text-sm text-muted-foreground">{consultant.email}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <p className="text-sm text-muted-foreground">{consultant.email}</p>
+                                  {availability && (
+                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                      availability.availabilityColor
+                                    }`}>
+                                      {availability.averageHoursPerWeek}h/wk avg
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">

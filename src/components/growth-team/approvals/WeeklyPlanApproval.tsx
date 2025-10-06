@@ -319,12 +319,12 @@ export default function WeeklyPlanApproval({
   return (
     <div className="space-y-8">
       {/* Search and Filter Controls */}
-      <div className="bg-gradient-to-r from-gray-50 to-white rounded-xl shadow-lg border border-gray-200/60 overflow-hidden">
+      <div className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700/60 overflow-hidden">
         {/* Header Section */}
-        <div className="bg-white border-b border-gray-100 px-6 py-4">
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-blue-500 dark:bg-blue-600 rounded-lg flex items-center justify-center">
                 <FaFilter className="w-4 h-4 text-white" />
               </div>
               <div>
@@ -338,7 +338,7 @@ export default function WeeklyPlanApproval({
                 setWeeklyFilterBy({ consultant: '', project: '', hoursRange: null, timeRange: 'all' });
                 setWeeklySortBy('newest');
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-card-foreground bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-card-foreground bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
             >
               <FaTimes className="w-3 h-3" />
               Clear All
@@ -347,7 +347,7 @@ export default function WeeklyPlanApproval({
         </div>
 
         {/* Search and Sort Section */}
-        <div className="px-6 py-5 bg-white">
+        <div className="px-6 py-5 bg-white dark:bg-gray-800">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Search Input */}
             <div className="relative">
@@ -363,7 +363,7 @@ export default function WeeklyPlanApproval({
                   placeholder="Search by consultant, project, or phase..."
                   value={weeklySearchTerm}
                   onChange={(e) => setWeeklySearchTerm(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+                  className="block w-full pl-10 pr-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500"
                 />
               </div>
             </div>
@@ -377,7 +377,7 @@ export default function WeeklyPlanApproval({
                 <select
                   value={weeklySortBy}
                   onChange={(e) => setWeeklySortBy(e.target.value as any)}
-                  className="w-full pl-3 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                  className="w-full pl-3 pr-8 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 appearance-none"
                 >
                   <option value="newest">Newest First</option>
                   <option value="oldest">Oldest First</option>
@@ -404,7 +404,7 @@ export default function WeeklyPlanApproval({
               <select
                 value={weeklyFilterBy.timeRange}
                 onChange={(e) => setWeeklyFilterBy(prev => ({ ...prev, timeRange: e.target.value as any }))}
-                className="w-full pl-3 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                className="w-full pl-3 pr-8 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 appearance-none"
               >
                 <option value="all">All Weeks</option>
                 <option value="this-week">This Week</option>
@@ -415,7 +415,7 @@ export default function WeeklyPlanApproval({
         </div>
 
         {/* Advanced Filters Section */}
-        <div className="px-6 py-5 bg-gray-50 border-t border-gray-100">
+        <div className="px-6 py-5 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Consultant Filter */}
             <div className="relative">
@@ -429,7 +429,7 @@ export default function WeeklyPlanApproval({
                 <select
                   value={weeklyFilterBy.consultant}
                   onChange={(e) => setWeeklyFilterBy(prev => ({ ...prev, consultant: e.target.value }))}
-                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 appearance-none"
                 >
                   <option value="">All Consultants</option>
                   {weeklyAvailableConsultants.map(consultant => (
@@ -451,7 +451,7 @@ export default function WeeklyPlanApproval({
                 <select
                   value={weeklyFilterBy.project}
                   onChange={(e) => setWeeklyFilterBy(prev => ({ ...prev, project: e.target.value }))}
-                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 appearance-none"
                 >
                   <option value="">All Projects</option>
                   {weeklyAvailableProjects.map(project => (
@@ -476,7 +476,7 @@ export default function WeeklyPlanApproval({
                     setWeeklyFilterBy(prev => ({ ...prev, hoursRange: { min, max } }));
                   }
                 }}
-                className="w-full pl-3 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                className="w-full pl-3 pr-8 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 appearance-none"
               >
                 <option value="">All Hours</option>
                 <option value="0-10">0-10 hours</option>
@@ -489,14 +489,14 @@ export default function WeeklyPlanApproval({
         </div>
 
         {/* Results Summary */}
-        <div className="px-6 py-4 bg-blue-50 border-t border-blue-100">
+        <div className="px-6 py-4 bg-blue-50 dark:bg-blue-900/30 border-t border-blue-100 dark:border-blue-800">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <p className="text-sm text-gray-600">
-                <span className="text-blue-600 font-bold">{getFilteredAndSortedWeeklyAllocations().length}</span>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-blue-600 dark:text-blue-400 font-bold">{getFilteredAndSortedWeeklyAllocations().length}</span>
                 <span className="text-muted-foreground mx-1">of</span>
                 <span className="font-bold">{weeklyAllocations.raw.length}</span>
-                <span className="text-gray-600 ml-1">
+                <span className="text-gray-600 dark:text-gray-400 ml-1">
                   request{weeklyAllocations.raw.length !== 1 ? 's' : ''} shown
                 </span>
               </p>
@@ -504,8 +504,8 @@ export default function WeeklyPlanApproval({
             {(weeklySearchTerm || weeklyFilterBy.consultant || weeklyFilterBy.project || weeklyFilterBy.hoursRange || weeklyFilterBy.timeRange !== 'all') && (
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
-                  <span className="text-xs font-medium text-amber-700 uppercase tracking-wide">
+                  <div className="w-2 h-2 bg-amber-400 dark:bg-amber-500 rounded-full"></div>
+                  <span className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wide">
                     Filtered
                   </span>
                 </div>
@@ -518,43 +518,43 @@ export default function WeeklyPlanApproval({
       {/* Visual Separator */}
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t-2 border-gray-200"></div>
+          <div className="w-full border-t-2 border-gray-200 dark:border-gray-700"></div>
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-gray-50 px-6 py-2 text-sm font-medium text-muted-foreground rounded-full border border-gray-200">
+          <span className="bg-gray-50 dark:bg-gray-900 px-6 py-2 text-sm font-medium text-muted-foreground rounded-full border border-gray-200 dark:border-gray-700">
             Weekly Plan Requests
           </span>
         </div>
       </div>
 
       {getFilteredAndSortedWeeklyAllocations().length === 0 ? (
-        <div className="bg-white rounded-lg shadow-md p-8 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
           {weeklyAllocations.raw.length === 0 ? (
             <>
-              <FaCheck className="h-12 w-12 text-green-500 mx-auto mb-4" />
+              <FaCheck className="h-12 w-12 text-green-500 dark:text-green-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground">All caught up!</h3>
-              <p className="text-gray-600">No weekly plans pending approval.</p>
+              <p className="text-gray-600 dark:text-gray-400">No weekly plans pending approval.</p>
             </>
           ) : (
             <>
               <FaSearch className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground">No results found</h3>
-              <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
+              <p className="text-gray-600 dark:text-gray-400">Try adjusting your search or filter criteria.</p>
             </>
           )}
         </div>
       ) : (
         <div className="space-y-6">
           {getGroupedWeeklyAllocations().map((group) => (
-            <div key={group.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+            <div key={group.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
               {/* Group Header */}
-              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 rounded-t-lg">
+              <div className="bg-gray-50 dark:bg-gray-900 px-6 py-4 border-b border-gray-200 dark:border-gray-700 rounded-t-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${generateColorFromString(group.consultant.id)}`}>
                       {group.consultant.name || group.consultant.email}
                     </span>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
                       <span className="font-medium">{group.allocations.length} week{group.allocations.length !== 1 ? 's' : ''}</span>
                       <span className="mx-2">•</span>
                       <span className="font-medium">{formatHoursForApproval(group.totalHours)} total</span>
@@ -569,7 +569,7 @@ export default function WeeklyPlanApproval({
                         onBatchApproval(allocationIds);
                       }}
                       disabled={group.allocations.some(a => processingIds.has(a.id))}
-                      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                      className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-green-600 dark:bg-green-700 border border-transparent rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
                     >
                       <FaCheck className="w-3 h-3" />
                       Approve All
@@ -583,7 +583,7 @@ export default function WeeklyPlanApproval({
               <div className="p-6">
                 <div className="space-y-4">
                   {group.allocations.map((allocation) => (
-                    <div key={allocation.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div key={allocation.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between mb-3">
@@ -596,7 +596,7 @@ export default function WeeklyPlanApproval({
                               </p>
                             </div>
                             <div className="text-right ml-4">
-                              <div className="text-xl font-bold text-blue-600">
+                              <div className="text-xl font-bold text-blue-600 dark:text-blue-400">
                                 {formatHoursForApproval(allocation.proposedHours || 0)}
                               </div>
                               <div className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
@@ -608,7 +608,7 @@ export default function WeeklyPlanApproval({
                                 <button
                                   onClick={() => openRejectionModal(allocation)}
                                   disabled={processingIds.has(allocation.id)}
-                                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded hover:bg-red-100 dark:hover:bg-red-900/50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                   <FaTimes className="w-2.5 h-2.5" />
                                   Reject
@@ -617,7 +617,7 @@ export default function WeeklyPlanApproval({
                                 <button
                                   onClick={() => openModifyModal(allocation)}
                                   disabled={processingIds.has(allocation.id)}
-                                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                   <FaEdit className="w-2.5 h-2.5" />
                                   Modify
@@ -626,7 +626,7 @@ export default function WeeklyPlanApproval({
                                 <button
                                   onClick={() => onApproval(allocation.id, 'approve', { approvedHours: allocation.proposedHours || 0 })}
                                   disabled={processingIds.has(allocation.id)}
-                                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-green-600 border border-transparent rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-green-600 dark:bg-green-700 border border-transparent rounded hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                   <FaCheck className="w-2.5 h-2.5" />
                                   Approve
@@ -640,21 +640,21 @@ export default function WeeklyPlanApproval({
                             const weekKey = new Date(allocation.weekStartDate).toISOString().split('T')[0];
                             const workloadContext = getWeekWorkloadContext(allocation.consultantId, weekKey);
                             return (
-                              <div className="mt-3 pt-3 border-t border-gray-100">
+                              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
                                 <div className="flex items-start gap-2">
-                                  <div className="flex-shrink-0 w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5"></div>
+                                  <div className="flex-shrink-0 w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full mt-1.5"></div>
                                   <div className="flex-1 min-w-0">
                                     {workloadContext.totalApprovedHours > 0 ? (
                                       <>
-                                        <h5 className="text-xs font-medium text-blue-800 mb-1">
+                                        <h5 className="text-xs font-medium text-blue-800 dark:text-blue-300 mb-1">
                                           Other work this week: {formatHoursForApproval(workloadContext.totalApprovedHours)} approved
                                         </h5>
                                         <div className="space-y-0.5">
                                           {workloadContext.projects.map((project, index) => (
-                                            <div key={index} className="flex items-center justify-between text-xs text-blue-600">
+                                            <div key={index} className="flex items-center justify-between text-xs text-blue-600 dark:text-blue-400">
                                               <span className="truncate">
                                                 <span className="font-medium">{project.projectTitle}</span>
-                                                <span className="text-blue-500 mx-1">•</span>
+                                                <span className="text-blue-500 dark:text-blue-500 mx-1">•</span>
                                                 <span>{project.phaseName}</span>
                                               </span>
                                               <span className="font-medium ml-2 flex-shrink-0">
@@ -663,7 +663,7 @@ export default function WeeklyPlanApproval({
                                             </div>
                                           ))}
                                         </div>
-                                        <div className="mt-1 text-xs text-blue-700">
+                                        <div className="mt-1 text-xs text-blue-700 dark:text-blue-300">
                                           Week total if approved: <span className="font-bold">
                                             {formatHoursForApproval(workloadContext.totalApprovedHours + (allocation.proposedHours || 0))}
                                           </span>

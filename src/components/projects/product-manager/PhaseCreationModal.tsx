@@ -66,7 +66,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
     };
   }, [onClose]);
 
-  // ESC key handler
+  
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -324,6 +324,10 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Prevent double submission
+    if (isLoading) return;
+
     setError(null);
 
     if (!name.trim()) {

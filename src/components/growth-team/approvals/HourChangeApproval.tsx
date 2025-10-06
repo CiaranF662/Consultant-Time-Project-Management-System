@@ -41,14 +41,14 @@ export default function HourChangeApproval({
   return (
     <div className="space-y-6">
       {hourChangeRequests.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-md p-8 text-center">
-          <FaCheck className="h-12 w-12 text-green-500 mx-auto mb-4" />
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
+          <FaCheck className="h-12 w-12 text-green-500 dark:text-green-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-foreground">All caught up!</h3>
-          <p className="text-gray-600">No hour change requests pending approval.</p>
+          <p className="text-muted-foreground">No hour change requests pending approval.</p>
         </div>
       ) : (
         hourChangeRequests.map((request) => (
-          <div key={request.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+          <div key={request.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
             <div className="p-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
@@ -57,13 +57,13 @@ export default function HourChangeApproval({
                       <h3 className="text-lg font-semibold text-foreground truncate">
                         {request.phaseAllocation?.phase?.project?.title || 'Unknown Project'}
                       </h3>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-sm text-muted-foreground mt-1">
                         Phase: {request.phaseAllocation?.phase?.name || 'Unknown Phase'}
                       </p>
                     </div>
                     <div className="text-right ml-4">
                       <div className={`text-2xl font-bold ${
-                        request.changeType === 'ADJUSTMENT' ? 'text-blue-600' : 'text-purple-600'
+                        request.changeType === 'ADJUSTMENT' ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400'
                       }`}>
                         {formatHours(request.requestedHours)}
                       </div>
@@ -82,7 +82,7 @@ export default function HourChangeApproval({
                     </span>
                   </div>
 
-                  <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                  <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 mb-4 border border-gray-200 dark:border-gray-700">
                     <p className="text-sm text-card-foreground">
                       <span className="font-medium">Reason:</span> {request.reason}
                     </p>
@@ -90,7 +90,7 @@ export default function HourChangeApproval({
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button
                   onClick={() => {
                     const reason = prompt('Enter rejection reason:');
@@ -99,7 +99,7 @@ export default function HourChangeApproval({
                     }
                   }}
                   disabled={processingIds.has(request.id)}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-md hover:bg-red-100 dark:hover:bg-red-900/50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <FaTimes className="w-4 h-4" />
                   Reject
@@ -108,7 +108,7 @@ export default function HourChangeApproval({
                 <button
                   onClick={() => onApproval(request.id, 'approve')}
                   disabled={processingIds.has(request.id)}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 dark:bg-green-700 border border-transparent rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <FaCheck className="w-4 h-4" />
                   Approve

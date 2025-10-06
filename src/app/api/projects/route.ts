@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   try {
     // Growth Team can see all projects, others see only projects where they're involved
     const whereCondition = session.user.role === UserRole.GROWTH_TEAM
-      ? {} // No filter for Growth Team - see all projects
+      ? {} 
       : {
           consultants: {
             some: {
@@ -68,7 +68,7 @@ export async function GET(request: Request) {
       }
     });
 
-    // Enrich projects with completion percentages
+   
     const enrichedProjects = projects.map(project => ({
       ...project,
       consultants: project.consultants.map(c => c.user),
@@ -252,7 +252,7 @@ export async function POST(request: Request) {
       }
     });
 
-    // Consultant allocations are now stored in the ConsultantsOnProjects table
+    // Consultant allocations are stored in the ConsultantsOnProjects table
     // These hours represent the total allocated to each consultant for the entire project
     // The Product Manager will later create phases and distribute these hours across phases
 

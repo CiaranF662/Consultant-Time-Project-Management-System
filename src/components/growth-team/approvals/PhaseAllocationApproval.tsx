@@ -181,12 +181,12 @@ export default function PhaseAllocationApproval({
   return (
     <div className="space-y-6">
       {/* Search and Filter Controls */}
-      <div className="bg-gradient-to-r from-gray-50 to-white rounded-xl shadow-lg border border-gray-200/60 overflow-hidden">
+      <div className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-lg border border-gray-200/60 dark:border-gray-700 overflow-hidden">
         {/* Header Section */}
-        <div className="bg-white border-b border-gray-100 px-6 py-4">
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-blue-500 dark:bg-blue-600 rounded-lg flex items-center justify-center">
                 <FaFilter className="w-4 h-4 text-white" />
               </div>
               <div>
@@ -200,7 +200,7 @@ export default function PhaseAllocationApproval({
                 setFilterBy({ consultant: '', project: '', hoursRange: null });
                 setSortBy('newest');
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-card-foreground bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-card-foreground bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
             >
               <FaTimes className="w-3 h-3" />
               Clear All
@@ -209,7 +209,7 @@ export default function PhaseAllocationApproval({
         </div>
 
         {/* Search and Sort Section */}
-        <div className="px-6 py-5 bg-white">
+        <div className="px-6 py-5 bg-white dark:bg-gray-800">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Enhanced Search Input */}
             <div className="lg:col-span-2">
@@ -223,7 +223,7 @@ export default function PhaseAllocationApproval({
                   placeholder="Search by consultant, project, or phase..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-foreground placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 rounded-lg text-foreground placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500"
                 />
                 {searchTerm && (
                   <button
@@ -246,7 +246,7 @@ export default function PhaseAllocationApproval({
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="w-full pl-10 pr-8 py-3 border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                  className="w-full pl-10 pr-8 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 appearance-none"
                 >
                   <option value="newest">Newest First</option>
                   <option value="oldest">Oldest First</option>
@@ -261,7 +261,7 @@ export default function PhaseAllocationApproval({
         </div>
 
         {/* Advanced Filters Section */}
-        <div className="px-6 py-5 bg-gradient-to-r from-gray-50/50 to-blue-50/30 border-t border-gray-100">
+        <div className="px-6 py-5 bg-gradient-to-r from-gray-50/50 to-blue-50/30 dark:from-gray-900/50 dark:to-blue-900/20 border-t border-gray-100 dark:border-gray-700">
           <div className="mb-3">
             <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <FaFilter className="w-3 h-3 text-blue-500" />
@@ -279,7 +279,7 @@ export default function PhaseAllocationApproval({
                 <select
                   value={filterBy.consultant}
                   onChange={(e) => setFilterBy(prev => ({ ...prev, consultant: e.target.value }))}
-                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 appearance-none"
                 >
                   <option value="">All Consultants</option>
                   {availableConsultants.map(consultant => (
@@ -299,7 +299,7 @@ export default function PhaseAllocationApproval({
                 <select
                   value={filterBy.project}
                   onChange={(e) => setFilterBy(prev => ({ ...prev, project: e.target.value }))}
-                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 appearance-none"
                 >
                   <option value="">All Projects</option>
                   {availableProjects.map(project => (
@@ -328,7 +328,7 @@ export default function PhaseAllocationApproval({
                       setFilterBy(prev => ({ ...prev, hoursRange: { min, max } }));
                     }
                   }}
-                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                  className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 appearance-none"
                 >
                   <option value="">All Hours</option>
                   <option value="0-10">0-10 hours</option>
@@ -343,7 +343,7 @@ export default function PhaseAllocationApproval({
         </div>
 
         {/* Results Summary */}
-        <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-t border-blue-100">
+        <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border-t border-blue-100 dark:border-blue-800">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -373,34 +373,34 @@ export default function PhaseAllocationApproval({
       {/* Visual Separator */}
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t-2 border-gray-200"></div>
+          <div className="w-full border-t-2 border-gray-200 dark:border-gray-700"></div>
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-gray-50 px-6 py-2 text-sm font-medium text-muted-foreground rounded-full border border-gray-200">
+          <span className="bg-gray-50 dark:bg-gray-900 px-6 py-2 text-sm font-medium text-muted-foreground rounded-full border border-gray-200 dark:border-gray-700">
             Phase Allocation Requests
           </span>
         </div>
       </div>
 
       {getFilteredAndSortedAllocations().length === 0 ? (
-        <div className="bg-white rounded-lg shadow-md p-8 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
           {phaseAllocations.length === 0 ? (
             <>
-              <FaCheck className="h-12 w-12 text-green-500 mx-auto mb-4" />
+              <FaCheck className="h-12 w-12 text-green-500 dark:text-green-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground">All caught up!</h3>
-              <p className="text-gray-600">No phase allocations pending approval.</p>
+              <p className="text-gray-600 dark:text-gray-400">No phase allocations pending approval.</p>
             </>
           ) : (
             <>
               <FaSearch className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground">No results found</h3>
-              <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
+              <p className="text-gray-600 dark:text-gray-400">Try adjusting your search or filter criteria.</p>
             </>
           )}
         </div>
       ) : (
         getFilteredAndSortedAllocations().map((allocation) => (
-          <div key={allocation.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+          <div key={allocation.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
             <div className="p-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
@@ -411,11 +411,11 @@ export default function PhaseAllocationApproval({
                           {allocation.consultant.name || allocation.consultant.email}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         <span className="font-bold">{allocation.phase.project.title}</span> • {allocation.phase.name}
                       </p>
                       {allocation.phase.description && (
-                        <p className="text-xs text-gray-600 mt-1 italic">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 italic">
                           {allocation.phase.description}
                         </p>
                       )}
@@ -430,7 +430,7 @@ export default function PhaseAllocationApproval({
                       </div>
                     </div>
                     <div className="text-right ml-4">
-                      <div className="text-2xl font-bold text-blue-600">
+                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                         {formatHours(allocation.totalHours)}
                       </div>
                       <div className="text-xs text-muted-foreground uppercase tracking-wide mb-3">
@@ -440,7 +440,7 @@ export default function PhaseAllocationApproval({
                         <button
                           onClick={() => openRejectionModal(allocation)}
                           disabled={processingIds.has(allocation.id)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-md hover:bg-red-100 dark:hover:bg-red-900/50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                           <FaTimes className="w-3 h-3" />
                           Reject
@@ -449,7 +449,7 @@ export default function PhaseAllocationApproval({
                         <button
                           onClick={() => onApproval(allocation.id, 'approve')}
                           disabled={processingIds.has(allocation.id)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-green-600 dark:bg-green-700 border border-transparent rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                           <FaCheck className="w-3 h-3" />
                           Approve

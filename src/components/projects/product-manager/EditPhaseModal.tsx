@@ -165,6 +165,9 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
   };
 
   const handleDelete = async () => {
+    // Prevent double submission
+    if (isLoading) return;
+
     if (!confirm('Are you sure you want to delete this phase? This action cannot be undone.')) {
       return;
     }
