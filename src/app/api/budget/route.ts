@@ -1,21 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { requireGrowthTeam, isAuthError } from '@/lib/api-auth';
+import { UserRole } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 // GET all projects budget overview - only for Growth Team
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
-
-  // Only Growth Team can access budget overview
-  if (session.user.role !== UserRole.GROWTH_TEAM) {
-    return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
-  }
+  const auth = await requireGrowthTeam();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   try {
     // Get all projects with phases and allocations
@@ -55,7 +48,7 @@ export async function GET(request: Request) {
       const totalPlanned = project.phases.reduce((sum, phase) => {
         return sum + phase.allocations.reduce((phaseSum, allocation) => {
           return phaseSum + allocation.weeklyAllocations.reduce((weekSum, week) => {
-            return weekSum + week.plannedHours;
+            return weekSum + (week.proposedHours || 0);
           }, 0);
         }, 0);
       }, 0);
@@ -67,7 +60,7 @@ export async function GET(request: Request) {
         totalAllocated,
         totalPlanned,
         remaining: project.budgetedHours - totalAllocated,
-        utilizationRate: project.budgetedHours > 0 
+        utilizationRate: project.budgetedHours > 0
           ? ((totalAllocated / project.budgetedHours) * 100).toFixed(1)
           : 0,
         teamSize: project.consultants.length,

@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { requireGrowthTeam, isAuthError } from '@/lib/api-auth';
+import { UserRole } from '@prisma/client';
 import { startOfWeek, endOfWeek, addWeeks, format } from 'date-fns';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 // Add type definition for week structure
 type WeekInfo = {
@@ -41,15 +40,9 @@ function getSprintInfoForWeek(weekStart: Date, sprints: any[]): { sprint: any; w
 }
 
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
-
-  // Only Growth Team can see full timeline
-  if (session.user.role !== UserRole.GROWTH_TEAM) {
-    return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
-  }
+  const auth = await requireGrowthTeam();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   const { searchParams } = new URL(request.url);
   const weeksToShow = parseInt(searchParams.get('weeks') || '12');
@@ -86,13 +79,14 @@ export async function GET(request: Request) {
       });
     }
 
-    // Get allocations for all consultants in the date range
+    // Get allocations for all consultants in the date range - only approved hours
     const allocations = await prisma.weeklyAllocation.findMany({
       where: {
         weekStartDate: {
           gte: startDate,
           lte: addWeeks(startDate, weeksToShow)
-        }
+        },
+        planningStatus: 'APPROVED' // Only show approved weekly allocations
       },
       include: {
         phaseAllocation: {
@@ -136,7 +130,7 @@ export async function GET(request: Request) {
           return allocTime >= weekStartTime && allocTime <= weekEndTime;
         });
 
-        const totalHours = weekAllocations.reduce((sum, a) => sum + a.plannedHours, 0);
+        const totalHours = weekAllocations.reduce((sum, a) => sum + (a.approvedHours || 0), 0);
         
         return {
           week: week.label,
@@ -148,7 +142,7 @@ export async function GET(request: Request) {
             
             return {
               id: a.id,
-              hours: a.plannedHours,
+              hours: a.approvedHours || 0,
               project: a.phaseAllocation.phase.project.title,
               projectId: a.phaseAllocation.phase.project.id,
               phase: a.phaseAllocation.phase.name,

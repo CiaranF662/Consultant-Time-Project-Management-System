@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { PrismaClient, ChangeType } from '@prisma/client';
+import { requireAuth, isAuthError } from '@/lib/api-auth';
+import { ChangeType } from '@prisma/client';
 import { sendEmail, renderEmailTemplate } from '@/lib/email';
 import { createMultipleNotifications, NotificationTemplates } from '@/lib/notifications';
 import HourChangeRequestEmail from '@/emails/HourChangeRequestEmail';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   const { searchParams } = new URL(request.url);
   const status = searchParams.get('status');
@@ -51,10 +49,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   try {
     const body = await request.json();

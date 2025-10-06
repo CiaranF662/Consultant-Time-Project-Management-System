@@ -1,21 +1,19 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { requireAuth, isAuthError } from '@/lib/api-auth';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 // PATCH /api/notifications/[notificationId] - Mark notification as read/unread
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ notificationId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
+
   const { notificationId } = await params;
-  
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
 
   try {
     const body = await request.json();
@@ -52,12 +50,11 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ notificationId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
+
   const { notificationId } = await params;
-  
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
 
   try {
     // Verify the notification belongs to the user

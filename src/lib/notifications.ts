@@ -66,6 +66,55 @@ export async function getUnreadNotificationCount(userId: string): Promise<number
   }
 }
 
+// Helper function to get all Growth Team member IDs
+export async function getGrowthTeamMemberIds(): Promise<string[]> {
+  try {
+    const growthTeamMembers = await prisma.user.findMany({
+      where: {
+        role: 'GROWTH_TEAM',
+        status: 'APPROVED'
+      },
+      select: { id: true }
+    });
+    return growthTeamMembers.map(member => member.id);
+  } catch (error) {
+    console.error('Error fetching Growth Team members:', error);
+    return [];
+  }
+}
+
+// Helper function to create notifications for multiple users
+export async function createNotificationsForUsers(
+  userIds: string[],
+  type: NotificationType,
+  title: string,
+  message: string,
+  actionUrl?: string,
+  metadata?: Record<string, any>
+) {
+  if (userIds.length === 0) return [];
+
+  try {
+    const notifications = userIds.map(userId => ({
+      userId,
+      type,
+      title,
+      message,
+      actionUrl: actionUrl || null,
+      metadata: metadata || {},
+    }));
+
+    const result = await prisma.notification.createMany({
+      data: notifications
+    });
+
+    return result;
+  } catch (error) {
+    console.error('Error creating notifications for multiple users:', error);
+    throw error;
+  }
+}
+
 // Notification templates for consistent messaging
 export const NotificationTemplates = {
   PROJECT_ASSIGNMENT: (projectName: string, role: string) => ({
@@ -101,5 +150,67 @@ export const NotificationTemplates = {
   OVERDUE_APPROVAL_ALERT: (type: string, count: number) => ({
     title: 'Overdue Approvals Alert',
     message: `You have ${count} overdue ${type} approval${count === 1 ? '' : 's'} pending.`,
+  }),
+
+  // Phase Allocation Templates
+  PHASE_ALLOCATION_PENDING_FOR_GROWTH: (consultantName: string, phaseName: string, projectName: string, hours: number, pmName: string) => ({
+    title: 'New Phase Allocation Pending Approval',
+    message: `${pmName} has requested to allocate ${consultantName} to "${phaseName}" in project "${projectName}" for ${hours} hours.`,
+  }),
+
+  PHASE_ALLOCATION_PENDING_FOR_PM: (consultantName: string, phaseName: string, hours: number) => ({
+    title: 'Phase Allocation Submitted',
+    message: `Your allocation request for ${consultantName} on "${phaseName}" (${hours}h) has been submitted for Growth Team approval.`,
+  }),
+
+  PHASE_ALLOCATION_APPROVED_FOR_CONSULTANT: (phaseName: string, projectName: string, hours: number) => ({
+    title: 'Phase Allocation Approved',
+    message: `You've been allocated to "${phaseName}" in project "${projectName}" for ${hours} hours.`,
+  }),
+
+  PHASE_ALLOCATION_APPROVED_FOR_PM: (consultantName: string, phaseName: string, hours: number) => ({
+    title: 'Phase Allocation Approved',
+    message: `Your allocation request for ${consultantName} on "${phaseName}" (${hours}h) has been approved by the Growth Team.`,
+  }),
+
+  PHASE_ALLOCATION_REJECTED_FOR_CONSULTANT: (phaseName: string, projectName: string, reason?: string) => ({
+    title: 'Phase Allocation Rejected',
+    message: `Your allocation to "${phaseName}" in project "${projectName}" has been rejected.${reason ? ` Reason: ${reason}` : ''}`,
+  }),
+
+  PHASE_ALLOCATION_REJECTED_FOR_PM: (consultantName: string, phaseName: string, reason?: string) => ({
+    title: 'Phase Allocation Rejected',
+    message: `Your allocation request for ${consultantName} on "${phaseName}" has been rejected.${reason ? ` Reason: ${reason}` : ''}`,
+  }),
+
+  PHASE_ALLOCATION_MODIFIED_FOR_CONSULTANT: (phaseName: string, projectName: string, newHours: number, originalHours: number) => ({
+    title: 'Phase Allocation Modified',
+    message: `Your allocation to "${phaseName}" in project "${projectName}" has been approved with modified hours (${newHours}h instead of ${originalHours}h).`,
+  }),
+
+  PHASE_ALLOCATION_MODIFIED_FOR_PM: (consultantName: string, phaseName: string, newHours: number, originalHours: number) => ({
+    title: 'Phase Allocation Modified',
+    message: `Your allocation request for ${consultantName} on "${phaseName}" has been approved with modified hours (${newHours}h instead of ${originalHours}h).`,
+  }),
+
+  // Weekly Allocation Templates
+  WEEKLY_ALLOCATION_PENDING: (consultantName: string, phaseName: string, projectName: string, hours: number, weekDate: string) => ({
+    title: 'New Weekly Allocation Pending Approval',
+    message: `${consultantName} has submitted weekly planning for "${phaseName}" in project "${projectName}" (${hours}h for week of ${weekDate}).`,
+  }),
+
+  WEEKLY_ALLOCATION_APPROVED: (phaseName: string, hours: number, weekDate: string) => ({
+    title: 'Weekly Allocation Approved',
+    message: `Your weekly allocation for "${phaseName}" (${hours}h for week of ${weekDate}) has been approved.`,
+  }),
+
+  WEEKLY_ALLOCATION_REJECTED: (phaseName: string, weekDate: string, reason?: string) => ({
+    title: 'Weekly Allocation Rejected',
+    message: `Your weekly allocation for "${phaseName}" (week of ${weekDate}) has been rejected.${reason ? ` Reason: ${reason}` : ''}`,
+  }),
+
+  WEEKLY_ALLOCATION_MODIFIED: (phaseName: string, newHours: number, originalHours: number, weekDate: string) => ({
+    title: 'Weekly Allocation Modified',
+    message: `Your weekly allocation for "${phaseName}" (week of ${weekDate}) has been modified from ${originalHours}h to ${newHours}h.`,
   }),
 };

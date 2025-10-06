@@ -182,12 +182,51 @@ import {
   /**
    * Format hours for display
    */
-  export function formatHours(hours: number): string {
+  export function formatHours(hours: number | null | undefined): string {
+    if (hours == null || hours === undefined || isNaN(hours)) return '-';
     if (hours === 0) return '-';
     if (hours % 1 === 0) return `${hours}h`;
     return `${hours.toFixed(1)}h`;
   }
+
+  /**
+   * Format hours for approval display (shows 0h instead of -)
+   */
+  export function formatHoursForApproval(hours: number): string {
+    if (hours % 1 === 0) return `${hours}h`;
+    return `${hours.toFixed(1)}h`;
+  }
   
+  /**
+   * Format date for display in DD/MM/YYYY format
+   */
+  export function formatDate(date: Date | string): string {
+    if (!date) return '';
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return '';
+    return dateObj.toLocaleDateString('en-GB'); // DD/MM/YYYY format
+  }
+
+  /**
+   * Format date for display in DD/MM/YYYY format with time options
+   */
+  export function formatDateWithOptions(date: Date | string, options?: Intl.DateTimeFormatOptions): string {
+    if (!date) return '';
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return '';
+    return dateObj.toLocaleDateString('en-GB', options);
+  }
+
+  /**
+   * Format date as "Week Sep 29" for weekly planning displays
+   */
+  export function formatWeekDate(date: Date | string): string {
+    if (!date) return '';
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return '';
+    return `Week ${dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  }
+
   /**
    * Calculate budget utilization percentage
    */
@@ -197,17 +236,14 @@ import {
   }
   
   /**
-   * Get week color based on utilization
+   * Get week color based on utilization - opaque colors with proper text contrast for light and dark modes
    */
-  export function getUtilizationColor(hours: number, maxHours: number = 40): string {
-    const utilization = (hours / maxHours) * 100;
-    
-    if (utilization === 0) return 'bg-gray-50';
-    if (utilization <= 25) return 'bg-green-50';
-    if (utilization <= 50) return 'bg-green-100';
-    if (utilization <= 75) return 'bg-yellow-100';
-    if (utilization <= 100) return 'bg-orange-100';
-    return 'bg-red-400 text-black'; // Over-allocated - prominent red that's clearly visible
+  export function getUtilizationColor(hours: number): string {
+    if (hours === 0) return 'bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500';
+    if (hours <= 20) return 'bg-green-100 dark:bg-green-900/40 text-gray-900 dark:text-gray-100'; // Low utilization (0-20h)
+    if (hours <= 35) return 'bg-yellow-100 dark:bg-yellow-900/40 text-gray-900 dark:text-gray-100'; // Medium utilization (20-35h)
+    if (hours <= 40) return 'bg-orange-100 dark:bg-orange-900/40 text-gray-900 dark:text-gray-100'; // High utilization (35-40h)
+    return 'bg-red-100 dark:bg-red-900/40 text-gray-900 dark:text-gray-100'; // Over utilization (40h+)
   }
   
   /**

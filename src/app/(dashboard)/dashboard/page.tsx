@@ -2,11 +2,11 @@
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, UserStatus, ChangeStatus, ProjectRole } from '@prisma/client';
-import DashboardLayout from '@/app/components/DashboardLayout';
-import GrowthTeamDashboard from '@/app/components/dashboards/GrowthTeamDashboard';
-import ConsultantDashboard from '@/app/components/dashboards/ConsultantDashboard';
-const prisma = new PrismaClient();
+import { UserRole, UserStatus, ChangeStatus, ProjectRole } from '@prisma/client';
+import GrowthTeamDashboard from '@/components/growth-team/dashboard/GrowthTeamDashboard';
+import ConsultantDashboard from '@/components/consultant/dashboard/ConsultantDashboard';
+import IntegratedPMDashboard from '@/components/product-manager/dashboard/IntegratedPMDashboard';
+import { prisma } from "@/lib/prisma";
 
 
 async function getGrowthTeamData() {
@@ -66,67 +66,52 @@ async function getConsultantData(userId: string) {
 
   const isPM = pmProjects.length > 0;
 
-  // Get pending hour change requests count for PM
-  let pendingHourChangesCount = 0;
-  if (isPM) {
-    // Get all phase allocations for projects this user manages
-    const managedProjectIds = pmProjects.map(p => p.id);
-    const phaseAllocationsForManagedProjects = await prisma.phaseAllocation.findMany({
-      where: {
-        phase: {
-          projectId: { in: managedProjectIds }
-        }
-      },
-      select: { id: true }
-    });
-    
-    const phaseAllocationIds = phaseAllocationsForManagedProjects.map(pa => pa.id);
-    
-    pendingHourChangesCount = await prisma.hourChangeRequest.count({
-      where: {
-        status: ChangeStatus.PENDING,
-        phaseAllocationId: { in: phaseAllocationIds }
-      }
-    });
-  }
-
-  // Get current week allocations using the same date logic as the app
-  const { getWeekNumber, getYear } = await import('@/lib/dates');
-  const today = new Date();
-  const currentWeekNumber = getWeekNumber(today);
-  const currentYear = getYear(today);
-
-  // Get current week allocations for stats
-  const currentWeekAllocations = await prisma.weeklyAllocation.findMany({
-    where: {
-      consultantId: userId,
-      weekNumber: currentWeekNumber,
-      year: currentYear
-    },
+  // Get all phase allocations for the consultant with related data (same as allocations page)
+  const phaseAllocations = await prisma.phaseAllocation.findMany({
+    where: { consultantId: userId },
     include: {
-      phaseAllocation: {
+      phase: {
         include: {
-          phase: {
-            include: {
-              project: true
-            }
+          project: {
+            select: { id: true, title: true, budgetedHours: true }
+          },
+          sprints: {
+            orderBy: { sprintNumber: 'asc' }
           }
         }
+      },
+      weeklyAllocations: {
+        orderBy: { weekStartDate: 'asc' }
+      }
+    },
+    orderBy: {
+      phase: {
+        startDate: 'asc'
       }
     }
   });
 
-  // Get ALL weekly allocations for the consultant (for weekly planner)
-  const allWeeklyAllocations = await prisma.weeklyAllocation.findMany({
+  // Get upcoming weeks where allocation is needed
+  const today = new Date();
+  const fourWeeksFromNow = new Date(today);
+  fourWeeksFromNow.setDate(today.getDate() + 28);
+
+  const upcomingAllocations = await prisma.weeklyAllocation.findMany({
     where: {
-      consultantId: userId
+      consultantId: userId,
+      weekStartDate: {
+        gte: today,
+        lte: fourWeeksFromNow
+      }
     },
     include: {
       phaseAllocation: {
         include: {
           phase: {
             include: {
-              project: true
+              project: {
+                select: { title: true }
+              }
             }
           }
         }
@@ -135,54 +120,24 @@ async function getConsultantData(userId: string) {
     orderBy: { weekStartDate: 'asc' }
   });
 
-  // Get all phase allocations for the consultant
-  const phaseAllocations = await prisma.phaseAllocation.findMany({
-    where: { consultantId: userId },
-    include: {
-      phase: {
-        include: {
-          project: true,
-          sprints: true
-        }
-      },
-      weeklyAllocations: {
-        orderBy: { weekStartDate: 'asc' }
-      }
-    }
-  });
-
-  // Get pending hour change requests
-  const pendingRequests = await prisma.hourChangeRequest.findMany({
-    where: {
-      consultantId: userId,
-      status: ChangeStatus.PENDING
-    }
-  });
-
-  // Get assigned projects
-  const projects = await prisma.project.findMany({
-    where: {
-      consultants: {
-        some: { userId }
-      }
-    },
-    include: {
-      phases: true,
-      consultants: {
-        include: { user: true }
-      }
-    }
-  });
+  // Calculate allocation statistics
+  const totalAllocatedHours = phaseAllocations.reduce((sum, alloc) => sum + alloc.totalHours, 0);
+  const totalDistributedHours = phaseAllocations.reduce((sum, alloc) => {
+    return sum + alloc.weeklyAllocations.reduce((weekSum, week) => weekSum + (week.approvedHours || week.proposedHours || 0), 0);
+  }, 0);
 
   return {
     isPM,
     pmProjects,
-    pendingHourChangesCount,
-    weeklyAllocations: allWeeklyAllocations, // Pass ALL weekly allocations for planner
-    currentWeekAllocations, // Pass current week for stats
     phaseAllocations,
-    pendingRequests,
-    projects
+    upcomingAllocations,
+    stats: {
+      totalAllocatedHours,
+      totalDistributedHours,
+      remainingToDistribute: totalAllocatedHours - totalDistributedHours,
+      activePhases: phaseAllocations.length,
+      upcomingWeeks: upcomingAllocations.length
+    }
   };
 }
 
@@ -196,21 +151,27 @@ export default async function DashboardPage() {
 
   if (isGrowthTeam) {
     const data = await getGrowthTeamData();
-    return (
-      <DashboardLayout>
-        <GrowthTeamDashboard data={data} />
-      </DashboardLayout>
-    );
+    return <GrowthTeamDashboard data={data} userRole={session.user.role} />;
   } else {
     const data = await getConsultantData(session.user.id);
-    return (
-      <DashboardLayout>
-        <ConsultantDashboard 
-          data={data} 
+
+    // If user is a Product Manager, show the Integrated PM Dashboard with role switcher
+    if (data.isPM) {
+      return (
+        <IntegratedPMDashboard
           userId={session.user.id}
           userName={session.user.name || session.user.email || 'User'}
         />
-      </DashboardLayout>
+      );
+    }
+
+    // Otherwise show the regular Consultant Dashboard
+    return (
+      <ConsultantDashboard
+        data={data}
+        userId={session.user.id}
+        userName={session.user.name || session.user.email || 'User'}
+      />
     );
   }
 }

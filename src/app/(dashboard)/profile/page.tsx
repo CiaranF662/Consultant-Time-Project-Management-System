@@ -4,13 +4,16 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import DashboardLayout from '@/app/components/DashboardLayout';
+import DashboardLayout from '@/components/DashboardLayout';
 import Loading from '@/app/loading';
 import { FaMoon, FaSun, FaBell, FaUser, FaLock, FaCog, FaSave } from 'react-icons/fa';
+import { Monitor } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { theme, actualTheme, setTheme } = useTheme();
 
   // Profile Information
   const [name, setName] = useState('');
@@ -19,7 +22,6 @@ export default function ProfilePage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   // System Preferences
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [inAppNotifications, setInAppNotifications] = useState(true);
 
@@ -34,26 +36,13 @@ export default function ProfilePage() {
       setAvatarPreview(session.user.image || null);
 
       // Load user preferences from localStorage
-      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light';
       const savedEmailNotifications = localStorage.getItem('emailNotifications') !== 'false';
       const savedInAppNotifications = localStorage.getItem('inAppNotifications') !== 'false';
 
-      setTheme(savedTheme);
       setEmailNotifications(savedEmailNotifications);
       setInAppNotifications(savedInAppNotifications);
-
-      // Apply theme to document
-      document.documentElement.className = savedTheme;
     }
   }, [status, session, router]);
-
-  // Theme toggle handler
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    document.documentElement.className = newTheme;
-  };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -84,8 +73,8 @@ export default function ProfilePage() {
   };
 
   const handlePreferencesSave = () => {
-    // Save preferences to localStorage
-    localStorage.setItem('theme', theme);
+    // Theme is already saved automatically by ThemeProvider
+    // Save other preferences to localStorage
     localStorage.setItem('emailNotifications', emailNotifications.toString());
     localStorage.setItem('inAppNotifications', inAppNotifications.toString());
 
@@ -100,32 +89,19 @@ export default function ProfilePage() {
 
   return (
     <DashboardLayout>
-      <div className={`transition-all duration-300 ease-in-out min-h-screen p-4 md:p-8 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
-        <div className={`max-w-5xl mx-auto ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow-lg rounded-lg overflow-hidden`}>
+      <div className="transition-all duration-300 ease-in-out min-h-screen p-4 md:p-8 bg-background">
+        <div className="max-w-5xl mx-auto bg-card shadow-lg rounded-lg overflow-hidden border border-border">
           {/* Header */}
-          <div className={`${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} border-b px-6 py-4`}>
+          <div className="bg-muted border-b border-border px-6 py-4">
             <div className="flex justify-between items-center">
               <div>
-                <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+                <h1 className="text-2xl font-bold text-foreground">
                   Profile & Settings
                 </h1>
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                <p className="text-sm text-muted-foreground">
                   Manage your account information and preferences
                 </p>
               </div>
-
-              {/* Theme Toggle */}
-              <button
-                onClick={toggleTheme}
-                className={`p-3 rounded-lg transition-colors ${
-                  theme === 'dark'
-                    ? 'bg-gray-600 hover:bg-gray-500 text-yellow-400'
-                    : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                }`}
-                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-              >
-                {theme === 'dark' ? <FaSun className="w-5 h-5" /> : <FaMoon className="w-5 h-5" />}
-              </button>
             </div>
           </div>
 
@@ -143,7 +119,7 @@ export default function ProfilePage() {
                   className={`flex items-center gap-2 py-4 px-6 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === key
                       ? 'border-blue-500 text-blue-600'
-                      : `border-transparent ${theme === 'dark' ? 'text-gray-300 hover:text-gray-100' : 'text-gray-500 hover:text-gray-700'}`
+                      : `border-transparent ${theme === 'dark' ? 'text-gray-300 hover:text-gray-100' : 'text-muted-foreground hover:text-card-foreground'}`
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -187,7 +163,7 @@ export default function ProfilePage() {
                   <div className="flex-1 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
+                        <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-card-foreground'} mb-2`}>
                           Full Name
                         </label>
                         <input
@@ -201,7 +177,7 @@ export default function ProfilePage() {
                       </div>
 
                       <div>
-                        <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
+                        <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-card-foreground'} mb-2`}>
                           Email Address
                         </label>
                         <input
@@ -215,7 +191,7 @@ export default function ProfilePage() {
                       </div>
 
                       <div>
-                        <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
+                        <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-card-foreground'} mb-2`}>
                           Account Type
                         </label>
                         <input
@@ -229,7 +205,7 @@ export default function ProfilePage() {
                       </div>
 
                       <div>
-                        <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'} mb-2`}>
+                        <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-card-foreground'} mb-2`}>
                           Account Status
                         </label>
                         <input
@@ -276,38 +252,69 @@ export default function ProfilePage() {
               <div className="space-y-8">
                 {/* Appearance */}
                 <div>
-                  <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'} mb-4 flex items-center gap-2`}>
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
                     <FaCog className="w-5 h-5" />
                     Display Settings
                   </h3>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200">
-                      <div>
-                        <label className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
-                          Theme
+                    <div className="p-4 rounded-lg border border-border bg-card">
+                      <div className="mb-3">
+                        <label className="text-sm font-medium text-foreground">
+                          Theme Preference
                         </label>
-                        <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                          Choose between light and dark mode for better comfort
+                        <p className="text-xs text-muted-foreground">
+                          Choose your preferred color scheme or match system settings
                         </p>
                       </div>
-                      <button
-                        onClick={toggleTheme}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-                          theme === 'dark'
-                            ? 'bg-gray-700 border-gray-600 text-yellow-400 hover:bg-gray-600'
-                            : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {theme === 'dark' ? <FaSun className="w-4 h-4" /> : <FaMoon className="w-4 h-4" />}
-                        {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-                      </button>
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          onClick={() => setTheme('light')}
+                          className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
+                            theme === 'light'
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-muted hover:bg-accent border-border'
+                          }`}
+                        >
+                          <FaSun className="w-5 h-5" />
+                          <span className="text-xs font-medium">Light</span>
+                        </button>
+                        <button
+                          onClick={() => setTheme('dark')}
+                          className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
+                            theme === 'dark'
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-muted hover:bg-accent border-border'
+                          }`}
+                        >
+                          <FaMoon className="w-5 h-5" />
+                          <span className="text-xs font-medium">Dark</span>
+                        </button>
+                        <button
+                          onClick={() => setTheme('system')}
+                          className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
+                            theme === 'system'
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-muted hover:bg-accent border-border'
+                          }`}
+                        >
+                          <Monitor className="w-5 h-5" />
+                          <span className="text-xs font-medium">System</span>
+                        </button>
+                      </div>
+                      {theme === 'system' && (
+                        <div className="mt-3 p-2 rounded-md bg-muted">
+                          <p className="text-xs text-muted-foreground">
+                            Currently using: <span className="font-medium text-foreground">{actualTheme === 'dark' ? 'Dark' : 'Light'}</span> (based on system preference)
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 {/* Notifications */}
                 <div>
-                  <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'} mb-4 flex items-center gap-2`}>
+                  <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-foreground'} mb-4 flex items-center gap-2`}>
                     <FaBell className="w-5 h-5" />
                     Notification Preferences
                   </h3>
@@ -315,10 +322,10 @@ export default function ProfilePage() {
                     <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}>
                       <div className="flex items-center justify-between">
                         <div>
-                          <label className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
+                          <label className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-card-foreground'}`}>
                             Email Notifications
                           </label>
-                          <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          <p className={`text-xs ${theme === 'dark' ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
                             Receive important updates via email
                           </p>
                         </div>
@@ -334,10 +341,10 @@ export default function ProfilePage() {
                     <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}>
                       <div className="flex items-center justify-between">
                         <div>
-                          <label className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
+                          <label className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-card-foreground'}`}>
                             In-App Notifications
                           </label>
-                          <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          <p className={`text-xs ${theme === 'dark' ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
                             Show notification badge and alerts in the application
                           </p>
                         </div>
@@ -374,7 +381,7 @@ export default function ProfilePage() {
             {activeTab === 'security' && (
               <div className="space-y-8">
                 <div>
-                  <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'} mb-4 flex items-center gap-2`}>
+                  <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-foreground'} mb-4 flex items-center gap-2`}>
                     <FaLock className="w-5 h-5" />
                     Account Security
                   </h3>
@@ -400,13 +407,13 @@ export default function ProfilePage() {
 
                   {/* Account Info */}
                   <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'}`}>
-                    <h4 className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'} mb-3`}>
+                    <h4 className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-foreground'} mb-3`}>
                       Account Information
                     </h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Account Type:</span>
-                        <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+                        <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-foreground'}`}>
                           {session?.user?.role === 'GROWTH_TEAM' ? 'Growth Team' : 'Consultant'}
                         </span>
                       </div>
@@ -418,7 +425,7 @@ export default function ProfilePage() {
                       </div>
                       <div className="flex justify-between">
                         <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Account ID:</span>
-                        <span className={`font-mono text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                        <span className={`font-mono text-xs ${theme === 'dark' ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
                           {session?.user?.id}
                         </span>
                       </div>

@@ -1,20 +1,18 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { requireAuth, isAuthError } from '@/lib/api-auth';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ phaseId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  const { phaseId } = await params;
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
+  const { phaseId } = await params;
 
   // Check if user is Product Manager of this project (only PMs can assign sprints)
   const phase = await prisma.phase.findUnique({
@@ -81,12 +79,11 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ phaseId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  const { phaseId } = await params;
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
+  const { phaseId } = await params;
 
   // Check if user is Product Manager of this project (only PMs can delete phase sprints)
   const phase = await prisma.phase.findUnique({

@@ -1,19 +1,22 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, UserStatus, ProjectRole } from '@prisma/client';
+import { requireAuth, requireGrowthTeam, isAuthError } from '@/lib/api-auth';
+import { UserRole, UserStatus, ProjectRole } from '@prisma/client';
 import { sendEmail, renderEmailTemplate } from '@/lib/email';
 import PhaseEndDateAlertEmail from '@/emails/PhaseEndDateAlertEmail';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-
-  // Allow system calls (no session) or Growth Team members
-  if (session && session.user.role !== UserRole.GROWTH_TEAM) {
-    return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
+  // Allow system calls (check auth but don't require Growth Team role)
+  try {
+    const auth = await requireAuth();
+    // If auth succeeds, check if user is Growth Team
+    if (!isAuthError(auth) && auth.session.user.role !== UserRole.GROWTH_TEAM) {
+      return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
+    }
+  } catch (error) {
+    // Allow system calls (no session) to proceed
   }
 
   try {
@@ -216,11 +219,9 @@ export async function POST(request: Request) {
 
 // GET endpoint to check upcoming phase end dates without sending emails
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.id || session.user.role !== UserRole.GROWTH_TEAM) {
-    return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
-  }
+  const auth = await requireGrowthTeam();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   try {
     // Calculate date ranges

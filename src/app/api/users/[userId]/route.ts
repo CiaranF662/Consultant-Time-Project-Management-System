@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient, UserRole } from '@prisma/client';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { UserRole } from '@prisma/client';
+import { requireGrowthTeam, isAuthError } from '@/lib/api-auth';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ userId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== 'GROWTH_TEAM') {
-    return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
-  }
+  const auth = await requireGrowthTeam();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   try {
     const { userId } = await params;
@@ -31,5 +29,32 @@ export async function PATCH(
   } catch (error) {
     console.error('Error updating user role:', error);
     return new NextResponse(JSON.stringify({ error: 'Failed to update user role' }), { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ userId: string }> }
+) {
+  const auth = await requireGrowthTeam();
+  if (isAuthError(auth)) return auth;
+  const { session } = auth;
+
+  try {
+    const { userId } = await params;
+
+    // Prevent deleting yourself
+    if (userId === session.user.id) {
+      return new NextResponse(JSON.stringify({ error: 'Cannot delete your own account' }), { status: 400 });
+    }
+
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return NextResponse.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return new NextResponse(JSON.stringify({ error: 'Failed to delete user' }), { status: 500 });
   }
 }

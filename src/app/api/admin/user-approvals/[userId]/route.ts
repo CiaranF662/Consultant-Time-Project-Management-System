@@ -1,21 +1,18 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient, UserStatus, UserRole } from '@prisma/client';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { UserStatus, UserRole } from '@prisma/client';
 import { sendEmail, renderEmailTemplate } from '@/lib/email';
 import { createNotification } from '@/lib/notifications';
 import GrowthTeamApprovalEmail from '@/emails/GrowthTeamApprovalEmail';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
+import { requireGrowthTeam, isAuthError } from '@/lib/api-auth';
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ userId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== 'GROWTH_TEAM') {
-    return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
-  }
+  const auth = await requireGrowthTeam();
+  if (isAuthError(auth)) return auth;
+  const { session } = auth;
 
   try {
     const { userId } = await params;

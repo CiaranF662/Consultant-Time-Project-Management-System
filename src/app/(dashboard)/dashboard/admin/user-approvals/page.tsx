@@ -5,7 +5,6 @@ import axios from 'axios';
 import type { User, UserStatus } from '@prisma/client';
 import Link from 'next/link';
 import { FaArrowLeft } from 'react-icons/fa';
-import DashboardLayout from '@/app/components/DashboardLayout';
 
 export default function UserApprovalsPage() {
   const [pendingUsers, setPendingUsers] = useState<User[]>([]);
@@ -44,7 +43,7 @@ export default function UserApprovalsPage() {
   if (error) return <div className="text-center p-12 text-red-500">{error}</div>;
 
   return (
-    <DashboardLayout>
+    
     <div className="bg-gray-50 min-h-screen">
         <div className="container mx-auto p-4 md:p-8">
             <div className="mb-6">
@@ -52,7 +51,7 @@ export default function UserApprovalsPage() {
                     <FaArrowLeft /> Back to Dashboard
                 </Link>
             </div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-6">User Sign-Up Approvals</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-6">User Sign-Up Approvals</h1>
             <div className="bg-white rounded-lg shadow-md border">
                 {pendingUsers.length > 0 ? (
                     <ul className="divide-y divide-gray-200">
@@ -60,7 +59,7 @@ export default function UserApprovalsPage() {
                             <li key={user.id} className="p-4 flex justify-between items-center">
                                 <div>
                                     <p className="font-semibold">{user.name}</p>
-                                    <p className="text-sm text-gray-500">{user.email}</p>
+                                    <p className="text-sm text-muted-foreground">{user.email}</p>
                                 </div>
                                 <div className="flex gap-2">
                                     <button onClick={() => handleApproval(user.id, 'APPROVED')} className="px-3 py-1 bg-green-500 text-white rounded-md text-sm hover:bg-green-600">
@@ -72,11 +71,11 @@ export default function UserApprovalsPage() {
                         ))}
                     </ul>
                 ) : (
-                    <p className="p-8 text-center text-gray-500">No pending user approvals.</p>
+                    <p className="p-8 text-center text-muted-foreground">No pending user approvals.</p>
                 )}
             </div>
         </div>
     </div>
-    </DashboardLayout>
+    
   );
 }

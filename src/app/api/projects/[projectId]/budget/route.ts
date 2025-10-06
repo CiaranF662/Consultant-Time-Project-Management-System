@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { requireAuth, isAuthError } from '@/lib/api-auth';
+import { UserRole } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return new NextResponse(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (isAuthError(auth)) return auth;
+  const { session, user } = auth;
 
   const { projectId } = await params;
   const { id: userId, role } = session.user;
@@ -31,6 +29,9 @@ export async function GET(
         phases: {
           include: {
             allocations: {
+              where: {
+                approvalStatus: 'APPROVED' // Only include approved phase allocations
+              },
               include: {
                 consultant: {
                   select: { id: true, name: true, email: true }
@@ -43,28 +44,68 @@ export async function GET(
       },
     });
 
+    // Also get all approved weekly allocations for this project
+    const approvedWeeklyAllocations = await prisma.weeklyAllocation.findMany({
+      where: {
+        phaseAllocation: {
+          phase: {
+            projectId: projectId
+          }
+        },
+        planningStatus: { in: ['APPROVED', 'MODIFIED'] }
+      },
+      include: {
+        phaseAllocation: {
+          include: {
+            consultant: {
+              select: { id: true, name: true, email: true }
+            }
+          }
+        }
+      }
+    });
+
     if (!project) {
       return new NextResponse(JSON.stringify({ error: 'Project not found or not authorized' }), { status: 404 });
     }
 
+    // Debug: Log the data we're working with
+    console.log('=== BUDGET API DEBUG ===');
+    console.log('Project phases:', project.phases.length);
+    project.phases.forEach((phase, i) => {
+      console.log(`Phase ${i}: ${phase.name}, allocations: ${phase.allocations.length}`);
+      phase.allocations.forEach((alloc, j) => {
+        console.log(`  Allocation ${j}: consultant ${alloc.consultant.name}, ${alloc.totalHours}h, status: ${alloc.approvalStatus}`);
+      });
+    });
+    console.log('Approved weekly allocations:', approvedWeeklyAllocations.length);
+    approvedWeeklyAllocations.forEach((wa, i) => {
+      console.log(`  Weekly ${i}: ${wa.approvedHours}h, status: ${wa.planningStatus}`);
+    });
+
     // Calculate budget data with three-tier system
     const today = new Date();
-    
+
     const phases = project.phases.map(phase => {
       const consultants = phase.allocations.map(allocation => {
-        // Planned Hours: All weekly allocations (what consultant planned)
-        const plannedHours = allocation.weeklyAllocations.reduce((sum, wa) => sum + wa.plannedHours, 0);
-        
-        // Actual/Used Hours: Only weekly allocations where the week has ended
-        const usedHours = allocation.weeklyAllocations
+        // Get approved weekly allocations for this specific allocation
+        const approvedWeeklyForThisAllocation = approvedWeeklyAllocations.filter(
+          wa => wa.phaseAllocationId === allocation.id
+        );
+
+        // Planned Hours: Only approved weekly allocations (Growth Team approved)
+        const totalPlannedHours = approvedWeeklyForThisAllocation.reduce((sum, wa) => sum + (wa.approvedHours || 0), 0);
+
+        // Actual/Used Hours: Only approved weekly allocations where the week has ended
+        const usedHours = approvedWeeklyForThisAllocation
           .filter(wa => new Date(wa.weekEndDate) < today)
-          .reduce((sum, wa) => sum + wa.plannedHours, 0);
-        
+          .reduce((sum, wa) => sum + (wa.approvedHours || 0), 0);
+
         return {
           id: allocation.consultant.id,
           name: allocation.consultant.name || allocation.consultant.email || 'Unknown',
           allocatedHours: allocation.totalHours,
-          plannedHours: plannedHours,
+          plannedHours: totalPlannedHours,
           usedHours: usedHours
         };
       });
