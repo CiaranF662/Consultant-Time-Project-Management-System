@@ -11,7 +11,8 @@ import {
 } from 'react-icons/fa';
 import Link from 'next/link';
 import { formatHours } from '@/lib/dates';
-import ProjectHealthView from '../dashboard-views/ProjectHealthView';
+import BudgetOverviewView from '../dashboard-views/BudgetOverviewView';
+import TeamWorkloadView from '../dashboard-views/TeamWorkloadView';
 import PendingRequestsView from '../dashboard-views/PendingRequestsView';
 import CrossProjectManagementView from '../dashboard-views/CrossProjectManagementView';
 import { ComponentLoading } from '@/components/ui/LoadingSpinner';
@@ -21,7 +22,7 @@ interface Project {
   title: string;
   description?: string;
   status?: 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED';
-  totalBudgetedHours: number;
+  budgetedHours: number;
   startDate: Date;
   endDate: Date;
   consultants: Array<{
@@ -59,13 +60,33 @@ interface PendingAllocation {
   };
 }
 
+interface PendingWeeklyRequest {
+  id: string;
+  planningStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  proposedHours: number;
+  weekStartDate: Date;
+  weekEndDate: Date;
+  consultant: {
+    name: string;
+    email: string;
+  };
+  phaseAllocation: {
+    phase: {
+      name: string;
+      project: {
+        title: string;
+      };
+    };
+  };
+}
+
 
 export default function ProductManagerDashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [pendingAllocations, setPendingAllocations] = useState<PendingAllocation[]>([]);
+  const [pendingWeeklyRequests, setPendingWeeklyRequests] = useState<PendingWeeklyRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAllProjects, setShowAllProjects] = useState(false);
-  const [activeView, setActiveView] = useState<'management' | 'projects' | 'requests'>('management');
+  const [activeView, setActiveView] = useState<'management' | 'budget' | 'workload' | 'requests'>('management');
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
   const [stats, setStats] = useState({
@@ -78,7 +99,21 @@ export default function ProductManagerDashboard() {
     upcomingDeadlines: [] as Array<{type: 'project' | 'phase', name: string, projectName: string, endDate: Date, daysLeft: number}>,
     pendingDecisions: 0,
     blockedAllocations: 0,
-    crossProjectRisks: 0
+    crossProjectRisks: 0,
+    // Budget & Capacity metrics
+    totalBudgeted: 0,
+    totalAllocated: 0,
+    budgetUtilization: 0,
+    overBudgetProjects: 0,
+    underUtilizedProjects: 0,
+    teamWorkloadData: [] as Array<{
+      consultantId: string;
+      consultantName: string;
+      upcomingHours: number;
+      avgHoursPerWeek: number;
+      projectCount: number;
+      status: 'overloaded' | 'moderate' | 'available';
+    }>
   });
 
   useEffect(() => {
@@ -128,6 +163,13 @@ export default function ProductManagerDashboard() {
       if (allocationsResponse.ok) {
         const allocationsData = await allocationsResponse.json();
         setPendingAllocations(allocationsData);
+      }
+
+      // Fetch pending weekly planning requests from team members in PM's projects
+      const weeklyResponse = await fetch('/api/projects/managed/pending-weekly-plans');
+      if (weeklyResponse.ok) {
+        const weeklyData = await weeklyResponse.json();
+        setPendingWeeklyRequests(weeklyData);
       }
 
 
@@ -219,6 +261,98 @@ export default function ProductManagerDashboard() {
           return daysUntilEnd <= 30 && daysUntilEnd > 0 && avgProgress < 50;
         }).length;
 
+        // Calculate budget & capacity metrics
+        const totalBudgeted = managedProjectsData.reduce((sum: number, p: any) => sum + (p.budgetedHours || 0), 0);
+        const totalAllocated = managedProjectsData.reduce((sum: number, p: any) => {
+          const projectAllocated = p.phases?.reduce((phaseSum: number, phase: any) =>
+            phaseSum + (phase.totalAllocatedHours || 0), 0) || 0;
+          return sum + projectAllocated;
+        }, 0);
+        const budgetUtilization = totalBudgeted > 0 ? Math.round((totalAllocated / totalBudgeted) * 100) : 0;
+
+        const overBudgetProjects = managedProjectsData.filter((p: any) => {
+          const projectAllocated = p.phases?.reduce((sum: number, phase: any) =>
+            sum + (phase.totalAllocatedHours || 0), 0) || 0;
+          return projectAllocated > (p.budgetedHours || 0);
+        }).length;
+
+        const underUtilizedProjects = managedProjectsData.filter((p: any) => {
+          const projectAllocated = p.phases?.reduce((sum: number, phase: any) =>
+            sum + (phase.totalAllocatedHours || 0), 0) || 0;
+          const utilization = (p.budgetedHours || 0) > 0
+            ? (projectAllocated / p.budgetedHours) * 100
+            : 0;
+          return utilization < 50;
+        }).length;
+
+        // Build team workload data - focus on next 4 weeks
+        const fourWeeksFromNow = new Date(today);
+        fourWeeksFromNow.setDate(today.getDate() + 28);
+
+        const consultantWorkloadMap = new Map<string, {
+          consultantId: string;
+          consultantName: string;
+          upcomingHours: number;
+          projectCount: number;
+        }>();
+
+        managedProjectsData.forEach((project: any) => {
+          project.consultants?.forEach((consultant: any) => {
+            // Calculate hours in next 4 weeks from weekly allocations
+            let upcomingHours = 0;
+
+            project.phases?.forEach((phase: any) => {
+              const phaseAllocation = phase.allocations?.find((a: any) => a.consultantId === consultant.id);
+              if (phaseAllocation?.weeklyAllocations) {
+                upcomingHours += phaseAllocation.weeklyAllocations
+                  .filter((wa: any) => {
+                    const weekStart = new Date(wa.weekStartDate);
+                    return weekStart >= today && weekStart <= fourWeeksFromNow;
+                  })
+                  .reduce((sum: number, wa: any) => sum + (wa.proposedHours || wa.approvedHours || 0), 0);
+              }
+            });
+
+            if (consultantWorkloadMap.has(consultant.id)) {
+              const existing = consultantWorkloadMap.get(consultant.id)!;
+              existing.upcomingHours += upcomingHours;
+              existing.projectCount += 1;
+            } else {
+              consultantWorkloadMap.set(consultant.id, {
+                consultantId: consultant.id,
+                consultantName: consultant.name,
+                upcomingHours,
+                projectCount: 1
+              });
+            }
+          });
+        });
+
+        // Convert to array and determine status based on avg hours per week
+        const teamWorkloadData = Array.from(consultantWorkloadMap.values()).map(consultant => {
+          const avgHoursPerWeek = consultant.upcomingHours / 4; // 4 weeks
+          let status: 'overloaded' | 'moderate' | 'available' = 'available';
+
+          if (avgHoursPerWeek > 40) {
+            status = 'overloaded';
+          } else if (avgHoursPerWeek >= 25) {
+            status = 'moderate';
+          }
+
+          return {
+            ...consultant,
+            avgHoursPerWeek: Math.round(avgHoursPerWeek * 10) / 10,
+            status
+          };
+        }).sort((a, b) => {
+          // Sort by status priority (overloaded first), then by hours
+          const statusPriority = { overloaded: 0, moderate: 1, available: 2 };
+          if (statusPriority[a.status] !== statusPriority[b.status]) {
+            return statusPriority[a.status] - statusPriority[b.status];
+          }
+          return b.avgHoursPerWeek - a.avgHoursPerWeek;
+        });
+
         setStats({
           totalProjectsInvolved: allProjectsData.length,
           projectsManaged: managedProjectsData.length,
@@ -228,7 +362,14 @@ export default function ProductManagerDashboard() {
           upcomingDeadlines,
           pendingDecisions: allocationsData.length,
           blockedAllocations: allocationsData.filter((a: any) => a.approvalStatus === 'PENDING').length,
-          crossProjectRisks
+          crossProjectRisks,
+          // Budget & Capacity metrics
+          totalBudgeted,
+          totalAllocated,
+          budgetUtilization,
+          overBudgetProjects,
+          underUtilizedProjects,
+          teamWorkloadData
         });
       }
     } catch (error) {
@@ -251,8 +392,10 @@ export default function ProductManagerDashboard() {
           <p className="text-lg text-gray-600 dark:text-gray-400">
             {activeView === 'management'
               ? 'Comprehensive project management workspace'
-              : activeView === 'projects'
-              ? 'Track portfolio health and project progress'
+              : activeView === 'budget'
+              ? 'Track project budgets and allocations'
+              : activeView === 'workload'
+              ? 'Monitor team capacity and availability'
               : 'Review pending requests from your teams'
             }
           </p>
@@ -260,7 +403,7 @@ export default function ProductManagerDashboard() {
       </div>
 
       {/* PM-Focused Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Portfolio Overview Card */}
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 rounded-xl shadow-sm border border-blue-200 dark:border-blue-800 p-6">
           <div className="flex items-center justify-between mb-4">
@@ -281,31 +424,6 @@ export default function ProductManagerDashboard() {
               className="bg-blue-500 dark:bg-blue-400 h-1.5 rounded-full transition-all"
               style={{ width: `${(stats.projectsManaged / Math.max(stats.totalProjectsInvolved, 1)) * 100}%` }}
             ></div>
-          </div>
-        </div>
-
-        {/* Project Health Card */}
-        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 rounded-xl shadow-sm border border-green-200 dark:border-green-800 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-green-500 dark:bg-green-600 rounded-lg">
-              <FaChartLine className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{stats.overallProjectHealth}%</p>
-              <p className="text-sm text-green-600 dark:text-green-400">Portfolio Health</p>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="w-full bg-green-200 dark:bg-green-800/50 rounded-full h-2">
-              <div
-                className={`h-2 rounded-full transition-all ${
-                  stats.overallProjectHealth >= 80 ? 'bg-green-500 dark:bg-green-400' :
-                  stats.overallProjectHealth >= 60 ? 'bg-yellow-500 dark:bg-yellow-400' : 'bg-red-500 dark:bg-red-400'
-                }`}
-                style={{ width: `${Math.min(stats.overallProjectHealth, 100)}%` }}
-              ></div>
-            </div>
-            <p className="text-xs text-card-foreground leading-tight">{stats.portfolioHealthDescription}</p>
           </div>
         </div>
 
@@ -418,7 +536,8 @@ export default function ProductManagerDashboard() {
           <nav className="-mb-px flex space-x-8">
             {[
               { key: 'management', label: 'Project Management', icon: FaProjectDiagram },
-              { key: 'projects', label: 'Project Health', icon: FaChartLine },
+              { key: 'budget', label: 'Budget Overview', icon: FaChartPie },
+              { key: 'workload', label: 'Team Workload', icon: FaChartLine },
               { key: 'requests', label: 'Pending Requests', icon: FaClock }
             ].map(({ key, label, icon: Icon }) => (
               <button
@@ -438,84 +557,41 @@ export default function ProductManagerDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Cool Project Timeline View - Similar to Resource Timeline */}
-        <div className="xl:col-span-2 space-y-6">
-          {/* Main Content Area with Toggle */}
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <div className="bg-blue-600 dark:bg-blue-700 rounded-lg p-4 mb-6">
-              <div>
-                <h2 className="text-xl font-semibold text-white">
-                  {activeView === 'management' ? 'Cross-Project Management Center' :
-                   activeView === 'projects' ? 'Project Health Overview' :
-                   'Pending Requests & Approvals'}
-                </h2>
-                <p className="text-sm text-blue-100">
-                  {activeView === 'management'
-                    ? 'Unified workspace for managing all your projects'
-                    : activeView === 'projects'
-                    ? 'Real-time status of your managed projects'
-                    : 'Review allocation requests and weekly planning submissions'
-                  }
-                </p>
-              </div>
-            </div>
-
-            {activeView === 'management' ? (
-              <CrossProjectManagementView projects={projects} stats={stats} />
-            ) : activeView === 'projects' ? (
-              <ProjectHealthView
-                projects={projects}
-                showAllProjects={showAllProjects}
-                setShowAllProjects={setShowAllProjects}
-                stats={stats}
-              />
-            ) : (
-              <PendingRequestsView />
-            )}
+      {/* Main Content Area - Full Width */}
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-blue-600 dark:bg-blue-700 rounded-lg p-4 mb-6">
+          <div>
+            <h2 className="text-xl font-semibold text-white">
+              {activeView === 'management' ? 'Cross-Project Management Center' :
+               activeView === 'budget' ? 'Budget Overview' :
+               activeView === 'workload' ? 'Team Workload & Availability' :
+               'Pending Requests & Approvals'}
+            </h2>
+            <p className="text-sm text-blue-100">
+              {activeView === 'management'
+                ? 'Unified workspace for managing all your projects'
+                : activeView === 'budget'
+                ? 'Track project budgets and allocation across your portfolio'
+                : activeView === 'workload'
+                ? 'Monitor team capacity and identify availability for the next 4 weeks'
+                : 'Review allocation requests and weekly planning submissions'
+              }
+            </p>
           </div>
         </div>
 
-        {/* Right Sidebar */}
-        <div className="space-y-6">
-          {/* PM Summary Card */}
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold text-foreground">PM Summary</h2>
-              <p className="text-xs text-muted-foreground">Your role overview</p>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.projectsManaged}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Projects Managing</div>
-              </div>
-
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.overallProjectHealth}%</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Portfolio Health</div>
-              </div>
-
-              {stats.pendingDecisions > 0 && (
-                <div className="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-orange-700 dark:text-orange-300">{stats.pendingDecisions}</div>
-                    <div className="text-xs text-orange-600 dark:text-orange-400">Requests Awaiting Approval</div>
-                  </div>
-                </div>
-              )}
-
-              {stats.upcomingDeadlines.length > 0 && (
-                <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-red-700 dark:text-red-300">{stats.upcomingDeadlines.filter(d => d.daysLeft <= 7).length}</div>
-                    <div className="text-xs text-red-600 dark:text-red-400">Urgent Deadlines (≤7 days)</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-        </div>
+        {activeView === 'management' ? (
+          <CrossProjectManagementView projects={projects} stats={stats} />
+        ) : activeView === 'budget' ? (
+          <BudgetOverviewView projects={projects} stats={stats} />
+        ) : activeView === 'workload' ? (
+          <TeamWorkloadView stats={stats} />
+        ) : (
+          <PendingRequestsView
+            pendingAllocations={pendingAllocations}
+            pendingWeeklyRequests={pendingWeeklyRequests}
+          />
+        )}
       </div>
     </div>
   );

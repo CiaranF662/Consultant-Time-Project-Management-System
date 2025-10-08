@@ -9,7 +9,7 @@ interface Project {
   title: string;
   description?: string;
   status?: 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED';
-  totalBudgetedHours: number;
+  budgetedHours: number;
   startDate: Date;
   endDate: Date;
   consultants: Array<{
@@ -49,6 +49,14 @@ export default function CrossProjectManagementView({ projects, stats }: CrossPro
     return totalPhases > 0 ? Math.round((completedPhases / totalPhases) * 100) : 0;
   };
 
+  const getBudgetUtilization = (project: Project) => {
+    const totalAllocated = project.phases.reduce((sum, phase) => sum + phase.totalAllocatedHours, 0);
+    const utilization = project.budgetedHours > 0
+      ? Math.round((totalAllocated / project.budgetedHours) * 100)
+      : 0;
+    return { totalAllocated, utilization, isOverBudget: totalAllocated > project.budgetedHours };
+  };
+
   return (
     <div className="space-y-6">
       {/* Quick Stats Grid */}
@@ -60,19 +68,19 @@ export default function CrossProjectManagementView({ projects, stats }: CrossPro
             </div>
             <div>
               <h3 className="font-semibold text-green-900 dark:text-green-100">Active Projects</h3>
-              <p className="text-sm text-green-700 dark:text-green-300">{stats.projectsManaged} projects under management</p>
+              <p className="text-sm text-green-700 dark:text-green-300">{stats.projectsManaged} projects under your management</p>
             </div>
           </div>
         </div>
 
-        <div className="p-4 border border-gray-200 dark:border-orange-800 rounded-lg bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/20">
+        <div className="p-4 border border-gray-200 dark:border-red-800 rounded-lg bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/20">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-500 dark:bg-orange-600 rounded-lg">
+            <div className="p-2 bg-red-500 dark:bg-red-600 rounded-lg">
               <FaClock className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-orange-900 dark:text-orange-100">Pending Approvals</h3>
-              <p className="text-sm text-orange-700 dark:text-orange-300">{stats.pendingDecisions} allocations awaiting approval</p>
+              <h3 className="font-semibold text-red-900 dark:text-red-100">At-Risk Projects</h3>
+              <p className="text-sm text-red-700 dark:text-red-300">{stats.crossProjectRisks} projects need attention</p>
             </div>
           </div>
         </div>
@@ -103,8 +111,11 @@ export default function CrossProjectManagementView({ projects, stats }: CrossPro
                   </td>
                 </tr>
               ) : (
-                projects.map((project) => {
+                projects
+                  .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+                  .map((project) => {
                   const progress = getProjectProgress(project);
+                  const budgetInfo = getBudgetUtilization(project);
 
                   return (
                     <tr key={project.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
@@ -135,7 +146,16 @@ export default function CrossProjectManagementView({ projects, stats }: CrossPro
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-foreground">{formatHours(project.totalBudgetedHours)}</div>
+                        <div className={`text-sm font-medium ${
+                          budgetInfo.isOverBudget ? 'text-red-600 dark:text-red-400' :
+                          budgetInfo.utilization >= 90 ? 'text-orange-600 dark:text-orange-400' :
+                          'text-foreground'
+                        }`}>
+                          {formatHours(budgetInfo.totalAllocated)} / {formatHours(project.budgetedHours)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {budgetInfo.utilization}% utilized
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
@@ -156,15 +176,19 @@ export default function CrossProjectManagementView({ projects, stats }: CrossPro
         </div>
       </div>
 
-      {/* Cross-Project Insights */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Resource Allocation Overview */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Upcoming Deadlines</h3>
-          <div className="space-y-4">
-            {stats.upcomingDeadlines.slice(0, 3).map((deadline, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div>
+      {/* Bottom Insights - Single Row */}
+      <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <h3 className="text-lg font-semibold text-foreground mb-4">Upcoming Deadlines</h3>
+
+        {stats.upcomingDeadlines.length > 0 ? (
+          <div className="space-y-2">
+            {stats.upcomingDeadlines.slice(0, 5).map((deadline, index) => (
+              <div key={index} className={`flex items-center justify-between p-3 rounded-lg ${
+                deadline.daysLeft <= 7 ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' :
+                deadline.daysLeft <= 14 ? 'bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800' :
+                'bg-gray-50 dark:bg-gray-800'
+              }`}>
+                <div className="flex-1">
                   <div className="text-sm font-medium text-foreground">
                     {deadline.type === 'project' ? '📋' : '📅'} {deadline.name}
                   </div>
@@ -172,53 +196,34 @@ export default function CrossProjectManagementView({ projects, stats }: CrossPro
                     <div className="text-xs text-muted-foreground">in {deadline.projectName}</div>
                   )}
                 </div>
-                <div className={`text-sm font-medium ${
-                  deadline.daysLeft <= 7 ? 'text-red-600 dark:text-red-400' :
-                  deadline.daysLeft <= 14 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'
-                }`}>
-                  {deadline.daysLeft} days
+                <div className="flex items-center gap-2">
+                  {deadline.daysLeft <= 7 && (
+                    <span className="text-xs font-medium text-red-600 dark:text-red-400 px-2 py-1 bg-red-100 dark:bg-red-900/40 rounded">
+                      URGENT
+                    </span>
+                  )}
+                  <div className={`text-sm font-semibold ${
+                    deadline.daysLeft <= 7 ? 'text-red-600 dark:text-red-400' :
+                    deadline.daysLeft <= 14 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'
+                  }`}>
+                    {deadline.daysLeft}d
+                  </div>
                 </div>
               </div>
             ))}
-            {stats.upcomingDeadlines.length === 0 && (
-              <div className="text-sm text-muted-foreground text-center py-4">
-                No upcoming deadlines
+            {stats.upcomingDeadlines.length > 5 && (
+              <div className="text-xs text-muted-foreground text-center pt-2">
+                + {stats.upcomingDeadlines.length - 5} more deadlines in the next 30 days
               </div>
             )}
           </div>
-        </div>
-
-        {/* Portfolio Health Summary */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Portfolio Health</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Overall Health</span>
-              <span className="text-lg font-bold text-foreground">{stats.overallProjectHealth}%</span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-              <div
-                className={`h-3 rounded-full ${
-                  stats.overallProjectHealth >= 80 ? 'bg-green-500 dark:bg-green-600' :
-                  stats.overallProjectHealth >= 60 ? 'bg-yellow-500 dark:bg-yellow-600' : 'bg-red-500 dark:bg-red-600'
-                }`}
-                style={{ width: `${stats.overallProjectHealth}%` }}
-              />
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">{stats.portfolioHealthDescription}</p>
-
-            {stats.crossProjectRisks > 0 && (
-              <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
-                <div className="text-sm font-medium text-red-800 dark:text-red-100">
-                  ⚠️ {stats.crossProjectRisks} projects need attention
-                </div>
-                <div className="text-xs text-red-600 dark:text-red-300 mt-1">
-                  Projects with low progress and near deadlines
-                </div>
-              </div>
-            )}
+        ) : (
+          <div className="text-center py-8">
+            <div className="text-4xl mb-2">📅</div>
+            <div className="text-sm font-medium text-gray-600 dark:text-gray-400">No upcoming deadlines</div>
+            <div className="text-xs text-muted-foreground mt-1">No project or phase deadlines in the next 30 days</div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

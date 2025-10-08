@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { formatHours, getUtilizationColor } from '@/lib/dates';
 import { ComponentLoading } from '@/components/ui/LoadingSpinner';
+import { FaSearch, FaTimes } from 'react-icons/fa';
 
 interface ResourceTimelineProps {
   consultants: Array<{
@@ -63,7 +64,8 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
   } | null>(null);
   const [weekHeaders, setWeekHeaders] = useState<Array<{label: string; isCurrent: boolean; isPast: boolean}>>([]);
   const [lastFetchedWeeks, setLastFetchedWeeks] = useState<number>(initialTimelineData ? weeks : 0);
-  const [lastDataUpdate, setLastDataUpdate] = useState<number>(Date.now());
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showSearch, setShowSearch] = useState<boolean>(false);
 
   // Initialize week headers from initial data
   useEffect(() => {
@@ -133,7 +135,6 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
 
       setTimelineData(normalizedTimeline);
       setLastFetchedWeeks(weeks);
-      setLastDataUpdate(Date.now());
 
       // Use API weeks for headers to ensure perfect alignment
       setWeekHeaders(apiWeeks.map((w: any) => {
@@ -174,6 +175,13 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
     }
   };
 
+  // Filter consultants based on search query
+  const filteredConsultants = consultants.filter(consultant => {
+    if (!searchQuery.trim()) return true;
+    const name = (consultant.name || consultant.email || '').toLowerCase();
+    return name.includes(searchQuery.toLowerCase());
+  });
+
   if (loading) {
     return <ComponentLoading message="Loading resource timeline..." />;
   }
@@ -183,7 +191,37 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
       <div className={`${weeks >= 32 ? 'min-w-[3600px]' : weeks >= 24 ? 'min-w-[2400px]' : weeks >= 12 ? 'min-w-[1300px]' : 'min-w-[1000px]'} ${weeks >= 32 ? 'pr-4' : ''}`}>
         {/* Header */}
         <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 sticky top-0 z-20 shadow-[0_2px_4px_-1px_rgba(0,0,0,0.1)]">
-          <div className="w-56 md:w-64 p-4 font-semibold text-card-foreground border-r border-gray-200 dark:border-gray-700 flex-shrink-0 sticky left-0 bg-gray-50 dark:bg-gray-800 z-30 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.1)]">Consultant</div>
+          <div className="w-56 md:w-64 p-4 font-semibold text-card-foreground border-r border-gray-200 dark:border-gray-700 flex-shrink-0 sticky left-0 bg-gray-50 dark:bg-gray-800 z-30 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.1)] flex items-center justify-between">
+            <span>Consultant</span>
+            <div className="flex items-center gap-2">
+              {showSearch && (
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search..."
+                  className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 w-32"
+                  autoFocus
+                />
+              )}
+              <button
+                onClick={() => {
+                  setShowSearch(!showSearch);
+                  if (showSearch) {
+                    setSearchQuery('');
+                  }
+                }}
+                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                title={showSearch ? "Close search" : "Search consultants"}
+              >
+                {showSearch ? (
+                  <FaTimes className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+                ) : (
+                  <FaSearch className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+                )}
+              </button>
+            </div>
+          </div>
           <div className="flex-1 flex">
             {weekHeaders.map((week, index) => (
               <div
@@ -202,17 +240,27 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
           </div>
         </div>
 
+        {/* No Results Message */}
+        {filteredConsultants.length === 0 && searchQuery.trim() && (
+          <div className="flex items-center justify-center p-8 text-gray-500 dark:text-gray-400">
+            <div className="text-center">
+              <FaSearch className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p>No consultants found matching &quot;{searchQuery}&quot;</p>
+            </div>
+          </div>
+        )}
+
         {/* Consultant Rows */}
-        {consultants
+        {filteredConsultants
           .sort((a, b) => {
             const consultantDataA = timelineData.find(td => td.consultantId === a.id);
             const consultantDataB = timelineData.find(td => td.consultantId === b.id);
-            
+
             // Sort by Product Manager status first (PMs at top), then by name
             if (consultantDataA?.isProductManager !== consultantDataB?.isProductManager) {
               return consultantDataB?.isProductManager ? 1 : -1;
             }
-            
+
             // If both are PMs or both are not PMs, sort alphabetically by name
             const nameA = (a.name || a.email || '').toLowerCase();
             const nameB = (b.name || b.email || '').toLowerCase();

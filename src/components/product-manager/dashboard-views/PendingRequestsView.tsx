@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { FaClock, FaCheckCircle, FaTimesCircle, FaUser, FaProjectDiagram } from 'react-icons/fa';
 import { formatHours, formatDate } from '@/lib/dates';
-import { SectionLoader } from '@/components/ui/LoadingSpinner';
 
 interface PendingAllocation {
   id: string;
@@ -42,40 +41,13 @@ interface PendingWeeklyRequest {
   };
 }
 
-export default function PendingRequestsView() {
-  const [pendingAllocations, setPendingAllocations] = useState<PendingAllocation[]>([]);
-  const [pendingWeeklyRequests, setPendingWeeklyRequests] = useState<PendingWeeklyRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+interface PendingRequestsViewProps {
+  pendingAllocations: PendingAllocation[];
+  pendingWeeklyRequests: PendingWeeklyRequest[];
+}
+
+export default function PendingRequestsView({ pendingAllocations, pendingWeeklyRequests }: PendingRequestsViewProps) {
   const [activeTab, setActiveTab] = useState<'allocations' | 'weekly'>('allocations');
-
-  useEffect(() => {
-    fetchPendingRequests();
-  }, []);
-
-  const fetchPendingRequests = async () => {
-    try {
-      // Fetch pending allocations that PM created (waiting for Growth Team approval)
-      const allocationsResponse = await fetch('/api/projects/managed/pending-allocations');
-      if (allocationsResponse.ok) {
-        const allocationsData = await allocationsResponse.json();
-        setPendingAllocations(allocationsData);
-      }
-
-      // Fetch pending weekly planning requests from team members in PM's projects
-      const weeklyResponse = await fetch('/api/projects/managed/pending-weekly-plans');
-      if (weeklyResponse.ok) {
-        const weeklyData = await weeklyResponse.json();
-        setPendingWeeklyRequests(weeklyData);
-      }
-    } catch (error) {
-      console.error('Error fetching pending requests:', error);
-    }
-    setLoading(false);
-  };
-
-  if (loading) {
-    return <SectionLoader message="Loading pending requests..." />;
-  }
 
   return (
     <div className="space-y-6">

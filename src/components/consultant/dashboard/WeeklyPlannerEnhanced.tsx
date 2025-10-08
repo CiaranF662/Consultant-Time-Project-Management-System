@@ -7,7 +7,8 @@ import {
   formatHours,
   formatDate
 } from '@/lib/dates';
-import { FaSave, FaChevronDown, FaChevronRight, FaCheckCircle, FaTimes, FaCheck, FaClock } from 'react-icons/fa';
+import { FaSave, FaChevronDown, FaChevronRight, FaCheckCircle, FaTimes, FaCheck, FaClock, FaEye, FaEyeSlash } from 'react-icons/fa';
+import Link from 'next/link';
 import InstructionsPanel from './InstructionsPanel';
 import WeeklyAllocationCard from './WeeklyAllocationCard';
 
@@ -48,10 +49,11 @@ interface PhaseAllocation {
 interface WeeklyPlannerEnhancedProps {
   consultantId: string;
   phaseAllocations: PhaseAllocation[];
+  includeCompleted?: boolean;
   onDataChanged?: () => void; // Callback to refresh parent data
 }
 
-export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged }: WeeklyPlannerEnhancedProps) {
+export default function WeeklyPlannerEnhanced({ phaseAllocations, includeCompleted = false, onDataChanged }: WeeklyPlannerEnhancedProps) {
   const [allocations, setAllocations] = useState<Map<string, number>>(new Map());
   const [unsavedChanges, setUnsavedChanges] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
@@ -539,14 +541,32 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, onDataChanged 
         {/* Professional Header */}
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 rounded-xl shadow-lg overflow-hidden">
           <div className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 dark:bg-white/10 rounded-lg">
-                <FaClock className="w-6 h-6 text-white" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 dark:bg-white/10 rounded-lg">
+                  <FaClock className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">Weekly Hour Planner</h2>
+                  <p className="text-blue-100 dark:text-blue-200 text-sm">Distribute your allocated hours across weeks</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Weekly Hour Planner</h2>
-                <p className="text-blue-100 dark:text-blue-200 text-sm">Distribute your allocated hours across weeks</p>
-              </div>
+              <Link
+                href={`/dashboard/weekly-planner${includeCompleted ? '' : '?includeCompleted=true'}`}
+                className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 dark:bg-white/10 dark:hover:bg-white/20 rounded-lg transition-colors text-white text-sm font-medium"
+              >
+                {includeCompleted ? (
+                  <>
+                    <FaEyeSlash className="w-4 h-4" />
+                    Hide Completed
+                  </>
+                ) : (
+                  <>
+                    <FaEye className="w-4 h-4" />
+                    Show Completed
+                  </>
+                )}
+              </Link>
             </div>
           </div>
         </div>

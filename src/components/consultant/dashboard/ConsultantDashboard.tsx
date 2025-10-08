@@ -5,7 +5,6 @@ import { FaCalendarWeek, FaClock, FaChartPie, FaExclamationTriangle, FaCheckCirc
 import Link from 'next/link';
 import { formatHours, formatDate } from '@/lib/dates';
 import { getPhaseStatus, getStatusColorClasses, getProgressBarColor } from '@/lib/phase-status';
-import WeeklyPlannerEnhanced from './WeeklyPlannerEnhanced';
 import WeeklyCalendarView from './WeeklyCalendarView';
 import WeeklyPlanningDashboard from './WeeklyPlanningDashboard';
 
@@ -82,7 +81,7 @@ interface ConsultantDashboardProps {
 }
 
 export default function ConsultantDashboard({ data, userId, userName }: ConsultantDashboardProps) {
-  const [activeView, setActiveView] = useState<'overview' | 'planner' | 'calendar' | 'planning'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'calendar' | 'planning'>('overview');
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
 
@@ -277,8 +276,6 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
           <p className="text-lg text-gray-600 dark:text-gray-400">
             {activeView === 'overview'
               ? 'Manage your time allocation across projects and phases'
-              : activeView === 'planner'
-              ? 'Plan and distribute your weekly hours'
               : activeView === 'calendar'
               ? 'View your allocations in calendar format'
               : 'My weekly planning and schedule overview'
@@ -449,7 +446,6 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
           <nav className="-mb-px flex space-x-8">
             {[
               { key: 'overview', label: 'Overview', icon: FaChartPie },
-              { key: 'planner', label: 'Weekly Planner', icon: FaCalendarWeek },
               { key: 'calendar', label: 'Calendar View', icon: FaClock },
               { key: 'planning', label: 'My Weekly Planning', icon: FaCalendarWeek }
             ].map(({ key, label, icon: Icon }) => (
@@ -709,14 +705,6 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
             </div>
           </div>
         </>
-      )}
-
-      {/* Weekly Planner Tab */}
-      {activeView === 'planner' && (
-        <WeeklyPlannerEnhanced
-          consultantId={userId}
-          phaseAllocations={data.phaseAllocations}
-        />
       )}
 
       {/* Calendar Tab */}

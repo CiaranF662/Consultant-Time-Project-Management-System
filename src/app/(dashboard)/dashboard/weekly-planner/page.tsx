@@ -6,7 +6,7 @@ import WeeklyPlannerEnhanced from '@/components/consultant/dashboard/WeeklyPlann
 
 import { prisma } from "@/lib/prisma";
 
-async function getPhaseAllocationsForPlanner(userId: string) {
+async function getPhaseAllocationsForPlanner(userId: string, includeCompleted: boolean = false) {
   // Get all phase allocations for the consultant - this is what WeeklyPlannerEnhanced needs
   const phaseAllocations = await prisma.phaseAllocation.findMany({
     where: { consultantId: userId },
@@ -14,7 +14,7 @@ async function getPhaseAllocationsForPlanner(userId: string) {
       phase: {
         include: {
           project: {
-            select: { id: true, title: true }
+            select: { id: true, title: true, endDate: true }
           },
           sprints: {
             orderBy: { sprintNumber: 'asc' }
@@ -32,10 +32,24 @@ async function getPhaseAllocationsForPlanner(userId: string) {
     }
   });
 
+  // Filter out completed projects if requested
+  if (!includeCompleted) {
+    const today = new Date();
+    return phaseAllocations.filter(allocation => {
+      const projectEndDate = allocation.phase.project.endDate;
+      // Keep if no end date OR end date is in the future
+      return !projectEndDate || new Date(projectEndDate) >= today;
+    });
+  }
+
   return phaseAllocations;
 }
 
-export default async function WeeklyPlannerPage() {
+export default async function WeeklyPlannerPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ includeCompleted?: string }>;
+}) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     redirect('/login');
@@ -46,16 +60,19 @@ export default async function WeeklyPlannerPage() {
     redirect('/dashboard');
   }
 
-  const phaseAllocations = await getPhaseAllocationsForPlanner(session.user.id);
+  const params = await searchParams;
+  const includeCompleted = params.includeCompleted === 'true';
+  const phaseAllocations = await getPhaseAllocationsForPlanner(session.user.id, includeCompleted);
 
   return (
-    
+
       <div className="p-6">
         <WeeklyPlannerEnhanced
           consultantId={session.user.id}
           phaseAllocations={phaseAllocations}
+          includeCompleted={includeCompleted}
         />
       </div>
-    
+
   );
 }
