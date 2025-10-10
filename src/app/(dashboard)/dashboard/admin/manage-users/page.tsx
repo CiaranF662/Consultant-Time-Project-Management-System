@@ -9,7 +9,7 @@ export default async function ManageUsersPage() {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
-    redirect('/login');
+    redirect('/auth/login');
   }
 
   // Only Growth Team can access user management

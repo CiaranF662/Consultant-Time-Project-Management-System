@@ -52,7 +52,7 @@ async function getPendingHourRequests(userId: string, isGrowthTeam: boolean) {
 export default async function HourChangeApprovalsPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    redirect('/login');
+    redirect('/auth/login');
   }
 
   // Check if user can access this page (Growth Team or Product Manager)

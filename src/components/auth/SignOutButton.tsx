@@ -10,7 +10,7 @@ interface SignOutButtonProps {
 
 export default function SignOutButton({ variant = 'default', className = '' }: SignOutButtonProps) {
   const handleSignOut = () => {
-    signOut({ callbackUrl: '/login' });
+    signOut({ callbackUrl: '/auth/login' });
   };
 
   if (variant === 'icon') {

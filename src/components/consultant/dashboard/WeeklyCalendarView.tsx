@@ -148,7 +148,7 @@ export default function WeeklyCalendarView({ phaseAllocations }: WeeklyCalendarV
         totalHours: totalWeekHours,
         isCurrentWeek,
         isInCurrentMonth,
-        capacityStatus: totalWeekHours > 40 ? 'overloaded' : totalWeekHours >= 30 ? 'optimal' : totalWeekHours > 0 ? 'light' : 'empty'
+        capacityStatus: totalWeekHours > 40 ? 'overloaded' : totalWeekHours >= 30 ? 'busy' : totalWeekHours > 0 ? 'available' : 'free'
       });
     }
 
@@ -243,8 +243,8 @@ export default function WeeklyCalendarView({ phaseAllocations }: WeeklyCalendarV
               !week.isInCurrentMonth ? 'opacity-50' :
               week.isCurrentWeek ? 'border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20 shadow-md' :
               week.capacityStatus === 'overloaded' ? 'border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20' :
-              week.capacityStatus === 'optimal' ? 'border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/20' :
-              week.capacityStatus === 'light' ? 'border-yellow-200 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20' :
+              week.capacityStatus === 'busy' ? 'border-yellow-200 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20' :
+              week.capacityStatus === 'available' ? 'border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/20' :
               'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'
             } p-3 sm:p-4`}
           >
@@ -254,7 +254,8 @@ export default function WeeklyCalendarView({ phaseAllocations }: WeeklyCalendarV
                 <div className={`text-base sm:text-lg font-bold ${
                   week.isCurrentWeek ? 'text-blue-600 dark:text-blue-400' :
                   week.capacityStatus === 'overloaded' ? 'text-red-600 dark:text-red-400' :
-                  week.capacityStatus === 'optimal' ? 'text-green-600 dark:text-green-400' :
+                  week.capacityStatus === 'busy' ? 'text-yellow-600 dark:text-yellow-400' :
+                  week.capacityStatus === 'available' ? 'text-green-600 dark:text-green-400' :
                   'text-card-foreground'
                 }`}>
                   Week {week.weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -269,8 +270,8 @@ export default function WeeklyCalendarView({ phaseAllocations }: WeeklyCalendarV
                 <div className={`text-2xl font-bold ${
                   week.isCurrentWeek ? 'text-blue-700 dark:text-blue-300' :
                   week.capacityStatus === 'overloaded' ? 'text-red-700 dark:text-red-300' :
-                  week.capacityStatus === 'optimal' ? 'text-green-700 dark:text-green-300' :
-                  week.capacityStatus === 'light' ? 'text-yellow-700 dark:text-yellow-300' :
+                  week.capacityStatus === 'busy' ? 'text-yellow-700 dark:text-yellow-300' :
+                  week.capacityStatus === 'available' ? 'text-green-700 dark:text-green-300' :
                   'text-muted-foreground'
                 }`}>
                   {formatHours(week.totalHours)}
@@ -282,17 +283,17 @@ export default function WeeklyCalendarView({ phaseAllocations }: WeeklyCalendarV
             <div className="mb-3">
               <div className="flex items-center gap-1 mb-1">
                 {week.capacityStatus === 'overloaded' && <FaExclamationTriangle className="w-3 h-3 text-red-600 dark:text-red-400" />}
-                {week.capacityStatus === 'optimal' && <FaCheckCircle className="w-3 h-3 text-green-600 dark:text-green-400" />}
-                {week.capacityStatus === 'light' && <FaClock className="w-3 h-3 text-yellow-600 dark:text-yellow-400" />}
+                {week.capacityStatus === 'busy' && <FaClock className="w-3 h-3 text-yellow-600 dark:text-yellow-400" />}
+                {week.capacityStatus === 'available' && <FaCheckCircle className="w-3 h-3 text-green-600 dark:text-green-400" />}
                 <span className={`text-xs font-medium ${
                   week.capacityStatus === 'overloaded' ? 'text-red-700 dark:text-red-300' :
-                  week.capacityStatus === 'optimal' ? 'text-green-700 dark:text-green-300' :
-                  week.capacityStatus === 'light' ? 'text-yellow-700 dark:text-yellow-300' :
+                  week.capacityStatus === 'busy' ? 'text-yellow-700 dark:text-yellow-300' :
+                  week.capacityStatus === 'available' ? 'text-green-700 dark:text-green-300' :
                   'text-muted-foreground'
                 }`}>
-                  {week.capacityStatus === 'overloaded' ? `+${week.totalHours - 40}h` :
-                   week.capacityStatus === 'optimal' ? 'Balanced' :
-                   week.capacityStatus === 'light' ? `${40 - week.totalHours}h free` :
+                  {week.capacityStatus === 'overloaded' ? `+${week.totalHours - 40}h Overloaded` :
+                   week.capacityStatus === 'busy' ? 'Busy' :
+                   week.capacityStatus === 'available' ? `${40 - week.totalHours}h Available` :
                    'No work'}
                 </span>
               </div>
@@ -301,8 +302,8 @@ export default function WeeklyCalendarView({ phaseAllocations }: WeeklyCalendarV
                 <div
                   className={`h-1.5 rounded-full transition-all ${
                     week.capacityStatus === 'overloaded' ? 'bg-red-500 dark:bg-red-600' :
-                    week.capacityStatus === 'optimal' ? 'bg-green-500 dark:bg-green-600' :
-                    week.capacityStatus === 'light' ? 'bg-yellow-500 dark:bg-yellow-600' :
+                    week.capacityStatus === 'busy' ? 'bg-yellow-500 dark:bg-yellow-600' :
+                    week.capacityStatus === 'available' ? 'bg-green-500 dark:bg-green-600' :
                     'bg-gray-400 dark:bg-gray-500'
                   }`}
                   style={{ width: `${Math.min((week.totalHours / 40) * 100, 100)}%` }}
@@ -366,19 +367,19 @@ export default function WeeklyCalendarView({ phaseAllocations }: WeeklyCalendarV
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-red-500 dark:bg-red-600 rounded-full"></div>
-            <span className="font-medium text-red-700 dark:text-red-300">Overloaded</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-green-500 dark:bg-green-600 rounded-full"></div>
-            <span className="font-medium text-green-700 dark:text-green-300">Optimal</span>
+            <span className="font-medium text-red-700 dark:text-red-300">Overloaded (&gt;40h)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-yellow-500 dark:bg-yellow-600 rounded-full"></div>
-            <span className="font-medium text-yellow-700 dark:text-yellow-300">Light</span>
+            <span className="font-medium text-yellow-700 dark:text-yellow-300">Busy (30-40h)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-green-500 dark:bg-green-600 rounded-full"></div>
+            <span className="font-medium text-green-700 dark:text-green-300">Available (1-29h)</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
-            <span className="font-medium text-gray-600 dark:text-gray-400">None</span>
+            <span className="font-medium text-gray-600 dark:text-gray-400">Free (0h)</span>
           </div>
         </div>
       </div>

@@ -2,8 +2,8 @@ import Link from 'next/link';
 
 export default function PendingApprovalPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 text-center shadow-lg">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-xl p-8 text-center border border-gray-200 dark:border-gray-700">
         <h1 className="text-2xl font-bold text-green-600">
           Registration Successful!
         </h1>
@@ -15,7 +15,7 @@ export default function PendingApprovalPage() {
         </p>
         <div className="mt-8">
           <Link
-            href="/login"
+            href="/auth/login"
             className="inline-block rounded-md bg-blue-500 px-6 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-600"
           >
             Back to Sign In

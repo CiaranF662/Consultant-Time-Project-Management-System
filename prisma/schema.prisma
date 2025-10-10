@@ -188,11 +188,16 @@ model Session {
 }
 
 model VerificationToken {
-  identifier String
-  token      String   @unique
+  id         String    @id @default(cuid())
+  identifier String    // email address
+  token      String    @unique
+  type       TokenType @default(EMAIL_VERIFICATION)
   expires    DateTime
+  createdAt  DateTime  @default(now())
 
   @@unique([identifier, token])
+  @@index([token])
+  @@index([identifier])
 }
 
 model Notification {
@@ -267,4 +272,9 @@ enum PlanningStatus {
   APPROVED
   MODIFIED
   REJECTED
+}
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
 }

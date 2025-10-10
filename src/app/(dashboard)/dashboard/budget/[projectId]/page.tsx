@@ -12,7 +12,7 @@ export default async function ProjectBudgetPage({ params }: PageProps) {
   const session = await getServerSession(authOptions);
   
   if (!session?.user?.id) {
-    redirect('/login');
+    redirect('/auth/login');
   }
 
   // Only Growth Team can access budget details

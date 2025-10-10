@@ -48,11 +48,15 @@ async function getPhaseAllocationsForPlanner(userId: string, includeCompleted: b
 export default async function WeeklyPlannerPage({
   searchParams,
 }: {
-  searchParams: Promise<{ includeCompleted?: string }>;
+  searchParams: Promise<{
+    includeCompleted?: string;
+    phaseAllocationId?: string;
+    week?: string;
+  }>;
 }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    redirect('/login');
+    redirect('/auth/login');
   }
 
   // Redirect Growth Team to their dashboard
@@ -71,6 +75,8 @@ export default async function WeeklyPlannerPage({
           consultantId={session.user.id}
           phaseAllocations={phaseAllocations}
           includeCompleted={includeCompleted}
+          initialPhaseAllocationId={params.phaseAllocationId}
+          initialWeek={params.week}
         />
       </div>
 

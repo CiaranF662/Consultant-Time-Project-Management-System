@@ -34,7 +34,7 @@ export default function SessionTimeout() {
   const handleLogout = useCallback(() => {
     clearAllTimers();
     setShowWarning(false);
-    signOut({ callbackUrl: '/login' });
+    signOut({ callbackUrl: '/auth/login' });
   }, [clearAllTimers]);
 
   const resetTimer = useCallback(() => {

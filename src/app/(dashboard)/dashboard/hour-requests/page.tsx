@@ -48,7 +48,7 @@ async function getUserHourRequests(userId: string) {
 export default async function HourRequestsPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    redirect('/login');
+    redirect('/auth/login');
   }
 
   const data = await getUserHourRequests(session.user.id);

@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FaPlus, FaUsers, FaChartBar, FaExclamationCircle, FaClock, FaProjectDiagram, FaTh, FaCheckCircle, FaBell } from 'react-icons/fa';
+import { FaPlus, FaUsers, FaChartBar, FaExclamationCircle, FaClock, FaProjectDiagram, FaTh, FaCheckCircle, FaBell, FaUsersCog } from 'react-icons/fa';
 import ResourceTimeline from '../timeline/ResourceTimeline';
 import CreateProjectModal from '@/components/projects/growth-team/CreateProjectModal';
 import GrowthTeamGanttChart from '../gantt/GrowthTeamGanttChart';
 import ProjectsPageClient from '@/components/projects/details/ProjectsPageClient';
+import ConsultantCapacityOverview from '../capacity/ConsultantCapacityOverview';
 import { categorizeProjects } from '@/lib/project-filters';
 
 import type { Project, Phase, Sprint, ConsultantsOnProjects, PhaseAllocation } from '@prisma/client';
@@ -41,7 +42,7 @@ interface GrowthTeamDashboardProps {
 export default function GrowthTeamDashboard({ data, userRole }: GrowthTeamDashboardProps) {
   const [timelineWeeks, setTimelineWeeks] = useState(12);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [activeView, setActiveView] = useState<'timeline' | 'gantt' | 'projects'>('timeline');
+  const [activeView, setActiveView] = useState<'timeline' | 'gantt' | 'projects' | 'capacity'>('timeline');
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
   // State for approvals and notifications
@@ -127,6 +128,8 @@ export default function GrowthTeamDashboard({ data, userRole }: GrowthTeamDashbo
               ? 'Manage consultant allocations and project resources'
               : activeView === 'gantt'
               ? 'Strategic overview of all projects and their timelines'
+              : activeView === 'capacity'
+              ? 'View consultant availability and capacity planning'
               : 'View and manage all projects by status'
             }
           </p>
@@ -307,6 +310,7 @@ export default function GrowthTeamDashboard({ data, userRole }: GrowthTeamDashbo
             {[
               { key: 'timeline', label: 'Consultant Allocation Table', icon: FaClock },
               { key: 'gantt', label: 'Portfolio Timeline', icon: FaProjectDiagram },
+              { key: 'capacity', label: 'Capacity Overview', icon: FaUsersCog },
               { key: 'projects', label: 'Projects', icon: FaTh }
             ].map(({ key, label, icon: Icon }) => (
               <button
@@ -425,6 +429,11 @@ export default function GrowthTeamDashboard({ data, userRole }: GrowthTeamDashbo
             <GrowthTeamGanttChart projects={data.projects} />
           </div>
         </div>
+      )}
+
+      {/* Capacity Overview */}
+      {activeView === 'capacity' && (
+        <ConsultantCapacityOverview />
       )}
 
       {/* Projects View - Reuse ProjectsPageClient */}

@@ -70,7 +70,7 @@ export async function POST(
           type: NotificationType.WEEKLY_ALLOCATION_APPROVED,
           title: 'Weekly Allocation Removed',
           message: `Your weekly allocation for ${allocation.phaseAllocation.phase.name} (Week ${allocation.weekNumber}, ${allocation.year}) has been approved for removal (0 hours).`,
-          actionUrl: `/dashboard/allocations`,
+          actionUrl: `/dashboard/weekly-planner?phaseAllocationId=${allocation.phaseAllocationId}`,
           metadata: {
             projectId: allocation.phaseAllocation.phase.project.id,
             phaseId: allocation.phaseAllocation.phase.id,
@@ -145,7 +145,7 @@ export async function POST(
         type: notificationType,
         title: notificationTitle,
         message: notificationMessage,
-        actionUrl: `/dashboard/allocations`,
+        actionUrl: `/dashboard/weekly-planner?phaseAllocationId=${allocation.phaseAllocationId}`,
         metadata: {
           projectId: allocation.phaseAllocation.phase.project.id,
           phaseId: allocation.phaseAllocation.phase.id,

@@ -66,7 +66,7 @@ async function getProjectsForDashboard(userId: string, userRole: UserRole) {
 export default async function ProjectsPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    redirect('/login');
+    redirect('/auth/login');
   }
 
   const projects = await getProjectsForDashboard(session.user.id, session.user.role as UserRole);

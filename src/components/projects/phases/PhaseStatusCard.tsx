@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
-import { FaCheckCircle, FaExclamationTriangle, FaClock, FaChartPie, FaPlay, FaEdit, FaHourglassHalf, FaTimesCircle } from 'react-icons/fa';
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { FaCheckCircle, FaExclamationTriangle, FaClock, FaChartPie, FaPlay, FaEdit, FaHourglassHalf, FaTimesCircle, FaExternalLinkAlt, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { getPhaseStatus, getStatusColorClasses, getProgressBarColor, formatHours } from '@/lib/phase-status';
 import { generateColorFromString } from '@/lib/colors';
 import { formatDate } from '@/lib/dates';
@@ -54,22 +55,32 @@ interface PhaseStatusCardProps {
   showIndividualAllocations?: boolean;
   canManageProject?: boolean;
   canManageAllocations?: boolean;
+  currentUserId?: string; // For determining if allocation belongs to current user
   onEditPhase?: () => void;
   onManageAllocations?: () => void;
   className?: string;
 }
 
-export default function PhaseStatusCard({ 
-  phase, 
+export default function PhaseStatusCard({
+  phase,
   individualAllocations = [],
-  showDetails = true, 
+  showDetails = true,
   showIndividualAllocations = true,
   canManageProject = false,
   canManageAllocations = false,
+  currentUserId,
   onEditPhase,
   onManageAllocations,
-  className = '' 
+  className = ''
 }: PhaseStatusCardProps) {
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+
+  // Determine if description is long (more than 150 characters)
+  const isLongDescription = phase.description && phase.description.length > 150;
+  const descriptionToShow = isLongDescription && !isDescriptionExpanded
+    ? phase.description!.substring(0, 150) + '...'
+    : phase.description;
+
   // Transform phase data to match the expected format
   const transformedPhase = {
     id: phase.id,
@@ -141,9 +152,6 @@ export default function PhaseStatusCard({
             <p className="text-sm text-muted-foreground mt-1">
               {formatDate(new Date(phase.startDate))} - {formatDate(new Date(phase.endDate))}
             </p>
-            {phase.description && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{phase.description}</p>
-            )}
           </div>
 
           <div className="flex items-center gap-3 ml-4">
@@ -205,6 +213,39 @@ export default function PhaseStatusCard({
             </div>
           </div>
         </div>
+
+        {/* Description - Full Width */}
+        {phase.description && (
+          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+            <div className="flex items-center gap-2 mb-2">
+              <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Description</span>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+              {descriptionToShow}
+            </p>
+            {isLongDescription && (
+              <button
+                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                className="mt-2 flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+              >
+                {isDescriptionExpanded ? (
+                  <>
+                    <FaChevronUp className="w-3 h-3" />
+                    Show Less
+                  </>
+                ) : (
+                  <>
+                    <FaChevronDown className="w-3 h-3" />
+                    Read More
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Sprint Info */}
         {phase.sprints && phase.sprints.length > 0 && (
@@ -299,13 +340,16 @@ export default function PhaseStatusCard({
         <div className="p-4 border-t border-gray-100 dark:border-gray-800">
           <h4 className="font-medium text-foreground mb-3">Individual Allocations</h4>
           <div className="space-y-2">
-            {individualAllocations.map((allocation) => (
+            {individualAllocations.map((allocation) => {
+              const isOwnAllocation = currentUserId && allocation.consultantId === currentUserId;
+
+              return (
               <div key={allocation.id}>
                 <div className={`relative overflow-hidden flex items-center justify-between p-3 rounded-lg ${
                   allocation.approvalStatus === 'PENDING' ? 'bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700' :
                   allocation.approvalStatus === 'REJECTED' ? 'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700' :
                   'bg-gray-50 dark:bg-gray-700/50 border border-transparent dark:border-gray-600'
-                }`}>
+                } ${isOwnAllocation ? 'hover:ring-2 hover:ring-blue-500 dark:hover:ring-blue-400 transition-all' : ''}`}>
                   {/* Diagonal stripes for pending/rejected allocations */}
                   {allocation.approvalStatus === 'PENDING' && (
                     <div className="absolute inset-0 pointer-events-none opacity-20"
@@ -361,7 +405,18 @@ export default function PhaseStatusCard({
                     <span className="text-muted-foreground mx-2">•</span>
                     <span className="text-gray-600 dark:text-gray-400">{formatHours(allocation.hours - allocation.plannedHours)} remaining</span>
                   </div>
-                  
+
+                  {/* Plan Hours Button - Only show for own allocations */}
+                  {isOwnAllocation && allocation.approvalStatus === 'APPROVED' && (
+                    <Link
+                      href={`/dashboard/weekly-planner?phaseAllocationId=${allocation.id}`}
+                      className="flex items-center gap-1 px-3 py-1 text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors shadow-sm"
+                    >
+                      <FaExternalLinkAlt className="w-3 h-3" />
+                      Plan Hours
+                    </Link>
+                  )}
+
                   {/* Circular Progress Indicator */}
                   <div className="relative w-10 h-10">
                     <svg className="w-10 h-10 transform -rotate-90" viewBox="0 0 40 40">
@@ -408,7 +463,8 @@ export default function PhaseStatusCard({
                 </div>
               )}
             </div>
-            ))}
+            );
+            })}
           </div>
 
           {/* Timeline & Status Info */}

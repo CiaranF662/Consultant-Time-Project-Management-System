@@ -8,11 +8,11 @@ export async function middleware(req: NextRequest) {
 
   // If a user is NOT logged in and tries to access a protected dashboard page, redirect them to login.
   if (!token && pathname.startsWith('/dashboard')) {
-    return NextResponse.redirect(new URL('/login', req.url));
+    return NextResponse.redirect(new URL('/auth/login', req.url));
   }
 
-  // If a logged-in user tries to access auth pages (/login, /register), redirect them to the dashboard.
-  if (token && (pathname.startsWith('/login') || pathname.startsWith('/register'))) {
+  // If a logged-in user tries to access auth pages, redirect them to the dashboard.
+  if (token && pathname.startsWith('/auth')) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
@@ -22,5 +22,5 @@ export async function middleware(req: NextRequest) {
 
 // Apply middleware to all relevant pages.
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/register'],
+  matcher: ['/dashboard/:path*', '/auth/:path*'],
 };

@@ -7,10 +7,11 @@ import {
   formatHours,
   formatDate
 } from '@/lib/dates';
-import { FaSave, FaChevronDown, FaChevronRight, FaCheckCircle, FaTimes, FaCheck, FaClock, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaSave, FaChevronDown, FaChevronRight, FaCheckCircle, FaTimes, FaCheck, FaClock, FaEye, FaEyeSlash, FaExternalLinkAlt } from 'react-icons/fa';
 import Link from 'next/link';
 import InstructionsPanel from './InstructionsPanel';
 import WeeklyAllocationCard from './WeeklyAllocationCard';
+import ProjectPlanningCard from './ProjectPlanningCard';
 
 interface PhaseAllocation {
   id: string;
@@ -50,16 +51,18 @@ interface WeeklyPlannerEnhancedProps {
   consultantId: string;
   phaseAllocations: PhaseAllocation[];
   includeCompleted?: boolean;
+  initialPhaseAllocationId?: string;
+  initialWeek?: string;
   onDataChanged?: () => void; // Callback to refresh parent data
 }
 
-export default function WeeklyPlannerEnhanced({ phaseAllocations, includeCompleted = false, onDataChanged }: WeeklyPlannerEnhancedProps) {
+export default function WeeklyPlannerEnhanced({ phaseAllocations, includeCompleted = false, initialPhaseAllocationId, initialWeek, onDataChanged }: WeeklyPlannerEnhancedProps) {
   const [allocations, setAllocations] = useState<Map<string, number>>(new Map());
   const [unsavedChanges, setUnsavedChanges] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Map<string, string>>(new Map());
   const [selectedProject, setSelectedProject] = useState<string>('all');
-  const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
+  const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const [collapsedPhases, setCollapsedPhases] = useState<Set<string>>(new Set());
   const [phaseDescriptions, setPhaseDescriptions] = useState<Map<string, string>>(new Map());
   const [unsavedDescriptions, setUnsavedDescriptions] = useState<Map<string, string>>(new Map());
@@ -95,17 +98,44 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
     // Clear local status overrides when data refreshes from server
     setLocalWeeklyStatuses(new Map());
 
-    // Initialize all projects as collapsed (include both approved and pending for visibility)
-    const uniqueProjectIds = Array.from(new Set(phaseAllocations.map(alloc => alloc.phase.project.id)));
-    setCollapsedProjects(new Set(uniqueProjectIds));
-
-    // Initialize all phases as collapsed (include both approved and pending for visibility)
-    const uniquePhaseIds = Array.from(new Set(phaseAllocations.map(alloc => alloc.id)));
-    setCollapsedPhases(new Set(uniquePhaseIds));
-    
     // Clear any unsaved descriptions when new data loads
     setUnsavedDescriptions(new Map());
   }, [phaseAllocations]);
+
+  // Handle deep linking to specific phase allocation
+  useEffect(() => {
+    if (initialPhaseAllocationId && phaseAllocations.length > 0) {
+      // Find the phase allocation
+      const targetAllocation = phaseAllocations.find(pa => pa.id === initialPhaseAllocationId);
+
+      if (targetAllocation) {
+        // Find and expand the parent project
+        const projectId = targetAllocation.phase.project.id;
+        setExpandedProject(projectId);
+
+        // Collapse all phases in this project EXCEPT the target phase
+        const projectPhases = phaseAllocations
+          .filter(pa => pa.phase.project.id === projectId)
+          .map(pa => pa.id)
+          .filter(id => id !== initialPhaseAllocationId);
+
+        setCollapsedPhases(new Set(projectPhases));
+
+        // Scroll to the phase allocation after a brief delay to allow rendering
+        setTimeout(() => {
+          const element = document.getElementById(`phase-allocation-${initialPhaseAllocationId}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Add temporary highlight effect
+            element.classList.add('ring-4', 'ring-blue-500', 'ring-opacity-50');
+            setTimeout(() => {
+              element.classList.remove('ring-4', 'ring-blue-500', 'ring-opacity-50');
+            }, 2000);
+          }
+        }, 300);
+      }
+    }
+  }, [initialPhaseAllocationId, phaseAllocations]);
 
   const handleHourChange = (phaseAllocationId: string, weekNumber: number, year: number, value: string) => {
     const key = `${phaseAllocationId}-${weekNumber}-${year}`;
@@ -512,16 +542,79 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
     return otherPhases;
   };
 
-  const toggleProjectCollapse = (projectId: string) => {
-    setCollapsedProjects(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(projectId)) {
-        newSet.delete(projectId);
-      } else {
-        newSet.add(projectId);
+  const toggleProjectExpand = (projectId: string) => {
+    if (expandedProject === projectId) {
+      setExpandedProject(null); // Collapse if already expanded
+    } else {
+      setExpandedProject(projectId); // Expand this project and collapse others
+      // Keep all phases collapsed by default - only deep linking should expand phases
+      const projectPhases = phaseAllocations
+        .filter(pa => pa.phase.project.id === projectId)
+        .map(pa => pa.id);
+      setCollapsedPhases(new Set(projectPhases));
+    }
+  };
+
+  // Calculate project card statistics
+  const calculateProjectStats = (projectPhases: any[]) => {
+    let totalAllocated = 0;
+    let totalPlanned = 0;
+    let phasesFullyPlanned = 0;
+    let nearestDeadline: Date | undefined;
+    const approvalStatus = { pending: 0, approved: 0, rejected: 0 };
+
+    projectPhases.forEach((phaseAlloc) => {
+      totalAllocated += phaseAlloc.totalHours;
+
+      // Calculate planned hours for this phase
+      let phasePlanned = 0;
+      const weeks = getWeeksBetween(
+        new Date(phaseAlloc.phase.startDate),
+        new Date(phaseAlloc.phase.endDate)
+      );
+
+      weeks.forEach((week) => {
+        const key = `${phaseAlloc.id}-${week.weekNumber}-${week.year}`;
+        const hours = allocations.get(key) || 0;
+        phasePlanned += hours;
+      });
+
+      totalPlanned += phasePlanned;
+
+      // Check if phase is fully planned
+      if (phasePlanned >= phaseAlloc.totalHours) {
+        phasesFullyPlanned++;
       }
-      return newSet;
+
+      // Track nearest deadline
+      const phaseEndDate = new Date(phaseAlloc.phase.endDate);
+      if (!nearestDeadline || phaseEndDate < nearestDeadline) {
+        nearestDeadline = phaseEndDate;
+      }
+
+      // Count approval statuses
+      if (phaseAlloc.approvalStatus === 'PENDING') {
+        approvalStatus.pending++;
+      } else if (phaseAlloc.approvalStatus === 'APPROVED') {
+        approvalStatus.approved++;
+      } else if (phaseAlloc.approvalStatus === 'REJECTED') {
+        approvalStatus.rejected++;
+      }
     });
+
+    const completionPercentage = totalAllocated > 0
+      ? Math.round((totalPlanned / totalAllocated) * 100)
+      : 0;
+
+    return {
+      totalAllocatedHours: totalAllocated,
+      totalPlannedHours: totalPlanned,
+      phasesFullyPlanned,
+      totalPhases: projectPhases.length,
+      completionPercentage,
+      nearestDeadline,
+      approvalStatus
+    };
   };
 
   const togglePhaseCollapse = (phaseId: string) => {
@@ -751,47 +844,81 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
             </p>
           </div>
         ) : (
-          Object.values(filteredProjectGroups).map((group: any) => (
-            <div key={group.project.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
-              {/* Project Header */}
-              <div
-                className="bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-800 dark:via-blue-900/30 dark:to-indigo-900/30 px-8 py-6 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:from-slate-100 hover:via-blue-100 hover:to-indigo-100 dark:hover:from-slate-700 dark:hover:via-blue-900/40 dark:hover:to-indigo-900/40 transition-all duration-300 group"
-                onClick={() => toggleProjectCollapse(group.project.id)}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center p-2 rounded-xl bg-white dark:bg-gray-800 shadow-sm group-hover:shadow-md transition-shadow">
-                    {collapsedProjects.has(group.project.id) ? (
-                      <FaChevronRight className="text-gray-600 dark:text-gray-400 w-4 h-4" />
-                    ) : (
-                      <FaChevronDown className="text-gray-600 dark:text-gray-400 w-4 h-4" />
-                    )}
-                  </div>
-                  <div
-                    className="w-6 h-6 rounded-xl shadow-sm"
-                    style={{ backgroundColor: `hsl(${Math.abs(group.project.id.split('').reduce((a: number, b: string) => a + b.charCodeAt(0), 0)) % 360}, 70%, 60%)` }}
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className="text-2xl font-bold text-foreground">{group.project.title}</h3>
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700">
-                        {group.phases.length} phase{group.phases.length !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                    {group.project.description && (
-                      <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{group.project.description}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Object.values(filteredProjectGroups).map((group: any) => {
+              const stats = calculateProjectStats(group.phases);
+              const isExpanded = expandedProject === group.project.id;
 
-              {/* Phases within Project */}
-              {!collapsedProjects.has(group.project.id) && (
-                <div className="p-8 space-y-8 bg-gradient-to-br from-gray-50/50 to-transparent dark:from-gray-800/30">
-                  {group.phases.map((phaseAlloc: any) => {
+              return (
+                <div key={group.project.id} className={`${isExpanded ? 'md:col-span-2 lg:col-span-3' : ''}`}>
+                  {!isExpanded ? (
+                    <ProjectPlanningCard
+                      project={group.project}
+                      totalPhases={stats.totalPhases}
+                      phasesFullyPlanned={stats.phasesFullyPlanned}
+                      totalAllocatedHours={stats.totalAllocatedHours}
+                      totalPlannedHours={stats.totalPlannedHours}
+                      completionPercentage={stats.completionPercentage}
+                      nearestDeadline={stats.nearestDeadline}
+                      approvalStatus={stats.approvalStatus}
+                      isExpanded={false}
+                      onClick={() => toggleProjectExpand(group.project.id)}
+                    />
+                  ) : (
+                    <div className="bg-white dark:bg-gray-900 border-2 border-blue-500 dark:border-blue-400 rounded-2xl shadow-xl overflow-hidden">
+                      {/* Project Header with Close Button */}
+                      <div className="bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-800 dark:via-blue-900/30 dark:to-indigo-900/30 px-8 py-6 border-b border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-4 flex-1">
+                            <div
+                              className="w-6 h-6 rounded-xl shadow-sm"
+                              style={{ backgroundColor: `hsl(${Math.abs(group.project.id.split('').reduce((a: number, b: string) => a + b.charCodeAt(0), 0)) % 360}, 70%, 60%)` }}
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-1">
+                                <h3 className="text-2xl font-bold text-foreground">{group.project.title}</h3>
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700">
+                                  {group.phases.length} phase{group.phases.length !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                              {group.project.description && (
+                                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{group.project.description}</p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Close and View Project Buttons */}
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/dashboard/projects/${group.project.id}`}
+                              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg transition-colors shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <FaExternalLinkAlt className="w-3 h-3" />
+                              View Project
+                            </Link>
+                            <button
+                              onClick={() => setExpandedProject(null)}
+                              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors text-sm font-medium text-gray-700 dark:text-gray-300"
+                            >
+                              <FaTimes className="w-3 h-3" />
+                              Close
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Phases within Expanded Project */}
+                      <div className="p-8 space-y-8 bg-gradient-to-br from-gray-50/50 to-transparent dark:from-gray-800/30">
+                        {group.phases.map((phaseAlloc: any) => {
                   const status = getPhaseAllocationStatus(phaseAlloc);
 
                   return (
-                    <div key={phaseAlloc.id} className="border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-900">
+                    <div
+                      key={phaseAlloc.id}
+                      id={`phase-allocation-${phaseAlloc.id}`}
+                      className="border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-900"
+                    >
                       {/* Phase Header */}
                       <div
                         className={`relative px-6 py-5 cursor-pointer transition-all duration-300 group ${
@@ -1261,11 +1388,14 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                       )}
                     </div>
                   );
-                })}
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ))
+              );
+            })}
+          </div>
         )}
         </div>
 

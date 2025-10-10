@@ -104,7 +104,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/login');
+      router.push('/auth/login');
     }
     if (status === 'authenticated') {
       fetchProjectDetails();
@@ -393,6 +393,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                         showIndividualAllocations={true}
                         canManageProject={canManagePhases}
                         canManageAllocations={canManageAllocations}
+                        currentUserId={session.user.id}
                         onEditPhase={() => setEditPhaseModal({ isOpen: true, phase })}
                         onManageAllocations={() => openAllocationModal(phase)}
                         className="shadow-md"
