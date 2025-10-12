@@ -73,6 +73,14 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
     type: 'success' | 'error';
     message: string;
   }>({ show: false, type: 'success', message: '' });
+  const [showUnplannedWarning, setShowUnplannedWarning] = useState<{
+    show: boolean;
+    phaseAllocationId: string;
+    phaseName: string;
+    totalHours: number;
+    plannedHours: number;
+    remainingHours: number;
+  } | null>(null);
 
   useEffect(() => {
     // Initialize allocations from existing data (preserving all existing planning)
@@ -216,83 +224,103 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
     return true;
   };
 
-  const savePhaseAllocations = async (phaseAllocationId: string) => {
+  const validatePlannedHours = (phaseAllocationId: string): boolean => {
+    const phaseAlloc = phaseAllocations.find(p => p.id === phaseAllocationId);
+    if (!phaseAlloc) return true;
+
+    const weeks = getWeeksBetween(
+      new Date(phaseAlloc.phase.startDate),
+      new Date(phaseAlloc.phase.endDate)
+    );
+
+    let plannedHours = 0;
+    weeks.forEach((week) => {
+      const key = `${phaseAllocationId}-${week.weekNumber}-${week.year}`;
+      plannedHours += allocations.get(key) || 0;
+    });
+
+    const remainingHours = phaseAlloc.totalHours - plannedHours;
+
+    if (remainingHours > 0) {
+      setShowUnplannedWarning({
+        show: true,
+        phaseAllocationId,
+        phaseName: phaseAlloc.phase.name,
+        totalHours: phaseAlloc.totalHours,
+        plannedHours,
+        remainingHours
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  const savePhaseAllocations = async (phaseAllocationId: string, skipValidation = false) => {
     // For first-time planning, check if description is required and missing
     const phaseAllocation = phaseAllocations.find(p => p.id === phaseAllocationId);
     if (phaseAllocation && requiresDescription(phaseAllocation) && !checkDescriptionRequirement(phaseAllocation)) {
       return; // Modal will be shown, don't continue with save
     }
-    
+
+    // Validate planned hours unless skipping validation (when user chooses "Proceed Anyway")
+    if (!skipValidation && !validatePlannedHours(phaseAllocationId)) {
+      return; // Warning modal will be shown, don't continue with save
+    }
+
     const phaseKeys = Array.from(unsavedChanges).filter(key => key.startsWith(`${phaseAllocationId}-`));
     const hasUnsavedDescription = unsavedDescriptions.has(phaseAllocationId);
-    
+
     if (phaseKeys.length === 0 && !hasUnsavedDescription) return;
 
     setSaving(true);
     try {
-      // Handle hour allocations
-      const savePromises = phaseKeys.map(async (key) => {
+      // Prepare batch weeks data for all allocations
+      const phaseAlloc = phaseAllocations.find(pa => pa.id === phaseAllocationId);
+      if (!phaseAlloc) {
+        throw new Error('Phase allocation not found');
+      }
+
+      const weeks = getPhaseWeeks(phaseAlloc.phase);
+      const weeksData = phaseKeys.map(key => {
         const [, weekNumber, year] = key.split('-');
         const hours = allocations.get(key) || 0;
-        
-        // Find the corresponding week data to get weekStartDate
-        const phaseAlloc = phaseAllocations.find(pa => pa.id === phaseAllocationId);
-        if (!phaseAlloc) {
-          throw new Error('Phase allocation not found');
-        }
-        
-        const weeks = getPhaseWeeks(phaseAlloc.phase);
+
         const week = weeks.find(w => w.weekNumber === parseInt(weekNumber) && w.year === parseInt(year));
-        
         if (!week) {
           throw new Error('Week not found');
         }
-        
+
         // Find the corresponding weekly allocation to check if it was rejected
         const weeklyAllocation = phaseAlloc.weeklyAllocations.find(
           wa => wa.weekNumber === parseInt(weekNumber) && wa.year === parseInt(year)
         );
         const wasRejected = weeklyAllocation?.planningStatus === 'REJECTED';
 
-        return axios.post('/api/allocations/weekly', {
-          phaseAllocationId,
+        return {
           weekStartDate: week.weekStart.toISOString(),
           plannedHours: hours,
-          clearRejection: wasRejected // Flag to indicate this was a resubmission after rejection
-        });
+          clearRejection: wasRejected
+        };
       });
 
-      // Handle description update separately if needed - use the first week's allocation
+      // Handle description update
       const unsavedDesc = unsavedDescriptions.get(phaseAllocationId);
-      if (unsavedDesc !== undefined && phaseKeys.length > 0) {
-        // Use the first week's data to update description along with hours
-        const firstKey = phaseKeys[0];
-        const [, weekNumber, year] = firstKey.split('-');
-        const phaseAlloc = phaseAllocations.find(pa => pa.id === phaseAllocationId);
-        if (phaseAlloc) {
-          const weeks = getPhaseWeeks(phaseAlloc.phase);
-          const week = weeks.find(w => w.weekNumber === parseInt(weekNumber) && w.year === parseInt(year));
-          if (week) {
-            // Replace the first save promise with one that includes description
-            savePromises[0] = axios.post('/api/allocations/weekly', {
-              phaseAllocationId,
-              weekStartDate: week.weekStart.toISOString(),
-              plannedHours: allocations.get(firstKey) || 0,
-              consultantDescription: unsavedDesc.trim(),
-              clearRejection: false
-            });
-          }
-        }
-      } else if (unsavedDesc !== undefined && phaseKeys.length === 0) {
-        // Description-only update - use new API endpoint
-        savePromises.push(
-          axios.put(`/api/phases/${phaseAllocations.find(pa => pa.id === phaseAllocationId)?.phase.id}/allocations/${phaseAllocationId}/description`, {
-            consultantDescription: unsavedDesc.trim()
-          })
+
+      if (phaseKeys.length > 0) {
+        // Send batch request with all weeks and optional description - this sends ONE notification
+        await axios.post('/api/allocations/weekly', {
+          phaseAllocationId,
+          weeks: weeksData,
+          consultantDescription: unsavedDesc !== undefined ? unsavedDesc.trim() : undefined
+        });
+      } else if (unsavedDesc !== undefined) {
+        // Description-only update - use separate API endpoint
+        await axios.put(
+          `/api/phases/${phaseAlloc.phase.id}/allocations/${phaseAllocationId}/description`,
+          { consultantDescription: unsavedDesc.trim() }
         );
       }
-
-      await Promise.all(savePromises);
 
       // Update local weekly statuses to PENDING for modified weeks
       setLocalWeeklyStatuses(prev => {
@@ -426,22 +454,27 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
     group.phases.sort((a: any, b: any) => {
       const aStartDate = new Date(a.phase.startDate).getTime();
       const bStartDate = new Date(b.phase.startDate).getTime();
-      
+
       // Primary sort: by start date
       if (aStartDate !== bStartDate) {
         return aStartDate - bStartDate;
       }
-      
+
       // Secondary sort: by creation date if start dates are the same
       const aCreatedAt = new Date(a.phase.createdAt).getTime();
       const bCreatedAt = new Date(b.phase.createdAt).getTime();
       return aCreatedAt - bCreatedAt;
     });
+
+    // Add earliest phase start date to the group for project-level sorting
+    group.earliestStartDate = group.phases.length > 0
+      ? new Date(Math.min(...group.phases.map((p: any) => new Date(p.phase.startDate).getTime())))
+      : new Date();
   });
 
   // Filter by selected project
-  const filteredProjectGroups = selectedProject === 'all' 
-    ? projectGroups 
+  const filteredProjectGroups = selectedProject === 'all'
+    ? projectGroups
     : { [selectedProject]: projectGroups[selectedProject] };
 
   // Get unique projects for filter dropdown
@@ -561,13 +594,16 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
     let totalPlanned = 0;
     let phasesFullyPlanned = 0;
     let nearestDeadline: Date | undefined;
+    let earliestStartDate: Date | undefined;
     const approvalStatus = { pending: 0, approved: 0, rejected: 0 };
+    const weeklyStatus = { pendingWeeks: 0, approvedWeeks: 0, rejectedWeeks: 0, modifiedWeeks: 0 };
 
     projectPhases.forEach((phaseAlloc) => {
       totalAllocated += phaseAlloc.totalHours;
 
       // Calculate planned hours for this phase
       let phasePlanned = 0;
+      let phaseFullyApproved = false;
       const weeks = getWeeksBetween(
         new Date(phaseAlloc.phase.startDate),
         new Date(phaseAlloc.phase.endDate)
@@ -577,22 +613,62 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
         const key = `${phaseAlloc.id}-${week.weekNumber}-${week.year}`;
         const hours = allocations.get(key) || 0;
         phasePlanned += hours;
+
+        // Check weekly allocation status
+        const weeklyAllocation = phaseAlloc.weeklyAllocations.find(
+          (wa: any) => wa.weekNumber === week.weekNumber && wa.year === week.year
+        );
+        const localStatus = localWeeklyStatuses.get(key);
+        const finalStatus = localStatus || weeklyAllocation?.planningStatus;
+
+        // Count weekly statuses (only for weeks with hours)
+        if (hours > 0 || (weeklyAllocation && (weeklyAllocation.proposedHours || 0) > 0)) {
+          if (finalStatus === 'PENDING') {
+            weeklyStatus.pendingWeeks++;
+          } else if (finalStatus === 'APPROVED') {
+            weeklyStatus.approvedWeeks++;
+          } else if (finalStatus === 'REJECTED') {
+            weeklyStatus.rejectedWeeks++;
+          } else if (finalStatus === 'MODIFIED') {
+            weeklyStatus.modifiedWeeks++;
+          }
+        }
       });
 
       totalPlanned += phasePlanned;
 
-      // Check if phase is fully planned
-      if (phasePlanned >= phaseAlloc.totalHours) {
+      // Check if phase is fully planned AND approved
+      // A phase is fully planned when all hours are distributed AND all weekly allocations are approved
+      const allWeeksApproved = weeks.every((week) => {
+        const key = `${phaseAlloc.id}-${week.weekNumber}-${week.year}`;
+        const hours = allocations.get(key) || 0;
+        if (hours === 0) return true; // Weeks with no hours don't need approval
+
+        const weeklyAllocation = phaseAlloc.weeklyAllocations.find(
+          (wa: any) => wa.weekNumber === week.weekNumber && wa.year === week.year
+        );
+        const localStatus = localWeeklyStatuses.get(key);
+        const finalStatus = localStatus || weeklyAllocation?.planningStatus;
+
+        return finalStatus === 'APPROVED' || finalStatus === 'MODIFIED';
+      });
+
+      if (phasePlanned >= phaseAlloc.totalHours && phaseAlloc.approvalStatus === 'APPROVED' && allWeeksApproved) {
         phasesFullyPlanned++;
       }
 
-      // Track nearest deadline
+      // Track latest deadline (furthest phase end date) and earliest start date
       const phaseEndDate = new Date(phaseAlloc.phase.endDate);
-      if (!nearestDeadline || phaseEndDate < nearestDeadline) {
+      if (!nearestDeadline || phaseEndDate > nearestDeadline) {
         nearestDeadline = phaseEndDate;
       }
 
-      // Count approval statuses
+      const phaseStartDate = new Date(phaseAlloc.phase.startDate);
+      if (!earliestStartDate || phaseStartDate < earliestStartDate) {
+        earliestStartDate = phaseStartDate;
+      }
+
+      // Count phase allocation approval statuses
       if (phaseAlloc.approvalStatus === 'PENDING') {
         approvalStatus.pending++;
       } else if (phaseAlloc.approvalStatus === 'APPROVED') {
@@ -613,7 +689,9 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
       totalPhases: projectPhases.length,
       completionPercentage,
       nearestDeadline,
-      approvalStatus
+      earliestStartDate,
+      approvalStatus,
+      weeklyStatus
     };
   };
 
@@ -744,6 +822,72 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
         </div>
       )}
 
+      {/* Unplanned Hours Warning Modal */}
+      {showUnplannedWarning && (
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8 w-full max-w-lg transform transition-all duration-300 scale-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 dark:from-amber-600 dark:to-orange-700 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-foreground">
+                  Incomplete Hour Planning
+                </h3>
+                <p className="text-sm text-muted-foreground">Not all hours distributed</p>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-6">
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+                You haven't planned all of your allocated hours for <span className="font-bold">{showUnplannedWarning.phaseName}</span>.
+              </p>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Total Allocated:</span>
+                  <span className="font-bold text-foreground">{formatHours(showUnplannedWarning.totalHours)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Planned So Far:</span>
+                  <span className="font-bold text-blue-600 dark:text-blue-400">{formatHours(showUnplannedWarning.plannedHours)}</span>
+                </div>
+                <div className="h-px bg-amber-200 dark:bg-amber-800 my-2"></div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Remaining:</span>
+                  <span className="font-bold text-amber-600 dark:text-amber-400">{formatHours(showUnplannedWarning.remainingHours)}</span>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
+              You still have <span className="font-bold text-amber-600 dark:text-amber-400">{formatHours(showUnplannedWarning.remainingHours)}</span> to plan.
+              Would you like to go back and distribute these hours, or proceed with partial planning?
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowUnplannedWarning(null)}
+                className="px-6 py-3 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 font-medium"
+              >
+                Go Back to Plan
+              </button>
+              <button
+                onClick={() => {
+                  const phaseId = showUnplannedWarning.phaseAllocationId;
+                  setShowUnplannedWarning(null);
+                  savePhaseAllocations(phaseId, true); // Skip validation
+                }}
+                className="px-6 py-3 bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-700 dark:to-orange-700 text-white rounded-xl hover:from-amber-700 hover:to-orange-700 dark:hover:from-amber-800 dark:hover:to-orange-800 transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+              >
+                Proceed Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Enhanced Project Filter - Matching Approvals Dashboard Style */}
       <div className="mb-8">
         <div className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-lg border border-gray-200/60 dark:border-gray-700/60 overflow-hidden">
@@ -845,7 +989,12 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Object.values(filteredProjectGroups).map((group: any) => {
+            {Object.values(filteredProjectGroups)
+              .sort((a: any, b: any) => {
+                // Sort projects by earliest phase start date for this consultant
+                return a.earliestStartDate.getTime() - b.earliestStartDate.getTime();
+              })
+              .map((group: any) => {
               const stats = calculateProjectStats(group.phases);
               const isExpanded = expandedProject === group.project.id;
 
@@ -860,7 +1009,9 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                       totalPlannedHours={stats.totalPlannedHours}
                       completionPercentage={stats.completionPercentage}
                       nearestDeadline={stats.nearestDeadline}
+                      earliestStartDate={stats.earliestStartDate}
                       approvalStatus={stats.approvalStatus}
+                      weeklyStatus={stats.weeklyStatus}
                       isExpanded={false}
                       onClick={() => toggleProjectExpand(group.project.id)}
                     />
@@ -965,6 +1116,84 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                                   {phaseAlloc.phase.sprints.length} sprint{phaseAlloc.phase.sprints.length !== 1 ? 's' : ''}
                                 </span>
 
+                                {/* Phase Timeline Status Indicator */}
+                                {(() => {
+                                  const today = new Date();
+                                  today.setHours(0, 0, 0, 0);
+                                  const phaseStart = new Date(phaseAlloc.phase.startDate);
+                                  phaseStart.setHours(0, 0, 0, 0);
+                                  const phaseEnd = new Date(phaseAlloc.phase.endDate);
+                                  phaseEnd.setHours(0, 0, 0, 0);
+
+                                  const hasStarted = phaseStart.getTime() <= today.getTime();
+                                  const hasEnded = phaseEnd.getTime() < today.getTime();
+                                  const daysUntilStart = Math.ceil((phaseStart.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+                                  // Check if planning is complete
+                                  const phaseStatus = getPhaseAllocationStatus(phaseAlloc);
+                                  const isPlanningComplete = phaseStatus.percentage >= 100;
+
+                                  if (hasEnded) {
+                                    // Phase has ended
+                                    return (
+                                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600">
+                                        <FaCheckCircle className="w-3 h-3" />
+                                        Phase Completed
+                                      </span>
+                                    );
+                                  } else if (hasStarted) {
+                                    // Phase is in progress
+                                    if (!isPlanningComplete) {
+                                      return (
+                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-2 border-red-300 dark:border-red-700 animate-pulse">
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                          </svg>
+                                          In Progress - Plan Hours!
+                                        </span>
+                                      );
+                                    } else {
+                                      return (
+                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
+                                          <FaClock className="w-3 h-3" />
+                                          In Progress
+                                        </span>
+                                      );
+                                    }
+                                  } else {
+                                    // Phase hasn't started yet
+                                    if (daysUntilStart === 0) {
+                                      return (
+                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700">
+                                          <FaClock className="w-3 h-3" />
+                                          Starts Today
+                                        </span>
+                                      );
+                                    } else if (daysUntilStart === 1) {
+                                      return (
+                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border border-orange-300 dark:border-orange-700">
+                                          <FaClock className="w-3 h-3" />
+                                          Starts Tomorrow
+                                        </span>
+                                      );
+                                    } else if (daysUntilStart <= 7) {
+                                      return (
+                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700">
+                                          <FaClock className="w-3 h-3" />
+                                          Starts in {daysUntilStart}d
+                                        </span>
+                                      );
+                                    } else {
+                                      return (
+                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600">
+                                          <FaClock className="w-3 h-3" />
+                                          Starts in {Math.ceil(daysUntilStart / 7)}w
+                                        </span>
+                                      );
+                                    }
+                                  }
+                                })()}
+
                                 {/* Phase Allocation Approval Status */}
                                 {phaseAlloc.approvalStatus === 'PENDING' && (
                                   <span className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-100 to-yellow-100 dark:from-orange-900/40 dark:to-yellow-900/40 border border-orange-300 dark:border-orange-700 text-orange-800 dark:text-orange-200 rounded-full text-xs font-semibold shadow-sm">
@@ -1020,22 +1249,44 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
 
                                   // const totalWeeklyCount = pendingWeeklyCount + rejectedWeeklyCount + approvedWeeklyCount;
 
-                                  // Priority: Show pending first, then show mixed status if both approved and rejected exist
-                                  if (pendingWeeklyCount > 0) {
+                                  // Priority: Show all statuses when mixed, otherwise show single status
+                                  if (pendingWeeklyCount > 0 && (rejectedWeeklyCount > 0 || approvedWeeklyCount > 0)) {
+                                    // Mixed status - show all
                                     return (
-                                      <span className="flex items-center gap-1 px-2 py-1 bg-blue-100 border border-blue-200 text-blue-700 rounded-full text-xs font-medium">
-                                        <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                                      <div className="flex items-center gap-2">
+                                        <span className="flex items-center gap-1 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-300 rounded-full text-xs font-medium">
+                                          <span className="w-2 h-2 bg-yellow-500 dark:bg-yellow-400 rounded-full animate-pulse"></span>
+                                          {pendingWeeklyCount} Pending
+                                        </span>
+                                        {approvedWeeklyCount > 0 && (
+                                          <span className="flex items-center gap-1 px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-medium">
+                                            <FaCheck className="w-2 h-2" />
+                                            {approvedWeeklyCount} Approved
+                                          </span>
+                                        )}
+                                        {rejectedWeeklyCount > 0 && (
+                                          <span className="flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-full text-xs font-medium">
+                                            <FaTimes className="w-2 h-2" />
+                                            {rejectedWeeklyCount} Rejected
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  } else if (pendingWeeklyCount > 0) {
+                                    return (
+                                      <span className="flex items-center gap-1 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-300 rounded-full text-xs font-medium">
+                                        <span className="w-2 h-2 bg-yellow-500 dark:bg-yellow-400 rounded-full animate-pulse"></span>
                                         {pendingWeeklyCount} Week{pendingWeeklyCount !== 1 ? 's' : ''} Pending Review
                                       </span>
                                     );
                                   } else if (rejectedWeeklyCount > 0 && approvedWeeklyCount > 0) {
                                     return (
                                       <div className="flex items-center gap-2">
-                                        <span className="flex items-center gap-1 px-2 py-1 bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-full text-xs font-medium">
+                                        <span className="flex items-center gap-1 px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-medium">
                                           <FaCheck className="w-2 h-2" />
                                           {approvedWeeklyCount} Week{approvedWeeklyCount !== 1 ? 's' : ''} Approved
                                         </span>
-                                        <span className="flex items-center gap-1 px-2 py-1 bg-red-100 border border-red-200 text-red-700 rounded-full text-xs font-medium">
+                                        <span className="flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-full text-xs font-medium">
                                           <FaTimes className="w-2 h-2" />
                                           {rejectedWeeklyCount} Week{rejectedWeeklyCount !== 1 ? 's' : ''} Rejected
                                         </span>
@@ -1043,14 +1294,14 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                                     );
                                   } else if (rejectedWeeklyCount > 0) {
                                     return (
-                                      <span className="flex items-center gap-1 px-2 py-1 bg-red-100 border border-red-200 text-red-700 rounded-full text-xs font-medium">
+                                      <span className="flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-full text-xs font-medium">
                                         <FaTimes className="w-2 h-2" />
                                         {rejectedWeeklyCount} Week{rejectedWeeklyCount !== 1 ? 's' : ''} Rejected
                                       </span>
                                     );
                                   } else if (approvedWeeklyCount > 0) {
                                     return (
-                                      <span className="flex items-center gap-1 px-2 py-1 bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-full text-xs font-medium">
+                                      <span className="flex items-center gap-1 px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-medium">
                                         <FaCheckCircle className="w-2 h-2" />
                                         {approvedWeeklyCount} Week{approvedWeeklyCount !== 1 ? 's' : ''} Approved
                                       </span>
@@ -1059,28 +1310,40 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                                   return null;
                                 })()}
                               </div>
-                              <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                                <span className="font-medium">{phaseAlloc.phase.project.title}</span>
-                                <span className="text-muted-foreground">•</span>
-                                <span className="inline-flex items-center gap-1">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              <div className="flex flex-col gap-1 mt-1">
+                                <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                                  <span className="font-medium">{phaseAlloc.phase.project.title}</span>
+                                  <span className="text-muted-foreground">•</span>
+                                  <span className="inline-flex items-center gap-1">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    {formatHours(phaseAlloc.totalHours)} total
+                                  </span>
+                                  {phaseAlloc.phase.sprints.length > 0 && (
+                                    <>
+                                      <span className="text-muted-foreground">•</span>
+                                      <span>
+                                        Sprint{phaseAlloc.phase.sprints.length > 1 ? 's' : ''} {
+                                          phaseAlloc.phase.sprints
+                                            .sort((a: any, b: any) => a.sprintNumber - b.sprintNumber)
+                                            .map((sprint: any) => sprint.sprintNumber)
+                                            .join(', ')
+                                        }
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-500">
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                   </svg>
-                                  {formatHours(phaseAlloc.totalHours)} total
-                                </span>
-                                {phaseAlloc.phase.sprints.length > 0 && (
-                                  <>
-                                    <span className="text-muted-foreground">•</span>
-                                    <span>
-                                      Sprint{phaseAlloc.phase.sprints.length > 1 ? 's' : ''} {
-                                        phaseAlloc.phase.sprints
-                                          .sort((a: any, b: any) => a.sprintNumber - b.sprintNumber)
-                                          .map((sprint: any) => sprint.sprintNumber)
-                                          .join(', ')
-                                      }
-                                    </span>
-                                  </>
-                                )}
+                                  <span>
+                                    {new Date(phaseAlloc.phase.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    <span className="mx-1.5">→</span>
+                                    {new Date(phaseAlloc.phase.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>

@@ -92,11 +92,14 @@ export async function GET(request: Request) {
         };
       }
 
-      acc[consultantId][weekKey].totalApprovedHours += allocation.approvedHours || 0;
+      // Use approvedHours if available (for MODIFIED status), otherwise use proposedHours (for APPROVED status)
+      const hours = allocation.approvedHours ?? allocation.proposedHours ?? 0;
+
+      acc[consultantId][weekKey].totalApprovedHours += hours;
       acc[consultantId][weekKey].projects.push({
         projectTitle: allocation.phaseAllocation.phase.project.title,
         phaseName: allocation.phaseAllocation.phase.name,
-        hours: allocation.approvedHours || 0
+        hours
       });
 
       return acc;

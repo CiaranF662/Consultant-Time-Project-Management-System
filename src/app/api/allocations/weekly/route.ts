@@ -6,6 +6,201 @@ import { getGrowthTeamMemberIds, createNotificationsForUsers, NotificationTempla
 
 import { prisma } from "@/lib/prisma";
 
+// Helper function to handle batch weekly allocations
+async function handleBatchWeeks(
+  session: any,
+  phaseAllocationId: string,
+  weeks: Array<{ weekStartDate: string; plannedHours: number; clearRejection?: boolean }>,
+  consultantDescription?: string
+) {
+  // Validate phase allocation
+  if (!phaseAllocationId) {
+    return new NextResponse(JSON.stringify({ error: 'phaseAllocationId is required' }), { status: 400 });
+  }
+
+  if (!weeks || weeks.length === 0) {
+    return new NextResponse(JSON.stringify({ error: 'weeks array is required and must not be empty' }), { status: 400 });
+  }
+
+  // Verify the consultant owns this allocation and it's approved
+  const phaseAllocation = await prisma.phaseAllocation.findUnique({
+    where: { id: phaseAllocationId },
+    include: {
+      phase: {
+        include: {
+          project: {
+            select: { title: true }
+          }
+        }
+      }
+    }
+  });
+
+  if (!phaseAllocation || phaseAllocation.consultantId !== session.user.id) {
+    return new NextResponse(JSON.stringify({ error: 'Not authorized' }), { status: 403 });
+  }
+
+  if (phaseAllocation.approvalStatus !== 'APPROVED') {
+    return new NextResponse(JSON.stringify({ error: 'Phase allocation must be approved before weekly planning' }), { status: 400 });
+  }
+
+  // Update consultant description if provided
+  if (consultantDescription !== undefined) {
+    await prisma.phaseAllocation.update({
+      where: { id: phaseAllocationId },
+      data: { consultantDescription }
+    });
+  }
+
+  // Process all weeks
+  const allocations = [];
+  let totalHoursPlanned = 0;
+
+  for (const week of weeks) {
+    const { weekStartDate, plannedHours, clearRejection } = week;
+
+    // Convert plannedHours to number
+    let numericPlannedHours: number;
+    if (typeof plannedHours === 'string') {
+      numericPlannedHours = parseFloat(plannedHours);
+      if (isNaN(numericPlannedHours)) {
+        continue; // Skip invalid hours
+      }
+    } else if (typeof plannedHours === 'number') {
+      numericPlannedHours = plannedHours;
+    } else {
+      continue; // Skip invalid type
+    }
+
+    if (numericPlannedHours < 0) {
+      continue; // Skip negative hours
+    }
+
+    const weekStart = startOfWeek(new Date(weekStartDate), { weekStartsOn: 1 }); // Monday
+    const weekEnd = endOfWeek(new Date(weekStartDate), { weekStartsOn: 1 });
+    const weekNumber = getISOWeek(weekStart);
+    const year = getYear(weekStart);
+
+    // Check if allocation exists
+    const existing = await prisma.weeklyAllocation.findUnique({
+      where: {
+        phaseAllocationId_weekNumber_year: {
+          phaseAllocationId,
+          weekNumber,
+          year
+        }
+      }
+    });
+
+    // Don't create new allocations with 0 hours if no existing allocation
+    if (numericPlannedHours === 0 && !existing) {
+      continue;
+    }
+
+    // Use upsert to handle both create and update cases
+    const allocation = await prisma.weeklyAllocation.upsert({
+      where: {
+        phaseAllocationId_weekNumber_year: {
+          phaseAllocationId,
+          weekNumber,
+          year
+        }
+      },
+      update: {
+        proposedHours: numericPlannedHours,
+        planningStatus: 'PENDING',
+        plannedBy: session.user.id,
+        approvedHours: null,
+        approvedBy: null,
+        approvedAt: null,
+        rejectionReason: null
+      },
+      create: {
+        phaseAllocationId,
+        consultantId: session.user.id,
+        weekStartDate: weekStart,
+        weekEndDate: weekEnd,
+        weekNumber,
+        year,
+        proposedHours: numericPlannedHours,
+        planningStatus: 'PENDING',
+        plannedBy: session.user.id
+      }
+    });
+
+    allocations.push(allocation);
+    if (numericPlannedHours > 0) {
+      totalHoursPlanned += numericPlannedHours;
+    }
+  }
+
+  console.log(`Batch upserted ${allocations.length} weekly allocations for phase ${phaseAllocationId}`);
+
+  // Send ONE batch notification to Growth Team for all weekly allocations
+  if (allocations.length > 0 && totalHoursPlanned > 0) {
+    try {
+      const growthTeamIds = await getGrowthTeamMemberIds();
+
+      if (growthTeamIds.length > 0) {
+        // Get consultant info
+        const consultant = await prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { name: true, email: true }
+        });
+
+        if (consultant) {
+          const consultantName = consultant.name || consultant.email || 'Consultant';
+
+          // Calculate date range
+          const sortedAllocations = allocations.filter(a => a.proposedHours && a.proposedHours > 0)
+            .sort((a, b) => a.weekStartDate.getTime() - b.weekStartDate.getTime());
+
+          const firstWeek = sortedAllocations[0].weekStartDate;
+          const lastWeek = sortedAllocations[sortedAllocations.length - 1].weekStartDate;
+          const totalWeeks = sortedAllocations.length;
+
+          const dateRange = totalWeeks === 1
+            ? format(firstWeek, 'MMM dd, yyyy')
+            : `${format(firstWeek, 'MMM dd')} - ${format(lastWeek, 'MMM dd, yyyy')}`;
+
+          // Send batch notification
+          const title = 'New Weekly Allocations Pending Approval';
+          const message = `${consultantName} has submitted weekly planning for "${phaseAllocation.phase.name}" in project "${phaseAllocation.phase.project.title}" (${totalWeeks} week${totalWeeks !== 1 ? 's' : ''}, ${totalHoursPlanned}h total, ${dateRange}).`;
+
+          await createNotificationsForUsers(
+            growthTeamIds,
+            NotificationType.WEEKLY_ALLOCATION_PENDING,
+            title,
+            message,
+            `/dashboard/hour-approvals`,
+            {
+              projectId: phaseAllocation.phase.project.title,
+              phaseId: phaseAllocation.phase.id,
+              phaseAllocationId: phaseAllocation.id,
+              consultantId: session.user.id,
+              totalWeeks,
+              totalHours: totalHoursPlanned,
+              dateRange
+            }
+          );
+
+          console.log(`Batch notification sent for phase allocation ${phaseAllocationId}: ${totalWeeks} weeks, ${totalHoursPlanned}h`);
+        }
+      }
+    } catch (notificationError) {
+      console.error('Failed to send batch notification:', notificationError);
+      // Don't fail the allocation creation if notification fails
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    allocations,
+    totalWeeks: allocations.length,
+    totalHoursPlanned
+  });
+}
+
 // GET weekly allocations for a consultant
 export async function GET(request: Request) {
   const auth = await requireAuth();
@@ -52,7 +247,7 @@ export async function GET(request: Request) {
   }
 }
 
-// POST create or update weekly allocation
+// POST create or update weekly allocation(s)
 export async function POST(request: Request) {
   const auth = await requireAuth();
   if (isAuthError(auth)) return auth;
@@ -60,8 +255,14 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { phaseAllocationId, weekStartDate, plannedHours, consultantDescription, clearRejection } = body;
-    
+    const { phaseAllocationId, weekStartDate, plannedHours, consultantDescription, clearRejection, skipNotification, weeks } = body;
+
+    // Handle batch weeks array (new approach)
+    if (weeks && Array.isArray(weeks)) {
+      return handleBatchWeeks(session, phaseAllocationId, weeks, consultantDescription);
+    }
+
+    // Legacy single week handling (for backward compatibility)
     console.log('Weekly allocation request:', {
       phaseAllocationId,
       weekStartDate,
@@ -190,10 +391,12 @@ export async function POST(request: Request) {
     });
 
     // Send notification to Growth Team for new/updated weekly allocation
-    try {
-      const growthTeamIds = await getGrowthTeamMemberIds();
+    // Skip if skipNotification flag is set (used for batch processing)
+    if (!skipNotification) {
+      try {
+        const growthTeamIds = await getGrowthTeamMemberIds();
 
-      if (growthTeamIds.length > 0 && allocation.proposedHours && allocation.proposedHours > 0) {
+        if (growthTeamIds.length > 0 && allocation.proposedHours && allocation.proposedHours > 0) {
         // Get consultant and project info for notification
         const consultant = await prisma.user.findUnique({
           where: { id: session.user.id },
@@ -242,9 +445,10 @@ export async function POST(request: Request) {
           );
         }
       }
-    } catch (notificationError) {
-      console.error('Failed to send weekly allocation notification:', notificationError);
-      // Don't fail the allocation creation if notification fails
+      } catch (notificationError) {
+        console.error('Failed to send weekly allocation notification:', notificationError);
+        // Don't fail the allocation creation if notification fails
+      }
     }
 
     // Note: Timeline update is handled on the client side after successful API response
