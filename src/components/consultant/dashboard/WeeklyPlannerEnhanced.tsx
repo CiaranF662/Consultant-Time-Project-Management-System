@@ -16,7 +16,7 @@ import ProjectPlanningCard from './ProjectPlanningCard';
 interface PhaseAllocation {
   id: string;
   totalHours: number;
-  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
   consultantDescription?: string | null; // Added for phase description
   phase: {
     id: string;
@@ -436,18 +436,20 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
     return total;
   };
 
-  // Group allocations by project
-  const projectGroups = phaseAllocations.reduce((groups: any, allocation: any) => {
-    const projectId = allocation.phase.project.id;
-    if (!groups[projectId]) {
-      groups[projectId] = {
-        project: allocation.phase.project,
-        phases: []
-      };
-    }
-    groups[projectId].phases.push(allocation);
-    return groups;
-  }, {});
+  // Group allocations by project (exclude EXPIRED and FORFEITED allocations)
+  const projectGroups = phaseAllocations
+    .filter(allocation => allocation.approvalStatus !== 'EXPIRED' && allocation.approvalStatus !== 'FORFEITED')
+    .reduce((groups: any, allocation: any) => {
+      const projectId = allocation.phase.project.id;
+      if (!groups[projectId]) {
+        groups[projectId] = {
+          project: allocation.phase.project,
+          phases: []
+        };
+      }
+      groups[projectId].phases.push(allocation);
+      return groups;
+    }, {});
 
   // Sort phases within each project by start date, then by creation date
   Object.values(projectGroups).forEach((group: any) => {
@@ -595,8 +597,12 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
     let phasesFullyPlanned = 0;
     let nearestDeadline: Date | undefined;
     let earliestStartDate: Date | undefined;
+    let hasUrgentUnplannedPhase = false; // Track if any urgent phase needs planning
     const approvalStatus = { pending: 0, approved: 0, rejected: 0 };
     const weeklyStatus = { pendingWeeks: 0, approvedWeeks: 0, rejectedWeeks: 0, modifiedWeeks: 0 };
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     projectPhases.forEach((phaseAlloc) => {
       totalAllocated += phaseAlloc.totalHours;
@@ -657,13 +663,28 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
         phasesFullyPlanned++;
       }
 
-      // Track latest deadline (furthest phase end date) and earliest start date
+      // Check if this phase is urgent and unplanned
+      // A phase is urgent if it has started or starts within 7 days, and is not fully planned
+      const phaseStartDate = new Date(phaseAlloc.phase.startDate);
+      phaseStartDate.setHours(0, 0, 0, 0);
       const phaseEndDate = new Date(phaseAlloc.phase.endDate);
+      phaseEndDate.setHours(0, 0, 0, 0);
+
+      const hasPhaseStarted = phaseStartDate.getTime() <= today.getTime();
+      const hasPhaseEnded = phaseEndDate.getTime() < today.getTime();
+      const daysUntilStart = Math.ceil((phaseStartDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      const isPhasePlanned = phasePlanned >= phaseAlloc.totalHours && phaseAlloc.approvalStatus === 'APPROVED' && allWeeksApproved;
+
+      // Phase is urgent if: (started or starting within 7 days) AND not ended AND not fully planned
+      if ((hasPhaseStarted || daysUntilStart <= 7) && !hasPhaseEnded && !isPhasePlanned) {
+        hasUrgentUnplannedPhase = true;
+      }
+
+      // Track latest deadline (furthest phase end date) and earliest start date
       if (!nearestDeadline || phaseEndDate > nearestDeadline) {
         nearestDeadline = phaseEndDate;
       }
 
-      const phaseStartDate = new Date(phaseAlloc.phase.startDate);
       if (!earliestStartDate || phaseStartDate < earliestStartDate) {
         earliestStartDate = phaseStartDate;
       }
@@ -691,7 +712,8 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
       nearestDeadline,
       earliestStartDate,
       approvalStatus,
-      weeklyStatus
+      weeklyStatus,
+      hasUrgentUnplannedPhase
     };
   };
 
@@ -1012,6 +1034,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                       earliestStartDate={stats.earliestStartDate}
                       approvalStatus={stats.approvalStatus}
                       weeklyStatus={stats.weeklyStatus}
+                      hasUrgentUnplannedPhase={stats.hasUrgentUnplannedPhase}
                       isExpanded={false}
                       onClick={() => toggleProjectExpand(group.project.id)}
                     />
@@ -1064,22 +1087,35 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                         {group.phases.map((phaseAlloc: any) => {
                   const status = getPhaseAllocationStatus(phaseAlloc);
 
+                  // Check if phase is complete (past end date)
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const phaseEnd = new Date(phaseAlloc.phase.endDate);
+                  phaseEnd.setHours(0, 0, 0, 0);
+                  const isPhaseComplete = today > phaseEnd;
+
                   return (
                     <div
                       key={phaseAlloc.id}
                       id={`phase-allocation-${phaseAlloc.id}`}
-                      className="border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-900"
+                      className={`border rounded-2xl overflow-hidden shadow-md transition-all duration-300 ${
+                        isPhaseComplete
+                          ? 'border-gray-400 dark:border-gray-600 opacity-80'
+                          : 'border-gray-200 dark:border-gray-700 hover:shadow-lg'
+                      } bg-white dark:bg-gray-900`}
                     >
                       {/* Phase Header */}
                       <div
-                        className={`relative px-6 py-5 cursor-pointer transition-all duration-300 group ${
-                          phaseAlloc.approvalStatus === 'PENDING'
-                            ? 'bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/30 dark:to-yellow-900/30 border-b border-orange-200 dark:border-orange-700 hover:from-orange-100 hover:to-yellow-100 dark:hover:from-orange-900/40 dark:hover:to-yellow-900/40'
+                        className={`relative px-6 py-5 transition-all duration-300 group ${
+                          isPhaseComplete
+                            ? 'bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 border-b border-gray-400 dark:border-gray-500 cursor-not-allowed'
+                            : phaseAlloc.approvalStatus === 'PENDING'
+                            ? 'bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/30 dark:to-yellow-900/30 border-b border-orange-200 dark:border-orange-700 hover:from-orange-100 hover:to-yellow-100 dark:hover:from-orange-900/40 dark:hover:to-yellow-900/40 cursor-pointer'
                             : phaseAlloc.approvalStatus === 'APPROVED'
-                            ? 'bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 border-b border-emerald-200 dark:border-emerald-700 hover:from-emerald-100 hover:to-green-100 dark:hover:from-emerald-900/40 dark:hover:to-green-900/40'
-                            : 'bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800 dark:to-slate-800 border-b border-gray-200 dark:border-gray-700 hover:from-gray-100 hover:to-slate-100 dark:hover:from-gray-700 dark:hover:to-slate-700'
+                            ? 'bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 border-b border-emerald-200 dark:border-emerald-700 hover:from-emerald-100 hover:to-green-100 dark:hover:from-emerald-900/40 dark:hover:to-green-900/40 cursor-pointer'
+                            : 'bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800 dark:to-slate-800 border-b border-gray-200 dark:border-gray-700 hover:from-gray-100 hover:to-slate-100 dark:hover:from-gray-700 dark:hover:to-slate-700 cursor-pointer'
                         }`}
-                        onClick={() => togglePhaseCollapse(phaseAlloc.id)}
+                        onClick={() => !isPhaseComplete && togglePhaseCollapse(phaseAlloc.id)}
                       >
                         {/* Pending approval diagonal stripes - only on header */}
                         {phaseAlloc.approvalStatus === 'PENDING' && (
@@ -1097,18 +1133,22 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                         )}
                         <div className="relative z-10 flex justify-between items-center">
                           <div className="flex items-center gap-4">
-                            <div className="flex items-center p-2 rounded-lg bg-white/80 shadow-sm group-hover:shadow-md transition-shadow">
-                              {collapsedPhases.has(phaseAlloc.id) ? (
-                                <FaChevronRight className="text-gray-600 w-4 h-4" />
-                              ) : (
-                                <FaChevronDown className="text-gray-600 w-4 h-4" />
-                              )}
-                            </div>
+                            {/* Hide chevron for completed phases since they can't be expanded */}
+                            {!isPhaseComplete && (
+                              <div className="flex items-center p-2 rounded-lg bg-white/80 shadow-sm group-hover:shadow-md transition-shadow">
+                                {collapsedPhases.has(phaseAlloc.id) ? (
+                                  <FaChevronRight className="text-gray-600 w-4 h-4" />
+                                ) : (
+                                  <FaChevronDown className="text-gray-600 w-4 h-4" />
+                                )}
+                              </div>
+                            )}
                             <div>
                               <div className="flex items-center gap-3 flex-wrap mb-2">
-                                <h3 className="text-xl font-bold text-foreground">
+                                <h3 className={`text-xl font-bold ${isPhaseComplete ? 'text-gray-600 dark:text-gray-400' : 'text-foreground'}`}>
                                   {phaseAlloc.phase.name}
                                 </h3>
+
                                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-700">
                                   <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />

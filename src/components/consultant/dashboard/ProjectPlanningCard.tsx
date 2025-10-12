@@ -28,6 +28,7 @@ interface ProjectPlanningCardProps {
     rejectedWeeks: number;
     modifiedWeeks: number;
   };
+  hasUrgentUnplannedPhase?: boolean; // True if any phase that started or starts within 7 days is unplanned
   isExpanded: boolean;
   onClick: () => void;
 }
@@ -43,6 +44,7 @@ export default function ProjectPlanningCard({
   earliestStartDate,
   approvalStatus,
   weeklyStatus,
+  hasUrgentUnplannedPhase = false,
   isExpanded,
   onClick
 }: ProjectPlanningCardProps) {
@@ -60,10 +62,6 @@ export default function ProjectPlanningCard({
   const isPlanningComplete = completionPercentage >= 100 && !hasPending && !hasRejections;
   const isFullyComplete = isPlanningComplete && allPhasesEnded; // Both planning done AND timeline ended
   const isInProgress = completionPercentage > 0 && completionPercentage < 100;
-
-  // Check if phases are in progress but planning is incomplete (URGENT)
-  const hasProjectStarted = earliestStartDate ? new Date(earliestStartDate).setHours(0, 0, 0, 0) <= today.getTime() : false;
-  const isUrgentPlanning = hasProjectStarted && !allPhasesEnded && !isPlanningComplete;
 
   // Determine card border color (most important status)
   let borderColor = 'border-gray-300 dark:border-gray-600'; // Default
@@ -222,8 +220,8 @@ export default function ProjectPlanningCard({
 
         {/* Status Badges Row */}
         <div className="flex flex-wrap gap-2 min-h-[28px]">
-          {/* Urgent Planning Required Badge - Shows when phases are in progress but planning incomplete */}
-          {isUrgentPlanning && (
+          {/* Urgent Planning Required Badge - Shows when any phase that started or starts within 7 days is unplanned */}
+          {hasUrgentUnplannedPhase && (
             <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-2 border-red-300 dark:border-red-700 animate-pulse">
               <FaExclamationTriangle className="w-3 h-3" />
               Urgent: Plan hours now

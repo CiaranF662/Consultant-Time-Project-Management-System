@@ -2,16 +2,17 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { FaCheckCircle, FaExclamationTriangle, FaClock, FaChartPie, FaPlay, FaEdit, FaHourglassHalf, FaTimesCircle, FaExternalLinkAlt, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaCheckCircle, FaExclamationTriangle, FaClock, FaChartPie, FaPlay, FaEdit, FaHourglassHalf, FaTimesCircle, FaExternalLinkAlt, FaChevronDown, FaChevronUp, FaLock } from 'react-icons/fa';
 import { getPhaseStatus, getStatusColorClasses, getProgressBarColor, formatHours } from '@/lib/phase-status';
 import { generateColorFromString } from '@/lib/colors';
 import { formatDate } from '@/lib/dates';
+import { isPhaseLocked } from '@/lib/phase-lock';
 
 interface PhaseAllocation {
   id: string;
   consultantId: string;
   totalHours: number;
-  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
   rejectionReason?: string | null;
   weeklyAllocations?: Array<{
     id: string;
@@ -29,7 +30,7 @@ interface IndividualAllocation {
   consultantName: string;
   hours: number;
   plannedHours: number;
-  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
   rejectionReason?: string | null;
 }
 
@@ -58,6 +59,7 @@ interface PhaseStatusCardProps {
   currentUserId?: string; // For determining if allocation belongs to current user
   onEditPhase?: () => void;
   onManageAllocations?: () => void;
+  onExpiredAllocationClick?: (allocation: IndividualAllocation) => void;
   className?: string;
 }
 
@@ -71,9 +73,14 @@ export default function PhaseStatusCard({
   currentUserId,
   onEditPhase,
   onManageAllocations,
+  onExpiredAllocationClick,
   className = ''
 }: PhaseStatusCardProps) {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+
+  // Check if phase is locked (past end date)
+  const phaseLocked = isPhaseLocked(phase);
+  const canEdit = !phaseLocked;
 
   // Determine if description is long (more than 150 characters)
   const isLongDescription = phase.description && phase.description.length > 150;
@@ -96,6 +103,7 @@ export default function PhaseStatusCard({
     allocations: phase.allocations?.map(allocation => ({
       id: allocation.id,
       totalHours: allocation.totalHours,
+      approvalStatus: allocation.approvalStatus,
       weeklyAllocations: allocation.weeklyAllocations?.map(week => ({
         id: week.id,
         plannedHours: week.plannedHours,
@@ -112,9 +120,13 @@ export default function PhaseStatusCard({
   // Check pending and rejected allocations
   const pendingAllocations = phase.allocations?.filter(allocation => allocation.approvalStatus === 'PENDING') || [];
   const rejectedAllocations = phase.allocations?.filter(allocation => allocation.approvalStatus === 'REJECTED') || [];
+  const expiredAllocations = phase.allocations?.filter(allocation => allocation.approvalStatus === 'EXPIRED') || [];
+  const forfeitedAllocations = phase.allocations?.filter(allocation => allocation.approvalStatus === 'FORFEITED') || [];
   const hasPendingApprovals = pendingAllocations.length > 0;
   const hasRejectedAllocations = rejectedAllocations.length > 0;
-  const needsAttention = hasPendingApprovals || hasRejectedAllocations;
+  const hasExpiredAllocations = expiredAllocations.length > 0;
+  const hasForfeitedAllocations = forfeitedAllocations.length > 0;
+  const needsAttention = hasPendingApprovals || hasRejectedAllocations || hasExpiredAllocations;
 
   const getStatusIcon = (status: string, size = 'w-5 h-5') => {
     switch (status) {
@@ -163,23 +175,35 @@ export default function PhaseStatusCard({
 
             {/* Management Buttons */}
             {canManageProject && (
-              <div className="flex items-center gap-1">
-                {onEditPhase && (
-                  <button
-                    onClick={onEditPhase}
-                    className="p-2 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400"
-                    title="Edit Phase"
-                  >
-                    <FaEdit />
-                  </button>
+              <div className="flex items-center gap-2">
+                {/* Lock indicator - shown when phase has ended */}
+                {phaseLocked && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded" title="Phase has ended and cannot be edited">
+                    <FaLock className="w-3 h-3 text-gray-500 dark:text-gray-400" />
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Locked</span>
+                  </div>
                 )}
-                {canManageAllocations && onManageAllocations && (
-                  <button
-                    onClick={onManageAllocations}
-                    className="px-3 py-1 text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50"
-                  >
-                    Manage Hours
-                  </button>
+                {/* Edit buttons - only shown when phase is not locked */}
+                {canEdit && (
+                  <div className="flex items-center gap-1">
+                    {onEditPhase && (
+                      <button
+                        onClick={onEditPhase}
+                        className="p-2 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400"
+                        title="Edit Phase"
+                      >
+                        <FaEdit />
+                      </button>
+                    )}
+                    {canManageAllocations && onManageAllocations && (
+                      <button
+                        onClick={onManageAllocations}
+                        className="px-3 py-1 text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                      >
+                        Manage Hours
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -204,6 +228,22 @@ export default function PhaseStatusCard({
                       </span>
                     </div>
                   )}
+                  {hasExpiredAllocations && (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-full">
+                      <FaExclamationTriangle className="w-3 h-3 text-yellow-600 dark:text-yellow-400" />
+                      <span className="text-xs font-medium text-yellow-700 dark:text-yellow-300">
+                        {expiredAllocations.length} expired
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+              {hasForfeitedAllocations && (
+                <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full">
+                  <FaTimesCircle className="w-3 h-3 text-gray-600 dark:text-gray-400" />
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                    {forfeitedAllocations.length} forfeited
+                  </span>
                 </div>
               )}
               {getStatusIcon(phaseStatus.status)}
@@ -343,14 +383,23 @@ export default function PhaseStatusCard({
             {individualAllocations.map((allocation) => {
               const isOwnAllocation = currentUserId && allocation.consultantId === currentUserId;
 
+              const isExpired = allocation.approvalStatus === 'EXPIRED';
+              const isForfeited = allocation.approvalStatus === 'FORFEITED';
+              const isClickable = isExpired && canManageProject && onExpiredAllocationClick;
+
               return (
               <div key={allocation.id}>
-                <div className={`relative overflow-hidden flex items-center justify-between p-3 rounded-lg ${
-                  allocation.approvalStatus === 'PENDING' ? 'bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700' :
-                  allocation.approvalStatus === 'REJECTED' ? 'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700' :
-                  'bg-gray-50 dark:bg-gray-700/50 border border-transparent dark:border-gray-600'
-                } ${isOwnAllocation ? 'hover:ring-2 hover:ring-blue-500 dark:hover:ring-blue-400 transition-all' : ''}`}>
-                  {/* Diagonal stripes for pending/rejected allocations */}
+                <div
+                  className={`relative overflow-hidden flex items-center justify-between p-3 rounded-lg ${
+                    allocation.approvalStatus === 'PENDING' ? 'bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700' :
+                    allocation.approvalStatus === 'REJECTED' ? 'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700' :
+                    allocation.approvalStatus === 'EXPIRED' ? 'bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600' :
+                    allocation.approvalStatus === 'FORFEITED' ? 'bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600' :
+                    'bg-gray-50 dark:bg-gray-700/50 border border-transparent dark:border-gray-600'
+                  } ${isOwnAllocation ? 'hover:ring-2 hover:ring-blue-500 dark:hover:ring-blue-400 transition-all' : ''} ${isClickable ? 'cursor-pointer hover:ring-2 hover:ring-yellow-500 dark:hover:ring-yellow-400 transition-all' : ''}`}
+                  onClick={isClickable ? () => onExpiredAllocationClick!(allocation) : undefined}
+                >
+                  {/* Diagonal stripes for pending/rejected/expired allocations */}
                   {allocation.approvalStatus === 'PENDING' && (
                     <div className="absolute inset-0 pointer-events-none opacity-20"
                          style={{
@@ -377,6 +426,19 @@ export default function PhaseStatusCard({
                          }}>
                     </div>
                   )}
+                  {allocation.approvalStatus === 'EXPIRED' && (
+                    <div className="absolute inset-0 pointer-events-none opacity-30"
+                         style={{
+                           backgroundImage: `repeating-linear-gradient(
+                             45deg,
+                             transparent,
+                             transparent 8px,
+                             rgba(107, 114, 128, 0.4) 8px,
+                             rgba(107, 114, 128, 0.4) 16px
+                           )`
+                         }}>
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-3 relative z-10">
                     <span className={`px-2 py-1 rounded text-sm font-medium ${generateColorFromString(allocation.consultantId)}`}>
@@ -392,6 +454,18 @@ export default function PhaseStatusCard({
                       <span className="flex items-center gap-1 px-2 py-0.5 bg-red-200 dark:bg-red-900/50 text-red-800 dark:text-red-300 rounded-full text-xs font-medium">
                         <FaTimesCircle className="w-2 h-2" />
                         Rejected
+                      </span>
+                    )}
+                    {allocation.approvalStatus === 'EXPIRED' && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-200 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 rounded-full text-xs font-medium">
+                        <FaExclamationTriangle className="w-2 h-2" />
+                        Expired - Click to Handle
+                      </span>
+                    )}
+                    {allocation.approvalStatus === 'FORFEITED' && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-300 rounded-full text-xs font-medium">
+                        <FaTimesCircle className="w-2 h-2" />
+                        Forfeited
                       </span>
                     )}
                     <div className="text-sm text-gray-600 dark:text-gray-400">

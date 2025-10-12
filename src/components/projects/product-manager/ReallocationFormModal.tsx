@@ -1,0 +1,313 @@
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { FaExchangeAlt, FaTimes, FaInfoCircle, FaUser, FaCalendarAlt, FaExclamationTriangle } from 'react-icons/fa';
+import axios from 'axios';
+
+interface Phase {
+  id: string;
+  name: string;
+  startDate: Date | string;
+  endDate: Date | string;
+}
+
+interface ReallocationFormModalProps {
+  projectId: string;
+  expiredAllocation: {
+    id: string;
+    phaseId: string;
+    phaseName: string;
+    consultantId: string;
+    consultantName: string;
+    unplannedHours: number;
+  };
+  availablePhases: Phase[];
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+export default function ReallocationFormModal({
+  projectId,
+  expiredAllocation,
+  availablePhases,
+  onClose,
+  onSuccess
+}: ReallocationFormModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const [selectedPhaseId, setSelectedPhaseId] = useState<string>('');
+  const [description, setDescription] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current === event.target) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [onClose]);
+
+  // Escape key handler
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedPhaseId) {
+      setError('Please select a phase to reallocate to');
+      return;
+    }
+
+    if (!description.trim()) {
+      setError('Please provide a description for this reallocation request');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      // Create a new phase allocation with PENDING status
+      // This will go through the existing phase allocation approval workflow
+      await axios.post(`/api/phases/${selectedPhaseId}/allocations`, {
+        allocations: [
+          {
+            consultantId: expiredAllocation.consultantId,
+            hours: expiredAllocation.unplannedHours,
+            description: `Reallocated from "${expiredAllocation.phaseName}": ${description}`
+          }
+        ]
+      });
+
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      console.error('Error creating reallocation request:', err);
+      setError(err.response?.data?.error || 'Failed to create reallocation request');
+      setIsSubmitting(false);
+    }
+  };
+
+  const selectedPhase = availablePhases.find(p => p.id === selectedPhaseId);
+
+  return (
+    <div
+      ref={modalRef}
+      className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4"
+    >
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Modal Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+              <FaExchangeAlt className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">Reallocate Hours to Another Phase</h1>
+              <p className="text-blue-100">Move unplanned hours to an active phase</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="w-8 h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg flex items-center justify-center transition-all duration-200"
+          >
+            <FaTimes className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Modal Content */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+          {error && (
+            <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+              <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
+                <FaExclamationTriangle className="w-4 h-4" />
+                <span className="text-sm font-medium">{error}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Current Allocation Info */}
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/30 dark:to-orange-800/20 p-6 rounded-lg border border-yellow-100 dark:border-yellow-800">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-yellow-600 text-white rounded-lg flex items-center justify-center">
+                <FaUser className="w-4 h-4" />
+              </div>
+              <h2 className="text-lg font-bold text-foreground">Current Allocation</h2>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between items-center p-3 bg-white dark:bg-gray-900 rounded-lg">
+                <span className="text-sm text-gray-600 dark:text-gray-400">From Phase:</span>
+                <span className="font-semibold text-foreground">{expiredAllocation.phaseName}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-white dark:bg-gray-900 rounded-lg">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Consultant:</span>
+                <span className="font-semibold text-foreground">{expiredAllocation.consultantName}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/50 dark:to-orange-900/50 rounded-lg border-2 border-yellow-300 dark:border-yellow-700">
+                <span className="text-sm font-bold text-yellow-800 dark:text-yellow-300">Hours to Reallocate:</span>
+                <span className="font-bold text-2xl text-yellow-900 dark:text-yellow-200">{expiredAllocation.unplannedHours.toFixed(1)}h</span>
+              </div>
+            </div>
+
+            <div className="mt-4 p-3 bg-blue-100 dark:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-700">
+              <div className="flex items-start gap-2">
+                <FaInfoCircle className="w-4 h-4 text-blue-700 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  This reallocation will require Growth Team approval before becoming active.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Phase Selection */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-800/20 p-6 rounded-lg border border-blue-100 dark:border-blue-800">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center">
+                <FaCalendarAlt className="w-4 h-4" />
+              </div>
+              <h2 className="text-lg font-bold text-foreground">Select Target Phase</h2>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="targetPhase" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Target Phase <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="targetPhase"
+                  value={selectedPhaseId}
+                  onChange={(e) => setSelectedPhaseId(e.target.value)}
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-foreground focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  required
+                >
+                  <option value="">Select a phase...</option>
+                  {availablePhases.map((phase) => (
+                    <option key={phase.id} value={phase.id}>
+                      {phase.name} ({new Date(phase.startDate).toLocaleDateString()} - {new Date(phase.endDate).toLocaleDateString()})
+                    </option>
+                  ))}
+                </select>
+                {availablePhases.length === 0 && (
+                  <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                      No other phases available for reallocation. The consultant must have access to the target phase.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Selected Phase Info */}
+              {selectedPhase && (
+                <div className="bg-white dark:bg-gray-900 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                  <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <FaInfoCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    Selected Phase Details
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                      <span className="text-gray-600 dark:text-gray-400">Phase Name:</span>
+                      <span className="font-medium text-foreground">{selectedPhase.name}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                      <span className="text-gray-600 dark:text-gray-400">Start Date:</span>
+                      <span className="text-foreground">{new Date(selectedPhase.startDate).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                      <span className="text-gray-600 dark:text-gray-400">End Date:</span>
+                      <span className="text-foreground">{new Date(selectedPhase.endDate).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-2 bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50 rounded border border-blue-200 dark:border-blue-700">
+                      <span className="font-medium text-blue-800 dark:text-blue-300">Hours to Reallocate:</span>
+                      <span className="font-bold text-lg text-blue-900 dark:text-blue-200">{expiredAllocation.unplannedHours.toFixed(1)}h</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Reason Section */}
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-800/20 p-6 rounded-lg border border-purple-100 dark:border-purple-800">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-purple-600 text-white rounded-lg flex items-center justify-center">
+                <FaInfoCircle className="w-4 h-4" />
+              </div>
+              <h2 className="text-lg font-bold text-foreground">Reason for Reallocation</h2>
+            </div>
+
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Explanation <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                disabled={isSubmitting}
+                rows={4}
+                className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-foreground focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 disabled:opacity-50 disabled:cursor-not-allowed resize-none transition-all"
+                placeholder="Explain why these hours need to be reallocated to this phase..."
+                required
+              />
+              <p className="mt-2 text-xs text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/50 p-2 rounded">
+                This explanation will be visible to the Growth Team when they review your reallocation request.
+              </p>
+            </div>
+          </div>
+        </form>
+
+        {/* Action Buttons */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="px-6 py-3 text-sm font-medium text-card-foreground bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            onClick={(e) => {
+              e.preventDefault();
+              const form = e.currentTarget.closest('form');
+              if (form) {
+                form.requestSubmit();
+              }
+            }}
+            disabled={isSubmitting || !selectedPhaseId || !description.trim()}
+            className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+          >
+            {isSubmitting ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            ) : (
+              <FaExchangeAlt className="w-4 h-4" />
+            )}
+            {isSubmitting ? 'Submitting...' : 'Submit Reallocation Request'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

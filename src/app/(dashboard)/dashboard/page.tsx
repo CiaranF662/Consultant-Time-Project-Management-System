@@ -66,9 +66,17 @@ async function getConsultantData(userId: string) {
 
   const isPM = pmProjects.length > 0;
 
-  // Get all phase allocations for the consultant with related data (same as allocations page)
+  // Get current and upcoming phase allocations for the consultant (exclude past phases)
+  const today = new Date();
   const phaseAllocations = await prisma.phaseAllocation.findMany({
-    where: { consultantId: userId },
+    where: {
+      consultantId: userId,
+      phase: {
+        endDate: {
+          gte: today // Only phases that haven't ended yet
+        }
+      }
+    },
     include: {
       phase: {
         include: {
@@ -86,13 +94,12 @@ async function getConsultantData(userId: string) {
     },
     orderBy: {
       phase: {
-        startDate: 'asc'
+        startDate: 'asc' // Sort by most recent start date (earliest first)
       }
     }
   });
 
   // Get upcoming weeks where allocation is needed
-  const today = new Date();
   const fourWeeksFromNow = new Date(today);
   fourWeeksFromNow.setDate(today.getDate() + 28);
 

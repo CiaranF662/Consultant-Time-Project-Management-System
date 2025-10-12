@@ -44,9 +44,19 @@ interface CrossProjectManagementViewProps {
 
 export default function CrossProjectManagementView({ projects, stats }: CrossProjectManagementViewProps) {
   const getProjectProgress = (project: Project) => {
-    const totalPhases = project._count.phases;
-    const completedPhases = project.phases.filter(p => p.completionPercentage >= 100).length;
-    return totalPhases > 0 ? Math.round((completedPhases / totalPhases) * 100) : 0;
+    // Calculate weighted average of phase completion based on allocated hours
+    const totalAllocatedHours = project.phases.reduce((sum, phase) => sum + phase.totalAllocatedHours, 0);
+
+    if (totalAllocatedHours === 0) {
+      return 0; // No allocations yet
+    }
+
+    const weightedProgress = project.phases.reduce((sum, phase) => {
+      const phaseWeight = phase.totalAllocatedHours / totalAllocatedHours;
+      return sum + (phase.completionPercentage * phaseWeight);
+    }, 0);
+
+    return Math.round(weightedProgress);
   };
 
   const getBudgetUtilization = (project: Project) => {
