@@ -17,19 +17,19 @@ async function getProjectsForDashboard(userId: string, userRole: UserRole) {
             allocations: true
           }
         },
-        consultants: { 
-          include: { 
-            user: { 
-              select: { 
+        consultants: {
+          include: {
+            user: {
+              select: {
                 id: true,
                 name: true,
                 email: true
-              } 
-            } 
-          } 
+              }
+            }
+          }
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { startDate: 'asc' }, // Sort by earliest start date first
     });
   } else {
     // Consultants see only their projects
@@ -46,19 +46,19 @@ async function getProjectsForDashboard(userId: string, userRole: UserRole) {
             allocations: true
           }
         },
-        consultants: { 
-          include: { 
-            user: { 
-              select: { 
+        consultants: {
+          include: {
+            user: {
+              select: {
                 id: true,
                 name: true,
                 email: true
-              } 
-            } 
-          } 
+              }
+            }
+          }
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { startDate: 'asc' }, // Sort by earliest start date first
     });
   }
 }

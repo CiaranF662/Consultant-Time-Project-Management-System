@@ -273,9 +273,13 @@ export default function ConsultantCapacityOverview() {
 
             return filteredConsultants.map((consultant) => {
               const thisWeekHours = consultant.weeklyBreakdown[0]?.totalHours || 0;
-              const totalCapacity = 40 * weeks; // Total capacity over selected weeks
-              const totalAllocated = consultant.totalAllocatedHours; // Total allocated over selected weeks
-              const availableHours = Math.max(0, totalCapacity - totalAllocated);
+
+              // Calculate total available hours across all weeks (sum of each week's availability)
+              const totalAvailableHours = consultant.weeklyBreakdown.reduce(
+                (sum, week) => sum + Math.max(0, 40 - week.totalHours),
+                0
+              );
+
               const status = thisWeekHours <= 30 ? 'available' : thisWeekHours <= 40 ? 'full' : 'over';
               const isExpanded = expandedConsultant === consultant.consultant.id;
 
@@ -310,7 +314,7 @@ export default function ConsultantCapacityOverview() {
                           status === 'full' ? 'text-blue-600 dark:text-blue-400' :
                           'text-red-600 dark:text-red-400'
                         }`}>
-                          {Math.round(availableHours)}h
+                          {Math.round(totalAvailableHours)}h
                         </p>
                         <p className="text-xs text-muted-foreground">available (total)</p>
                       </div>
