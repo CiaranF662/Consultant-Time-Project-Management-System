@@ -265,7 +265,51 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
     }
   };
 
-  const nextWeekAllocations = data.upcomingAllocations.slice(0, 7); // Next 7 weeks
+  // Group upcoming allocations by week and aggregate by project
+  const groupAllocationsByWeek = () => {
+    const weekMap = new Map<string, {
+      weekStartDate: Date;
+      weekEndDate: Date;
+      weekNumber: number;
+      year: number;
+      totalHours: number;
+      projects: Array<{
+        projectTitle: string;
+        phaseName: string;
+        hours: number;
+      }>;
+    }>();
+
+    data.upcomingAllocations.forEach((allocation) => {
+      const weekKey = `${allocation.year}-W${allocation.weekNumber}`;
+
+      if (!weekMap.has(weekKey)) {
+        weekMap.set(weekKey, {
+          weekStartDate: new Date(allocation.weekStartDate),
+          weekEndDate: new Date(allocation.weekEndDate),
+          weekNumber: allocation.weekNumber,
+          year: allocation.year,
+          totalHours: 0,
+          projects: []
+        });
+      }
+
+      const week = weekMap.get(weekKey)!;
+      week.totalHours += allocation.approvedHours || allocation.proposedHours || 0;
+      week.projects.push({
+        projectTitle: allocation.phaseAllocation.phase.project.title,
+        phaseName: allocation.phaseAllocation.phase.name,
+        hours: allocation.approvedHours || allocation.proposedHours || 0
+      });
+    });
+
+    // Convert to array and sort by date, limit to next 6 weeks
+    return Array.from(weekMap.values())
+      .sort((a, b) => a.weekStartDate.getTime() - b.weekStartDate.getTime())
+      .slice(0, 6);
+  };
+
+  const nextWeekAllocations = groupAllocationsByWeek();
 
   return (
     <div className="p-6 space-y-6">
@@ -497,17 +541,63 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                   data.phaseAllocations.map((allocation) => {
                     const enhancedPhaseStatus = getEnhancedPhaseStatus(allocation);
                     const planningStatus = getPlanningStatus(allocation);
+                    const isApproved = allocation.approvalStatus === 'APPROVED';
+                    const hasRemainingHours = allocation.totalHours - allocation.weeklyAllocations.reduce((sum, week) => sum + (week.approvedHours || 0), 0) > 0;
+
+                    // Calculate time until phase starts
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const phaseStart = new Date(allocation.phase.startDate);
+                    phaseStart.setHours(0, 0, 0, 0);
+                    const daysUntilStart = Math.ceil((phaseStart.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+                    let startsInText = '';
+                    if (daysUntilStart > 0) {
+                      if (daysUntilStart === 1) {
+                        startsInText = 'Starts tomorrow';
+                      } else if (daysUntilStart <= 7) {
+                        startsInText = `Starts in ${daysUntilStart} days`;
+                      } else if (daysUntilStart <= 30) {
+                        const weeks = Math.ceil(daysUntilStart / 7);
+                        startsInText = `Starts in ${weeks} ${weeks === 1 ? 'week' : 'weeks'}`;
+                      } else {
+                        const months = Math.ceil(daysUntilStart / 30);
+                        startsInText = `Starts in ${months} ${months === 1 ? 'month' : 'months'}`;
+                      }
+                    } else if (daysUntilStart === 0) {
+                      startsInText = 'Starts today';
+                    } else {
+                      startsInText = 'In progress';
+                    }
+
+                    // Wrapper component for clickable/non-clickable cards
+                    const CardWrapper = isApproved ? Link : 'div';
+                    const wrapperProps = isApproved ? { href: `/dashboard/weekly-planner?phaseAllocationId=${allocation.id}` } : {};
 
                     return (
-                      <div key={allocation.id} className={`rounded-xl shadow-sm border-l-4 transition-all hover:shadow-md ${
-                        allocation.approvalStatus === 'APPROVED' ? 'border-l-green-500 bg-gradient-to-r from-green-50 to-white dark:from-green-900/20 dark:to-gray-800' :
-                        allocation.approvalStatus === 'REJECTED' ? 'border-l-red-500 bg-gradient-to-r from-red-50 to-white dark:from-red-900/20 dark:to-gray-800' :
-                        'border-l-yellow-500 bg-gradient-to-r from-yellow-50 to-white dark:from-yellow-900/20 dark:to-gray-800'
-                      } p-5`}>
+                      <CardWrapper
+                        key={allocation.id}
+                        {...wrapperProps}
+                        className={`rounded-xl shadow-sm border-l-4 transition-all block ${
+                          allocation.approvalStatus === 'APPROVED' ? 'border-l-green-500 bg-gradient-to-r from-green-50 to-white dark:from-green-900/20 dark:to-gray-800 cursor-pointer hover:shadow-lg hover:scale-[1.02]' :
+                          allocation.approvalStatus === 'REJECTED' ? 'border-l-red-500 bg-gradient-to-r from-red-50 to-white dark:from-red-900/20 dark:to-gray-800' :
+                          'border-l-yellow-500 bg-gradient-to-r from-yellow-50 to-white dark:from-yellow-900/20 dark:to-gray-800'
+                        } p-5`}>
                         <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <h3 className="font-semibold text-foreground">{allocation.phase.name}</h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{allocation.phase.project.title}</p>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-semibold text-foreground">{allocation.phase.name}</h3>
+                              {/* Starts in indicator */}
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                daysUntilStart > 7 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' :
+                                daysUntilStart > 0 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                                daysUntilStart === 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                              }`}>
+                                {startsInText}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{allocation.phase.project.title}</p>
                             {allocation.approvalStatus === 'REJECTED' && allocation.rejectionReason && (
                               <p className="text-xs text-red-600 dark:text-red-400 mt-1">Rejected: {allocation.rejectionReason}</p>
                             )}
@@ -629,7 +719,15 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                             </div>
                           </div>
                         )}
-                      </div>
+
+                        {/* Click to plan indicator for approved phases */}
+                        {isApproved && (
+                          <div className="mt-3 flex items-center justify-center gap-2 text-sm text-blue-600 dark:text-blue-400 font-medium">
+                            <FaCalendarWeek className="w-4 h-4" />
+                            <span>Click to plan hours in weekly planner</span>
+                          </div>
+                        )}
+                      </CardWrapper>
                     );
                   })
                 )}
@@ -656,50 +754,69 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                       <FaCalendar className="w-8 h-8 text-purple-500 dark:text-purple-400" />
                     </div>
                     <h3 className="text-lg font-medium text-foreground mb-2">No Upcoming Work</h3>
-                    <p className="text-muted-foreground text-sm">You have no scheduled allocations for the next 7 weeks.</p>
+                    <p className="text-muted-foreground text-sm">You have no scheduled allocations for the next 6 weeks.</p>
                   </div>
                 ) : (
-                  nextWeekAllocations.map((allocation, index) => (
-                    <div key={allocation.id} className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-700 rounded-xl shadow-sm border border-gray-100 dark:border-gray-600 p-4 hover:shadow-md transition-all">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white ${
-                            index === 0 ? 'bg-blue-500 dark:bg-blue-600' :
-                            index === 1 ? 'bg-green-500 dark:bg-green-600' :
-                            index === 2 ? 'bg-purple-500 dark:bg-purple-600' : 'bg-gray-500 dark:bg-gray-600'
-                          }`}>
-                            W{allocation.weekNumber}
-                          </div>
-                          <div>
-                            <div className="font-semibold text-foreground">
-                              Week {allocation.weekNumber}, {allocation.year}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {formatDate(new Date(allocation.weekStartDate))} - {formatDate(new Date(allocation.weekEndDate))}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                            {formatHours(allocation.approvedHours || allocation.proposedHours || 0)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">hours</div>
-                        </div>
-                      </div>
+                  nextWeekAllocations.map((week, index) => {
+                    // Format week label like "Week of Oct 13"
+                    const weekLabel = week.weekStartDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-                      <div className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-100 dark:border-gray-700">
-                        <div className="flex items-center gap-2 mb-1">
-                          <FaProjectDiagram className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-                          <span className="font-medium text-foreground text-sm">
-                            {allocation.phaseAllocation.phase.project.title}
-                          </span>
+                    return (
+                      <div key={`${week.year}-${week.weekNumber}`} className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-700 rounded-xl shadow-sm border border-gray-100 dark:border-gray-600 p-4 hover:shadow-md transition-all">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold text-white ${
+                              index === 0 ? 'bg-blue-500 dark:bg-blue-600' :
+                              index === 1 ? 'bg-green-500 dark:bg-green-600' :
+                              index === 2 ? 'bg-purple-500 dark:bg-purple-600' : 'bg-gray-500 dark:bg-gray-600'
+                            }`}>
+                              <FaCalendar className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <div className="font-semibold text-foreground text-lg">
+                                Week of {weekLabel}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {formatDate(week.weekStartDate)} - {formatDate(week.weekEndDate)}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                              {formatHours(week.totalHours)}
+                            </div>
+                            <div className="text-xs text-muted-foreground">total hours</div>
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400 ml-6">
-                          Phase: {allocation.phaseAllocation.phase.name}
+
+                        {/* Projects breakdown */}
+                        <div className="space-y-2">
+                          {week.projects.map((project, projectIndex) => (
+                            <div key={projectIndex} className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-100 dark:border-gray-700">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 flex-1">
+                                  <FaProjectDiagram className="w-4 h-4 text-blue-500 dark:text-blue-400 flex-shrink-0" />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium text-foreground text-sm truncate">
+                                      {project.projectTitle}
+                                    </div>
+                                    <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                      {project.phaseName}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="ml-3 text-right flex-shrink-0">
+                                  <div className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                                    {formatHours(project.hours)}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>

@@ -117,7 +117,7 @@ export async function POST(request: Request) {
           type: notificationType,
           title: notificationTitle,
           message: notificationMessage,
-          actionUrl: '/dashboard/allocations',
+          actionUrl: `/dashboard/weekly-planner?phaseAllocationId=${dbAllocation.phaseAllocationId}`,
           metadata: {
             projectId: dbAllocation.phaseAllocation.phase.project.id,
             phaseId: dbAllocation.phaseAllocation.phase.id,

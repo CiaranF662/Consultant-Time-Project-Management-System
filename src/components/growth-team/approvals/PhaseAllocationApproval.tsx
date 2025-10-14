@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FaCheck, FaTimes, FaUser, FaClock, FaSearch, FaFilter, FaSortAmountDown, FaChevronDown, FaChevronUp, FaCalendarWeek } from 'react-icons/fa';
+import { FaCheck, FaTimes, FaUser, FaClock, FaSearch, FaFilter, FaSortAmountDown, FaChevronDown, FaChevronUp, FaCalendarWeek, FaExchangeAlt, FaInfoCircle } from 'react-icons/fa';
 import { formatHours, formatDate } from '@/lib/dates';
 import { generateColorFromString } from '@/lib/colors';
 import RejectionReasonModal from './RejectionReasonModal';
@@ -11,6 +11,7 @@ interface PhaseAllocation {
   id: string;
   totalHours: number;
   createdAt: Date;
+  consultantDescription?: string | null;
   consultant: {
     id: string;
     name: string | null;
@@ -399,7 +400,14 @@ export default function PhaseAllocationApproval({
           )}
         </div>
       ) : (
-        getFilteredAndSortedAllocations().map((allocation) => (
+        getFilteredAndSortedAllocations().map((allocation) => {
+          // Check if this is a reallocation request
+          const isReallocation = allocation.consultantDescription?.startsWith('Reallocated from');
+          const reallocationMatch = isReallocation ? allocation.consultantDescription?.match(/Reallocated from "([^"]+)": (.+)/) : null;
+          const originalPhaseName = reallocationMatch?.[1];
+          const reallocationReason = reallocationMatch?.[2];
+
+          return (
           <div key={allocation.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
             <div className="p-6">
               <div className="flex items-start justify-between">
@@ -410,6 +418,12 @@ export default function PhaseAllocationApproval({
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${generateColorFromString(allocation.consultant.id)}`}>
                           {allocation.consultant.name || allocation.consultant.email}
                         </span>
+                        {isReallocation && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-full text-xs font-medium border border-amber-200 dark:border-amber-700">
+                            <FaExchangeAlt className="w-3 h-3" />
+                            Reallocation Request
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         <span className="font-bold">{allocation.phase.project.title}</span> • {allocation.phase.name}
@@ -418,6 +432,21 @@ export default function PhaseAllocationApproval({
                         <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 italic">
                           {allocation.phase.description}
                         </p>
+                      )}
+                      {isReallocation && originalPhaseName && reallocationReason && (
+                        <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <FaInfoCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 text-xs">
+                              <p className="font-semibold text-amber-900 dark:text-amber-100 mb-1">
+                                Reallocated from: <span className="font-bold">"{originalPhaseName}"</span>
+                              </p>
+                              <p className="text-amber-800 dark:text-amber-300">
+                                <span className="font-medium">Reason:</span> {reallocationReason}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       )}
                       <div className="flex items-center gap-2 mt-1">
                         <p className="text-xs text-muted-foreground">
@@ -494,7 +523,8 @@ export default function PhaseAllocationApproval({
 
             </div>
           </div>
-        ))
+          );
+        })
       )}
 
       {/* Rejection Reason Modal */}

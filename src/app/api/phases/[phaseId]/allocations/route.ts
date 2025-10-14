@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { requireAuth, isAuthError } from '@/lib/api-auth';
-import { ProjectRole, NotificationType } from '@prisma/client';
+import { ProjectRole, NotificationType, UserRole } from '@prisma/client';
 import { getGrowthTeamMemberIds, createNotificationsForUsers, NotificationTemplates } from '@/lib/notifications';
 import { createPhaseAllocationSchema, bulkUpdatePhaseAllocationsSchema, safeValidateRequestBody, formatValidationErrors } from '@/lib/validation-schemas';
 import { logError, logApiRequest, logValidationError, logAuthorizationFailure } from '@/lib/error-logger';
+import { isPhaseLocked } from '@/lib/phase-lock';
 
 import { prisma } from "@/lib/prisma";
 
@@ -81,6 +82,16 @@ export async function POST(
   if (!isPM) {
     logAuthorizationFailure(session.user.id, 'create phase allocation', `phase:${phaseId}`);
     return new NextResponse(JSON.stringify({ error: 'Only Product Managers can create phase allocations' }), { status: 403 });
+  }
+
+  // Check if phase is locked (past end date)
+  // Growth Team can override for corrections
+  const isGrowthTeam = session.user.role === UserRole.GROWTH_TEAM;
+  if (isPhaseLocked(phase) && !isGrowthTeam) {
+    return new NextResponse(
+      JSON.stringify({ error: 'Cannot modify allocations for a phase that has already ended. Contact Growth Team if corrections are needed.' }),
+      { status: 403 }
+    );
   }
 
   try {
@@ -376,6 +387,16 @@ export async function PUT(
 
     if (!isProductManager) {
       return new NextResponse(JSON.stringify({ error: 'Only Product Managers can update phase allocations' }), { status: 403 });
+    }
+
+    // Check if phase is locked (past end date)
+    // Growth Team can override for corrections
+    const isGrowthTeam = session.user.role === UserRole.GROWTH_TEAM;
+    if (isPhaseLocked(phase) && !isGrowthTeam) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Cannot modify allocations for a phase that has already ended. Contact Growth Team if corrections are needed.' }),
+        { status: 403 }
+      );
     }
 
     // Validate allocations

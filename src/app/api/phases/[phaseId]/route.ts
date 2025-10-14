@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { requireAuth, isAuthError } from '@/lib/api-auth';
 import { logError, logApiRequest, logAuthorizationFailure } from '@/lib/error-logger';
 import { prisma } from "@/lib/prisma";
+import { isPhaseLocked } from '@/lib/phase-lock';
+import { UserRole } from '@prisma/client';
 
 export async function DELETE(
   _request: Request,
@@ -44,6 +46,16 @@ export async function DELETE(
       logAuthorizationFailure(session.user.id, 'delete phase', `phase:${phaseId}`);
       return NextResponse.json(
         { error: 'Only Product Managers can delete phases' },
+        { status: 403 }
+      );
+    }
+
+    // Check if phase is locked (past end date)
+    // Growth Team can override for corrections
+    const isGrowthTeam = session.user.role === UserRole.GROWTH_TEAM;
+    if (isPhaseLocked(phase) && !isGrowthTeam) {
+      return NextResponse.json(
+        { error: 'Cannot delete a phase that has already ended. Contact Growth Team if corrections are needed.' },
         { status: 403 }
       );
     }

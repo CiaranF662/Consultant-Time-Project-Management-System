@@ -42,7 +42,7 @@ export default function ProjectsPageClient({
     search: '',
     status: 'all',
     sortBy: 'startDate',
-    sortOrder: 'desc'
+    sortOrder: 'asc' // Sort by earliest start date first
   });
 
   // Apply filters and sorting
@@ -69,13 +69,6 @@ export default function ProjectsPageClient({
           )}
         </div>
       )}
-
-      {/* Search and Filter */}
-      <ProjectSearchFilter
-        filters={filters}
-        onFiltersChange={setFilters}
-        showStatusFilter={true}
-      />
 
       {/* Summary Statistics */}
       {!hideStats && (
@@ -133,6 +126,13 @@ export default function ProjectsPageClient({
         </div>
         </div>
       )}
+
+      {/* Search and Filter */}
+      <ProjectSearchFilter
+        filters={filters}
+        onFiltersChange={setFilters}
+        showStatusFilter={true}
+      />
 
       {/* Projects by Status */}
       {filteredProjects.length > 0 ? (

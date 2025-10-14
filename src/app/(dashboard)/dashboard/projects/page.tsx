@@ -17,19 +17,19 @@ async function getProjectsForDashboard(userId: string, userRole: UserRole) {
             allocations: true
           }
         },
-        consultants: { 
-          include: { 
-            user: { 
-              select: { 
+        consultants: {
+          include: {
+            user: {
+              select: {
                 id: true,
                 name: true,
                 email: true
-              } 
-            } 
-          } 
+              }
+            }
+          }
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { startDate: 'asc' }, // Sort by earliest start date first
     });
   } else {
     // Consultants see only their projects
@@ -46,19 +46,19 @@ async function getProjectsForDashboard(userId: string, userRole: UserRole) {
             allocations: true
           }
         },
-        consultants: { 
-          include: { 
-            user: { 
-              select: { 
+        consultants: {
+          include: {
+            user: {
+              select: {
                 id: true,
                 name: true,
                 email: true
-              } 
-            } 
-          } 
+              }
+            }
+          }
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { startDate: 'asc' }, // Sort by earliest start date first
     });
   }
 }
@@ -66,7 +66,7 @@ async function getProjectsForDashboard(userId: string, userRole: UserRole) {
 export default async function ProjectsPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    redirect('/login');
+    redirect('/auth/login');
   }
 
   const projects = await getProjectsForDashboard(session.user.id, session.user.role as UserRole);

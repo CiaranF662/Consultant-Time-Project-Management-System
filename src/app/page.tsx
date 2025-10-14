@@ -25,13 +25,13 @@ export default async function HomePage() {
             </div>
             <div className="flex items-center space-x-4">
               <Link
-                href="/login"
+                href="/auth/login"
                 className="text-gray-600 dark:text-gray-300 hover:text-foreground font-medium transition-colors"
               >
                 Sign In
               </Link>
               <Link
-                href="/register"
+                href="/auth/register"
                 className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm"
               >
                 Get Started
@@ -55,13 +55,13 @@ export default async function HomePage() {
             </p>
             <div className="mt-10 flex justify-center gap-4">
               <Link
-                href="/register"
+                href="/auth/register"
                 className="bg-blue-600 text-white px-8 py-4 text-lg font-semibold rounded-lg hover:bg-blue-700 transition-all transform hover:scale-105 shadow-lg"
               >
                 Get Started
               </Link>
               <Link
-                href="/login"
+                href="/auth/login"
                 className="bg-white dark:bg-gray-800 text-foreground px-8 py-4 text-lg font-semibold rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
               >
                 Sign In
@@ -137,7 +137,7 @@ export default async function HomePage() {
           <h2 className="text-3xl font-bold text-white mb-4">Ready to streamline your resource planning?</h2>
           <p className="text-xl text-blue-100 dark:text-blue-200 mb-8">Join teams that trust Agility to manage their consulting resources efficiently.</p>
           <Link
-            href="/register"
+            href="/auth/register"
             className="inline-block bg-white text-blue-600 px-8 py-4 text-lg font-semibold rounded-lg hover:bg-gray-50 transition-colors shadow-lg"
           >
             Get Started Today

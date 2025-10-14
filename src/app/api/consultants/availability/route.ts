@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const weeks: Array<{ weekStart: Date; weekEnd: Date; weekNumber: number; year: number }> = [];
     let currentWeekStart = new Date(start);
 
-    while (currentWeekStart <= end) {
+    while (currentWeekStart < end) { // Changed from <= to < to prevent extra week
       const weekEnd = new Date(currentWeekStart);
       weekEnd.setDate(weekEnd.getDate() + 6);
 

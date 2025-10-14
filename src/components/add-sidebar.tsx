@@ -202,7 +202,7 @@ export default function Sidebar({ children }: SidebarProps) {
   };
 
   const handleSignOut = () => {
-    signOut({ callbackUrl: '/login' });
+    signOut({ callbackUrl: '/auth/login' });
   };
 
   return (
@@ -395,7 +395,7 @@ export default function Sidebar({ children }: SidebarProps) {
       {/* Main content */}
       <div className={`
         transition-all duration-300 ease-in-out min-h-screen
-        lg:ml-16 ${!isCollapsed ? 'lg:ml-64' : ''}
+        ${isCollapsed ? 'lg:ml-16' : 'lg:ml-64'}
       `}>
         <main className="pt-16 lg:pt-0">
           {children}

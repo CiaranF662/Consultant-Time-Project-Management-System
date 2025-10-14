@@ -17,6 +17,7 @@ interface PhaseWithAllocations {
   allocations: Array<{
     id: string;
     totalHours: number;
+    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
     weeklyAllocations: Array<{
       id: string;
       plannedHours: number;
@@ -116,21 +117,28 @@ export function getPhaseStatus(phase: PhaseWithAllocations, currentDate: Date = 
 }
 
 /**
- * Calculate planning completion status (unchanged from existing logic)
+ * Calculate planning completion status
+ * Excludes FORFEITED and EXPIRED allocations from the calculation
  */
 function getPlanningStatus(phase: PhaseWithAllocations): PlanningStatus {
-  const totalAllocatedHours = phase.allocations.reduce(
+  // Filter out FORFEITED and EXPIRED allocations
+  // These hours should not be counted towards the planning total
+  const activeAllocations = phase.allocations.filter(
+    allocation => allocation.approvalStatus !== 'FORFEITED' && allocation.approvalStatus !== 'EXPIRED'
+  );
+
+  const totalAllocatedHours = activeAllocations.reduce(
     (sum, allocation) => sum + allocation.totalHours, 0
   );
 
-  const totalDistributedHours = phase.allocations.reduce(
+  const totalDistributedHours = activeAllocations.reduce(
     (sum, allocation) => sum + allocation.weeklyAllocations.reduce(
       (weekSum, week) => weekSum + week.plannedHours, 0
     ), 0
   );
 
   const remainingToDistribute = totalAllocatedHours - totalDistributedHours;
-  const completionPercentage = totalAllocatedHours > 0 
+  const completionPercentage = totalAllocatedHours > 0
     ? Math.round((totalDistributedHours / totalAllocatedHours) * 100)
     : 0;
 
@@ -183,14 +191,20 @@ function getTimeStatus(phase: PhaseWithAllocations, currentDate: Date): TimeStat
 
 /**
  * Enhanced work completion based on actual weekly allocations
+ * Excludes FORFEITED and EXPIRED allocations from work progress
  */
 function getWorkStatusEnhanced(phase: PhaseWithAllocations, currentDate: Date): WorkStatus {
   const currentWeekStart = getWeekStart(currentDate);
   const currentWeekNumber = getWeekNumber(currentDate);
   const currentYear = currentDate.getFullYear();
-  
+
+  // Filter out FORFEITED and EXPIRED allocations
+  const activeAllocations = phase.allocations.filter(
+    allocation => allocation.approvalStatus !== 'FORFEITED' && allocation.approvalStatus !== 'EXPIRED'
+  );
+
   // Get all weekly allocations across all consultants and group by week
-  const allWeeklyAllocations = phase.allocations.flatMap(allocation => 
+  const allWeeklyAllocations = activeAllocations.flatMap(allocation =>
     allocation.weeklyAllocations
   );
   
@@ -381,19 +395,24 @@ function getOverallProgress(
  * Determine the primary status for display
  */
 function determinePrimaryStatus(
-  planning: PlanningStatus, 
-  time: TimeStatus, 
+  planning: PlanningStatus,
+  time: TimeStatus,
   work: WorkStatus
 ): { status: PhaseStatus['status']; label: string; color: PhaseStatus['color'] } {
-  
+
   // Complete: Both planning and work are done
   if (planning.status === 'complete' && work.status === 'complete') {
     return { status: 'complete', label: 'Complete', color: 'green' };
   }
 
-  // Overdue: Past end date and not complete
+  // Overdue: Past end date and significantly incomplete (< 95%)
+  // Allow for phases that are nearly complete (>= 95%) to show as "In Progress" instead of "Overdue"
   if (time.status === 'past' && work.status !== 'complete') {
-    return { status: 'overdue', label: 'Overdue', color: 'red' };
+    if (work.workCompletionPercentage < 95) {
+      return { status: 'overdue', label: 'Overdue', color: 'red' };
+    }
+    // Nearly complete (>= 95%), treat as in progress rather than overdue
+    return { status: 'in_progress', label: 'Nearly Complete', color: 'blue' };
   }
 
   // Behind schedule during active phase

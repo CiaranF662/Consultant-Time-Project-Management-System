@@ -90,7 +90,7 @@ export default function NotificationsPageClient({
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/login');
+      router.push('/auth/login');
     } else if (status === 'authenticated' && (selectedFilter !== 'all' || debouncedSearchQuery)) {
       fetchNotifications(true);
     }

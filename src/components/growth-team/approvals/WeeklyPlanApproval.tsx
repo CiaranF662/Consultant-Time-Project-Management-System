@@ -73,6 +73,15 @@ export default function WeeklyPlanApproval({
   onBatchApproval,
   processingIds
 }: WeeklyPlanApprovalProps) {
+  // Helper function to format date with time
+  const formatDateTime = (date: Date) => {
+    const d = new Date(date);
+    const dateStr = formatDate(d);
+    const hours = d.getHours().toString().padStart(2, '0');
+    const minutes = d.getMinutes().toString().padStart(2, '0');
+    return `${dateStr} at ${hours}:${minutes}`;
+  };
+
   // Weekly plan approvals state for search and filtering
   const [weeklySearchTerm, setWeeklySearchTerm] = useState('');
   const [weeklySortBy, setWeeklySortBy] = useState<'newest' | 'oldest' | 'hours-high' | 'hours-low' | 'consultant' | 'project'>('newest');
@@ -215,13 +224,13 @@ export default function WeeklyPlanApproval({
         };
       });
 
-    // Sort groups based on user selection
+    // Sort groups based on user selection (default: most recent submissions first)
     groups.sort((a, b) => {
       switch (weeklySortBy) {
         case 'newest':
-          return b.earliestWeek.getTime() - a.earliestWeek.getTime();
+          return b.submissionTime.getTime() - a.submissionTime.getTime();
         case 'oldest':
-          return a.earliestWeek.getTime() - b.earliestWeek.getTime();
+          return a.submissionTime.getTime() - b.submissionTime.getTime();
         case 'hours-high':
           return b.totalHours - a.totalHours;
         case 'hours-low':
@@ -559,7 +568,7 @@ export default function WeeklyPlanApproval({
                       <span className="mx-2">•</span>
                       <span className="font-medium">{formatHoursForApproval(group.totalHours)} total</span>
                       <span className="mx-2">•</span>
-                      <span>Submitted {formatDate(group.submissionTime)}</span>
+                      <span>Submitted {formatDateTime(group.submissionTime)}</span>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -582,17 +591,30 @@ export default function WeeklyPlanApproval({
               {/* Individual Weekly Allocations */}
               <div className="p-6">
                 <div className="space-y-4">
-                  {group.allocations.map((allocation) => (
+                  {group.allocations.map((allocation) => {
+                    // Format week label like "Week Oct 6"
+                    const weekStartDate = new Date(allocation.weekStartDate);
+                    const weekLabel = `Week ${weekStartDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+
+                    return (
                     <div key={allocation.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <p className="text-sm text-foreground font-medium">
-                                <span className="font-bold">{allocation.phaseAllocation.phase.project.title}</span> • {allocation.phaseAllocation.phase.name}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Week of {formatDate(new Date(allocation.weekStartDate))} - {formatDate(new Date(allocation.weekEndDate))}
+                            <div className="flex-1">
+                              {/* Week Label - Prominent */}
+                              <div className="mb-2">
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700">
+                                  {weekLabel}
+                                </span>
+                              </div>
+
+                              {/* Project and Phase - Larger and more readable */}
+                              <h4 className="text-base font-bold text-foreground mb-1">
+                                {allocation.phaseAllocation.phase.project.title}
+                              </h4>
+                              <p className="text-sm text-muted-foreground">
+                                {allocation.phaseAllocation.phase.name}
                               </p>
                             </div>
                             <div className="text-right ml-4">
@@ -635,52 +657,64 @@ export default function WeeklyPlanApproval({
                             </div>
                           </div>
 
-                          {/* Week Workload Context */}
+                          {/* Week Workload Context - Compact */}
                           {(() => {
                             const weekKey = new Date(allocation.weekStartDate).toISOString().split('T')[0];
                             const workloadContext = getWeekWorkloadContext(allocation.consultantId, weekKey);
+
                             return (
-                              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-                                <div className="flex items-start gap-2">
-                                  <div className="flex-shrink-0 w-1.5 h-1.5 bg-blue-500 dark:bg-blue-400 rounded-full mt-1.5"></div>
-                                  <div className="flex-1 min-w-0">
-                                    {workloadContext.totalApprovedHours > 0 ? (
-                                      <>
-                                        <h5 className="text-xs font-medium text-blue-800 dark:text-blue-300 mb-1">
-                                          Other work this week: {formatHoursForApproval(workloadContext.totalApprovedHours)} approved
+                              <div className="mt-3">
+                                {workloadContext.totalApprovedHours > 0 ? (
+                                  <div className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 border-l-3 border-indigo-400 dark:border-indigo-600 rounded-r-lg px-3 py-2">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex items-center gap-2">
+                                        <svg className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                        </svg>
+                                        <h5 className="text-xs font-bold text-indigo-900 dark:text-indigo-100">
+                                          Other Work This Week
                                         </h5>
-                                        <div className="space-y-0.5">
-                                          {workloadContext.projects.map((project, index) => (
-                                            <div key={index} className="flex items-center justify-between text-xs text-blue-600 dark:text-blue-400">
-                                              <span className="truncate">
-                                                <span className="font-medium">{project.projectTitle}</span>
-                                                <span className="text-blue-500 dark:text-blue-500 mx-1">•</span>
-                                                <span>{project.phaseName}</span>
-                                              </span>
-                                              <span className="font-medium ml-2 flex-shrink-0">
-                                                {formatHoursForApproval(project.hours)}
-                                              </span>
-                                            </div>
-                                          ))}
-                                        </div>
-                                        <div className="mt-1 text-xs text-blue-700 dark:text-blue-300">
-                                          Week total if approved: <span className="font-bold">
-                                            {formatHoursForApproval(workloadContext.totalApprovedHours + (allocation.proposedHours || 0))}
+                                      </div>
+                                      <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full">
+                                        {formatHoursForApproval(workloadContext.totalApprovedHours)} approved
+                                      </span>
+                                    </div>
+                                    <div className="space-y-1 mb-2">
+                                      {workloadContext.projects.map((project, index) => (
+                                        <div key={index} className="flex items-center justify-between text-xs">
+                                          <span className="text-indigo-700 dark:text-indigo-300 truncate mr-2">
+                                            <span className="font-semibold">{project.projectTitle}</span>
+                                            <span className="text-indigo-500 dark:text-indigo-500 mx-1">•</span>
+                                            <span>{project.phaseName}</span>
+                                          </span>
+                                          <span className="font-bold text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                                            {formatHoursForApproval(project.hours)}
                                           </span>
                                         </div>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <h5 className="text-xs font-medium text-muted-foreground mb-0.5">
-                                          Other work this week: None
-                                        </h5>
-                                        <div className="text-xs text-muted-foreground">
-                                          No other approved allocations for this week
-                                        </div>
-                                      </>
-                                    )}
+                                      ))}
+                                    </div>
+                                    <div className="pt-2 border-t border-indigo-200 dark:border-indigo-800 flex items-center justify-between">
+                                      <span className="text-xs font-semibold text-indigo-900 dark:text-indigo-100">
+                                        Week Total (if approved):
+                                      </span>
+                                      <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300">
+                                        {formatHoursForApproval(workloadContext.totalApprovedHours + (allocation.proposedHours || 0))}
+                                      </span>
+                                    </div>
                                   </div>
-                                </div>
+                                ) : (
+                                  <div className="bg-gray-50 dark:bg-gray-900/50 border-l-3 border-gray-300 dark:border-gray-600 rounded-r-lg px-3 py-2">
+                                    <div className="flex items-center gap-2">
+                                      <svg className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                      </svg>
+                                      <h5 className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                                        Other Work This Week:
+                                      </h5>
+                                      <span className="text-xs text-gray-600 dark:text-gray-400">None</span>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             );
                           })()}
@@ -688,7 +722,8 @@ export default function WeeklyPlanApproval({
                       </div>
 
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>

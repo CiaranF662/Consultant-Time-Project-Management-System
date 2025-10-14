@@ -188,11 +188,16 @@ model Session {
 }
 
 model VerificationToken {
-  identifier String
-  token      String   @unique
+  id         String    @id @default(cuid())
+  identifier String    // email address
+  token      String    @unique
+  type       TokenType @default(EMAIL_VERIFICATION)
   expires    DateTime
+  createdAt  DateTime  @default(now())
 
   @@unique([identifier, token])
+  @@index([token])
+  @@index([identifier])
 }
 
 model Notification {
@@ -224,6 +229,7 @@ enum NotificationType {
   PHASE_ALLOCATION_APPROVED
   PHASE_ALLOCATION_REJECTED
   PHASE_ALLOCATION_MODIFIED
+  PHASE_ALLOCATION_EXPIRED
   WEEKLY_ALLOCATION_PENDING
   WEEKLY_ALLOCATION_APPROVED
   WEEKLY_ALLOCATION_MODIFIED
@@ -260,6 +266,8 @@ enum ApprovalStatus {
   PENDING
   APPROVED
   REJECTED
+  EXPIRED    // Phase ended with unplanned hours
+  FORFEITED  // Hours were forfeited by PM
 }
 
 enum PlanningStatus {
@@ -267,4 +275,9 @@ enum PlanningStatus {
   APPROVED
   MODIFIED
   REJECTED
+}
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
 }

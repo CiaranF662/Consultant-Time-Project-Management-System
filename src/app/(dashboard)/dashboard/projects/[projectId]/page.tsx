@@ -12,11 +12,13 @@ import PhaseCreationModal from '@/components/projects/product-manager/PhaseCreat
 import PhaseAllocationForm from '@/components/projects/allocations/PhaseAllocationForm';
 import EditPhaseModal from '@/components/projects/product-manager/EditPhaseModal';
 import EditProjectModal from '@/components/projects/growth-team/EditProjectModal';
+import ExpiredAllocationModal from '@/components/projects/product-manager/ExpiredAllocationModal';
+import ReallocationFormModal from '@/components/projects/product-manager/ReallocationFormModal';
 import BudgetTracker from '@/components/projects/budget/BudgetTracker';
 import PhaseStatusCard from '@/components/projects/phases/PhaseStatusCard';
 import ProjectGanttChart from '@/components/projects/gantt/ProjectGanttChart';
 import { generateColorFromString } from '@/lib/colors';
-import { formatDate } from '@/lib/dates';
+import { formatDate, formatLongDate } from '@/lib/dates';
 import { ComponentLoading } from '@/components/ui/LoadingSpinner';
 
 // Define comprehensive types
@@ -26,7 +28,7 @@ interface PhaseAllocation {
   consultantName: string;
   hours: number; // Changed from allocatedHours to hours
   plannedHours: number;
-  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
   rejectionReason?: string | null;
 }
 
@@ -91,6 +93,20 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
     isOpen: false,
     phase: null,
   });
+  const [expiredAllocationModal, setExpiredAllocationModal] = useState<{
+    isOpen: boolean;
+    allocation: PhaseAllocation & { phaseId: string; phaseName: string } | null;
+  }>({
+    isOpen: false,
+    allocation: null
+  });
+  const [reallocationModal, setReallocationModal] = useState<{
+    isOpen: boolean;
+    expiredAllocation: PhaseAllocation & { phaseId: string; phaseName: string } | null;
+  }>({
+    isOpen: false,
+    expiredAllocation: null
+  });
 
   const fetchProjectDetails = useCallback(async () => {
     try {
@@ -104,7 +120,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/login');
+      router.push('/auth/login');
     }
     if (status === 'authenticated') {
       fetchProjectDetails();
@@ -142,6 +158,40 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
       existingAllocations: []
     });
     fetchProjectDetails();
+  };
+
+  const handleExpiredAllocationClick = (allocation: PhaseAllocation, phase: PhaseWithAllocations) => {
+    setExpiredAllocationModal({
+      isOpen: true,
+      allocation: {
+        ...allocation,
+        phaseId: phase.id,
+        phaseName: phase.name
+      }
+    });
+  };
+
+  const handleForfeit = () => {
+    // Refresh project details after forfeit
+    fetchProjectDetails();
+    setExpiredAllocationModal({ isOpen: false, allocation: null });
+  };
+
+  const handleReallocationRequest = () => {
+    // Close expired modal and open reallocation modal
+    if (expiredAllocationModal.allocation) {
+      setReallocationModal({
+        isOpen: true,
+        expiredAllocation: expiredAllocationModal.allocation
+      });
+      setExpiredAllocationModal({ isOpen: false, allocation: null });
+    }
+  };
+
+  const handleReallocationSuccess = () => {
+    // Refresh project details after reallocation request
+    fetchProjectDetails();
+    setReallocationModal({ isOpen: false, expiredAllocation: null });
   };
 
   if (status === 'loading' || !project) {
@@ -229,10 +279,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                   </div>
                   <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">Duration</div>
                   <div className="text-sm font-bold text-blue-900 dark:text-blue-100 mt-1">
-                    {formatDate(project.startDate)}
+                    {formatLongDate(project.startDate)}
                   </div>
                   <div className="text-xs text-blue-700 dark:text-blue-300">
-                    to {project.endDate ? formatDate(project.endDate) : 'Ongoing'}
+                    to {project.endDate ? formatLongDate(project.endDate) : 'Ongoing'}
                   </div>
                 </div>
 
@@ -393,8 +443,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                         showIndividualAllocations={true}
                         canManageProject={canManagePhases}
                         canManageAllocations={canManageAllocations}
+                        currentUserId={session.user.id}
                         onEditPhase={() => setEditPhaseModal({ isOpen: true, phase })}
                         onManageAllocations={() => openAllocationModal(phase)}
+                        onExpiredAllocationClick={(allocation) => handleExpiredAllocationClick(allocation, phase)}
                         className="shadow-md"
                       />
                     ))}
@@ -545,6 +597,53 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
             onClose={closeAllocationModal}
             onSaved={closeAllocationModal}
             existingAllocations={allocationModal.existingAllocations}
+          />
+        )}
+
+        {expiredAllocationModal.isOpen && expiredAllocationModal.allocation && (
+          <ExpiredAllocationModal
+            allocation={{
+              id: expiredAllocationModal.allocation.id,
+              phaseId: expiredAllocationModal.allocation.phaseId,
+              phaseName: expiredAllocationModal.allocation.phaseName,
+              consultantId: expiredAllocationModal.allocation.consultantId,
+              consultantName: expiredAllocationModal.allocation.consultantName,
+              totalHours: expiredAllocationModal.allocation.hours,
+              plannedHours: expiredAllocationModal.allocation.plannedHours,
+              unplannedHours: expiredAllocationModal.allocation.hours - expiredAllocationModal.allocation.plannedHours
+            }}
+            onClose={() => setExpiredAllocationModal({ isOpen: false, allocation: null })}
+            onForfeit={handleForfeit}
+            onReallocationRequest={handleReallocationRequest}
+          />
+        )}
+
+        {reallocationModal.isOpen && reallocationModal.expiredAllocation && project && (
+          <ReallocationFormModal
+            projectId={projectId}
+            expiredAllocation={{
+              id: reallocationModal.expiredAllocation.id,
+              phaseId: reallocationModal.expiredAllocation.phaseId,
+              phaseName: reallocationModal.expiredAllocation.phaseName,
+              consultantId: reallocationModal.expiredAllocation.consultantId,
+              consultantName: reallocationModal.expiredAllocation.consultantName,
+              unplannedHours: reallocationModal.expiredAllocation.hours - reallocationModal.expiredAllocation.plannedHours
+            }}
+            availablePhases={project.phases
+              .filter(phase =>
+                // Only show phases that haven't ended yet and where the consultant is already allocated
+                new Date(phase.endDate) >= new Date() &&
+                phase.id !== reallocationModal.expiredAllocation?.phaseId
+              )
+              .map(phase => ({
+                id: phase.id,
+                name: phase.name,
+                startDate: phase.startDate,
+                endDate: phase.endDate
+              }))
+            }
+            onClose={() => setReallocationModal({ isOpen: false, expiredAllocation: null })}
+            onSuccess={handleReallocationSuccess}
           />
         )}
       </div>

@@ -104,7 +104,7 @@ export default async function NotificationsPage() {
   const session = await getServerSession(authOptions);
   
   if (!session) {
-    redirect('/login');
+    redirect('/auth/login');
   }
 
   const initialData = await getInitialNotifications();

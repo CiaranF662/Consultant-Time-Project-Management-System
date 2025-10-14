@@ -8,7 +8,7 @@ export default async function BudgetPage() {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
-    redirect('/login');
+    redirect('/auth/login');
   }
 
   // Only Growth Team can access budget overview

@@ -122,6 +122,12 @@ export default function PhaseAllocationForm({
           // Skip current phase to avoid counting its allocations
           if (phase.id !== phaseId && phase.allocations) {
             phase.allocations.forEach((allocation: any) => {
+              // Exclude FORFEITED and EXPIRED allocations from the calculation
+              // These hours should be available for reallocation
+              if (allocation.approvalStatus === 'FORFEITED' || allocation.approvalStatus === 'EXPIRED') {
+                return;
+              }
+
               if (!allocatedToPhasesMap[allocation.consultantId]) {
                 allocatedToPhasesMap[allocation.consultantId] = 0;
               }

@@ -283,3 +283,104 @@ export function getValidationColor(result: ValidationResult): string {
 export function formatValidationMessage(result: ValidationResult): string {
   return result.error || result.warning || 'Valid';
 }
+
+// Validate team allocation
+export function validateTeamAllocation(
+  allocations: Record<string, number>,
+  teamMemberIds: string[],
+  options?: {
+    requireProductManager?: boolean;
+    requireConsultants?: boolean;
+    minConsultants?: number;
+  }
+): ValidationResult {
+  const { requireProductManager = true, requireConsultants = true, minConsultants = 1 } = options || {};
+
+  // Check if product manager is assigned (first ID is typically PM)
+  if (requireProductManager && teamMemberIds.length === 0) {
+    return { isValid: false, error: 'You must assign a Product Manager to the project' };
+  }
+
+  // Check if consultants are assigned
+  if (requireConsultants && teamMemberIds.length < minConsultants + 1) {
+    return { isValid: false, error: `You must assign at least ${minConsultants} consultant(s) to the project` };
+  }
+
+  // Calculate total allocated hours
+  const totalAllocated = teamMemberIds.reduce((sum, id) => sum + (allocations[id] || 0), 0);
+
+  if (totalAllocated === 0) {
+    return { isValid: false, error: 'You must allocate hours to at least one team member' };
+  }
+
+  // Check for team members with zero hours
+  const membersWithoutHours = teamMemberIds.filter(id => !allocations[id] || allocations[id] <= 0);
+  if (membersWithoutHours.length > 0) {
+    return {
+      isValid: false,
+      error: `All team members must have allocated hours greater than 0 (${membersWithoutHours.length} member(s) with 0 hours)`
+    };
+  }
+
+  // Check for unreasonably high allocations
+  const membersWithHighHours = teamMemberIds.filter(id => allocations[id] > 1000);
+  if (membersWithHighHours.length > 0) {
+    return {
+      isValid: true,
+      warning: `${membersWithHighHours.length} team member(s) have very high hour allocations (>1000 hours)`
+    };
+  }
+
+  return { isValid: true };
+}
+
+// Validate project creation data
+export function validateProjectCreation(data: {
+  title: string;
+  description?: string;
+  startDate: string;
+  durationInWeeks: number;
+  budgetedHours: number;
+  productManagerId: string;
+  consultantIds: string[];
+  allocations: Record<string, number>;
+}): ValidationResult {
+  // Validate basic fields
+  if (!data.title || data.title.trim().length < 3) {
+    return { isValid: false, error: 'Project title must be at least 3 characters' };
+  }
+
+  if (data.description && data.description.trim().length > 0 && data.description.trim().length < 10) {
+    return { isValid: false, error: 'Description must be at least 10 characters if provided' };
+  }
+
+  if (!data.startDate) {
+    return { isValid: false, error: 'Start date is required' };
+  }
+
+  if (data.durationInWeeks < 1) {
+    return { isValid: false, error: 'Duration must be at least 1 week' };
+  }
+
+  // Validate budget
+  const budgetValidation = validateHours(data.budgetedHours, { min: 1, max: 10000, allowZero: false });
+  if (!budgetValidation.isValid) {
+    return budgetValidation;
+  }
+
+  // Validate team
+  const allTeamMemberIds = [data.productManagerId, ...data.consultantIds].filter(id => id);
+  const teamValidation = validateTeamAllocation(data.allocations, allTeamMemberIds);
+  if (!teamValidation.isValid) {
+    return teamValidation;
+  }
+
+  // Validate budget vs allocations
+  const totalAllocated = allTeamMemberIds.reduce((sum, id) => sum + (data.allocations[id] || 0), 0);
+  const budgetCheck = validateProjectBudget(data.budgetedHours, totalAllocated, data.title);
+  if (!budgetCheck.isValid) {
+    return budgetCheck;
+  }
+
+  return { isValid: true };
+}

@@ -25,11 +25,19 @@ export default function ProfilePage() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [inAppNotifications, setInAppNotifications] = useState(true);
 
+  // Password Change
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'security'>('profile');
 
   useEffect(() => {
-    if (status === 'unauthenticated') router.push('/login');
+    if (status === 'unauthenticated') router.push('/auth/login');
     if (status === 'authenticated' && session?.user) {
       setName(session.user.name || '');
       setEmail(session.user.email || '');
@@ -81,16 +89,59 @@ export default function ProfilePage() {
     alert('Preferences saved successfully!');
   };
 
-  if (status === 'loading') {
-    return (
-      <Loading className="min-h-screen flex items-center justify-center"  />
-    );
-  }
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    // Validation
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      setPasswordError('All fields are required');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setPasswordError('New password must be at least 8 characters long');
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      setPasswordError('New password must be different from current password');
+      return;
+    }
+
+    setChangingPassword(true);
+
+    try {
+      await axios.post('/api/auth/change-password', {
+        currentPassword,
+        newPassword
+      });
+
+      setPasswordSuccess('Password changed successfully!');
+      // Clear form
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch (err: any) {
+      setPasswordError(err.response?.data?.error || 'Failed to change password. Please try again.');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
 
   return (
     <DashboardLayout>
-      <div className="transition-all duration-300 ease-in-out min-h-screen p-4 md:p-8 bg-background">
-        <div className="max-w-5xl mx-auto bg-card shadow-lg rounded-lg overflow-hidden border border-border">
+      {status === 'loading' ? (
+        <Loading className="min-h-screen flex items-center justify-center"  />
+      ) : (
+      <div className="min-h-screen p-6">
+        <div className="bg-card shadow-lg rounded-lg overflow-hidden border border-border max-w-7xl">
           {/* Header */}
           <div className="bg-muted border-b border-border px-6 py-4">
             <div className="flex justify-between items-center">
@@ -381,28 +432,76 @@ export default function ProfilePage() {
             {activeTab === 'security' && (
               <div className="space-y-8">
                 <div>
-                  <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-foreground'} mb-4 flex items-center gap-2`}>
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
                     <FaLock className="w-5 h-5" />
                     Account Security
                   </h3>
 
-                  {/* Password Change Notice */}
-                  <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-orange-900/20 border-orange-700' : 'bg-orange-50 border-orange-200'}`}>
-                    <div className="flex items-start gap-3">
-                      <FaLock className={`w-5 h-5 mt-1 ${theme === 'dark' ? 'text-orange-400' : 'text-orange-600'}`} />
+                  {/* Change Password Form */}
+                  <div className="p-6 rounded-lg border border-border bg-card">
+                    <h4 className="font-medium text-foreground mb-4">Change Password</h4>
+
+                    <form onSubmit={handlePasswordChange} className="space-y-4">
                       <div>
-                        <h4 className={`font-medium ${theme === 'dark' ? 'text-orange-200' : 'text-orange-800'} mb-2`}>
-                          Password Management
-                        </h4>
-                        <p className={`text-sm ${theme === 'dark' ? 'text-orange-300' : 'text-orange-700'} mb-3`}>
-                          Password changes are currently managed by system administrators.
-                          The profile update API is not yet implemented.
-                        </p>
-                        <p className={`text-sm ${theme === 'dark' ? 'text-orange-300' : 'text-orange-700'}`}>
-                          To change your password, please contact your system administrator or use the forgot password option on the login page.
-                        </p>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          Current Password
+                        </label>
+                        <input
+                          type="password"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
+                          placeholder="Enter current password"
+                        />
                       </div>
-                    </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          New Password
+                        </label>
+                        <input
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
+                          placeholder="Enter new password (min 8 characters)"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          Confirm New Password
+                        </label>
+                        <input
+                          type="password"
+                          value={confirmNewPassword}
+                          onChange={(e) => setConfirmNewPassword(e.target.value)}
+                          className="w-full border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
+                          placeholder="Confirm new password"
+                        />
+                      </div>
+
+                      {passwordError && (
+                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                          <p className="text-sm text-red-600 dark:text-red-400">{passwordError}</p>
+                        </div>
+                      )}
+
+                      {passwordSuccess && (
+                        <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                          <p className="text-sm text-green-600 dark:text-green-400">{passwordSuccess}</p>
+                        </div>
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={changingPassword}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+                      >
+                        <FaLock className="w-4 h-4" />
+                        {changingPassword ? 'Changing Password...' : 'Change Password'}
+                      </button>
+                    </form>
                   </div>
 
                   {/* Account Info */}
@@ -437,6 +536,7 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+      )}
     </DashboardLayout>
   );
 }

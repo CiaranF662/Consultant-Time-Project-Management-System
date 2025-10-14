@@ -105,7 +105,7 @@ export async function POST(
           NotificationType.PHASE_ALLOCATION_APPROVED,
           consultantTemplate.title,
           consultantTemplate.message,
-          `/dashboard/projects/${allocation.phase.project.id}`,
+          `/dashboard/weekly-planner?phaseAllocationId=${allocation.id}`,
           {
             projectId: allocation.phase.project.id,
             phaseId: allocation.phase.id,
@@ -175,7 +175,7 @@ export async function POST(
           NotificationType.PHASE_ALLOCATION_MODIFIED,
           consultantTemplate.title,
           consultantTemplate.message,
-          `/dashboard/projects/${allocation.phase.project.id}`,
+          `/dashboard/weekly-planner?phaseAllocationId=${allocation.id}`,
           {
             projectId: allocation.phase.project.id,
             phaseId: allocation.phase.id,

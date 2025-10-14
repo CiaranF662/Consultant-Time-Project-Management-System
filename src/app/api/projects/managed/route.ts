@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, isAuthError } from '@/lib/api-auth';
-import { ProjectRole } from '@prisma/client';
+import { ProjectRole, ApprovalStatus } from '@prisma/client';
 
 import { prisma } from "@/lib/prisma";
 
@@ -56,16 +56,33 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Calculate completion percentages for phases
+    // Calculate completion percentages for phases based on time-based work progress
     const enrichedProjects = projects.map(project => ({
       ...project,
       consultants: project.consultants.map(c => c.user),
       phases: project.phases.map(phase => {
-        const totalAllocatedHours = phase.allocations.reduce((sum, alloc) => sum + alloc.totalHours, 0);
-        const completedHours = phase.allocations.reduce((sum, alloc) =>
-          sum + alloc.weeklyAllocations.reduce((weekSum, weekly) => weekSum + (weekly.approvedHours || 0), 0), 0
+        // Calculate total allocated hours excluding EXPIRED and FORFEITED allocations
+        const activeAllocations = phase.allocations.filter(
+          alloc => alloc.approvalStatus !== ApprovalStatus.EXPIRED && alloc.approvalStatus !== ApprovalStatus.FORFEITED
         );
-        const completionPercentage = totalAllocatedHours > 0 ? Math.round((completedHours / totalAllocatedHours) * 100) : 0;
+        const totalAllocatedHours = activeAllocations.reduce((sum, alloc) => sum + alloc.totalHours, 0);
+
+        // Calculate work completion based on time progression through phase
+        const now = new Date();
+        const phaseStart = new Date(phase.startDate);
+        const phaseEnd = new Date(phase.endDate);
+
+        let completionPercentage = 0;
+        if (now >= phaseEnd) {
+          completionPercentage = 100; // Phase has ended
+        } else if (now <= phaseStart) {
+          completionPercentage = 0; // Phase hasn't started
+        } else {
+          // Phase is in progress - calculate based on time elapsed
+          const totalDuration = phaseEnd.getTime() - phaseStart.getTime();
+          const elapsed = now.getTime() - phaseStart.getTime();
+          completionPercentage = Math.round((elapsed / totalDuration) * 100);
+        }
 
         return {
           ...phase,

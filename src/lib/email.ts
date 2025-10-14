@@ -1,34 +1,8 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { render } from '@react-email/render';
 
-// Email service configuration
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'localhost',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: process.env.SMTP_SECURE === 'true',
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-});
-
-// For development, we'll use Ethereal Email (temporary email service)
-// In production, you would configure with your actual SMTP provider
-export async function createTestAccount() {
-  if (process.env.NODE_ENV === 'development' && !process.env.SMTP_HOST) {
-    const testAccount = await nodemailer.createTestAccount();
-    return nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
-      },
-    });
-  }
-  return transporter;
-}
+// Initialize Resend with API key from environment
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Email sending function
 export async function sendEmail({
@@ -43,39 +17,49 @@ export async function sendEmail({
   text?: string;
 }) {
   try {
-    console.log('Email config:', {
-      host: process.env.SMTP_HOST,
-      user: process.env.SMTP_USER,
-      from: process.env.FROM_EMAIL,
-      hasPassword: !!process.env.SMTP_PASSWORD
-    });
-    
-    const emailTransporter = await createTestAccount();
-    
-    const mailOptions = {
-      from: process.env.FROM_EMAIL || 'noreply@agilem.com',
+    // Validate Resend API key exists
+    if (!process.env.RESEND_API_KEY) {
+      console.error('RESEND_API_KEY is not configured in environment variables');
+      return {
+        success: false,
+        error: new Error('Email service not configured')
+      };
+    }
+
+    // Validate FROM_EMAIL exists
+    const fromEmail = process.env.FROM_EMAIL;
+    if (!fromEmail) {
+      console.error('FROM_EMAIL is not configured in environment variables');
+      return {
+        success: false,
+        error: new Error('From email address not configured')
+      };
+    }
+
+    console.log('Sending email via Resend:', {
+      from: fromEmail,
       to: Array.isArray(to) ? to.join(', ') : to,
+      subject,
+    });
+
+    // Send email via Resend
+    const { data, error } = await resend.emails.send({
+      from: fromEmail,
+      to: Array.isArray(to) ? to : [to],
       subject,
       html,
       text,
-    };
-    
-    console.log('Sending email to:', mailOptions.to);
-    console.log('Email subject:', mailOptions.subject);
-    
-    const info = await emailTransporter.sendMail(mailOptions);
+    });
 
-    console.log('Email sent successfully!');
-    console.log('Message ID:', info.messageId);
-    
-    // For development with Ethereal, log the preview URL
-    if (process.env.NODE_ENV === 'development' && !process.env.SMTP_HOST) {
-      console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
-    } else {
-      console.log('Real email sent via SMTP');
+    if (error) {
+      console.error('Resend API error:', error);
+      return { success: false, error };
     }
 
-    return { success: true, messageId: info.messageId };
+    console.log('Email sent successfully via Resend!');
+    console.log('Email ID:', data?.id);
+
+    return { success: true, messageId: data?.id };
   } catch (error) {
     console.error('Error sending email:', error);
     console.error('Email error details:', error instanceof Error ? error.message : String(error));
