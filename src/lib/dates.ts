@@ -208,6 +208,16 @@ import {
   }
 
   /**
+   * Format date as "20 October 2025"
+   */
+  export function formatLongDate(date: Date | string): string {
+    if (!date) return '';
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return '';
+    return format(dateObj, 'd MMMM yyyy');
+  }
+
+  /**
    * Format date for display in DD/MM/YYYY format with time options
    */
   export function formatDateWithOptions(date: Date | string, options?: Intl.DateTimeFormatOptions): string {

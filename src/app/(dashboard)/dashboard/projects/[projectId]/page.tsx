@@ -18,7 +18,7 @@ import BudgetTracker from '@/components/projects/budget/BudgetTracker';
 import PhaseStatusCard from '@/components/projects/phases/PhaseStatusCard';
 import ProjectGanttChart from '@/components/projects/gantt/ProjectGanttChart';
 import { generateColorFromString } from '@/lib/colors';
-import { formatDate } from '@/lib/dates';
+import { formatDate, formatLongDate } from '@/lib/dates';
 import { ComponentLoading } from '@/components/ui/LoadingSpinner';
 
 // Define comprehensive types
@@ -279,10 +279,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                   </div>
                   <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">Duration</div>
                   <div className="text-sm font-bold text-blue-900 dark:text-blue-100 mt-1">
-                    {formatDate(project.startDate)}
+                    {formatLongDate(project.startDate)}
                   </div>
                   <div className="text-xs text-blue-700 dark:text-blue-300">
-                    to {project.endDate ? formatDate(project.endDate) : 'Ongoing'}
+                    to {project.endDate ? formatLongDate(project.endDate) : 'Ongoing'}
                   </div>
                 </div>
 

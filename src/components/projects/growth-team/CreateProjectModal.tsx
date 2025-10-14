@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { User } from '@prisma/client';
 import { FaInfoCircle, FaSearch, FaTimes, FaUser, FaUsers, FaCalendarAlt, FaBriefcase, FaClock, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
+import { z } from 'zod';
+import { createProjectSchema, formatValidationErrors } from '@/lib/validation-schemas';
+import { validateHours, validateProjectBudget, validateTeamAllocation, validateProjectCreation, ValidationResult } from '@/lib/validation';
 
 // Helper function to get today's date in YYYY-MM-DD format
 const getTodayString = () => {
@@ -45,8 +48,9 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
   const pmDropdownRef = useRef<HTMLDivElement>(null);
   const consultantDropdownRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  
+
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
   // Reset form when modal opens/closes
@@ -242,11 +246,75 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
     setConsultantAllocations(newAllocations);
   };
 
+  const removeProductManager = () => {
+    setSelectedProductManagerId('');
+    setPmSearchQuery('');
+    const newAllocations = { ...consultantAllocations };
+    delete newAllocations[selectedProductManagerId];
+    setConsultantAllocations(newAllocations);
+  };
+
   const handleAllocationChange = (consultantId: string, hours: number) => {
     setConsultantAllocations(prev => ({
       ...prev,
       [consultantId]: hours
     }));
+  };
+
+  // Validate individual fields
+  const validateField = (field: string, value: any) => {
+    try {
+      if (field === 'title') {
+        createProjectSchema.shape.title.parse(value);
+        setFieldErrors(prev => ({ ...prev, title: '' }));
+      } else if (field === 'description') {
+        // Description is optional, but if provided, enforce min length
+        if (value && value.trim().length > 0 && value.trim().length < 10) {
+          setFieldErrors(prev => ({ ...prev, description: 'Description must be at least 10 characters if provided' }));
+          return;
+        }
+        setFieldErrors(prev => ({ ...prev, description: '' }));
+      } else if (field === 'startDate') {
+        createProjectSchema.shape.startDate.parse(value);
+        setFieldErrors(prev => ({ ...prev, startDate: '' }));
+      } else if (field === 'durationInWeeks') {
+        const numValue = parseInt(value);
+        createProjectSchema.shape.durationInWeeks.parse(numValue);
+        setFieldErrors(prev => ({ ...prev, durationInWeeks: '' }));
+      } else if (field === 'budgetedHours') {
+        const numValue = parseInt(value);
+        if (isNaN(numValue) || numValue <= 0) {
+          setFieldErrors(prev => ({ ...prev, budgetedHours: 'Budgeted hours must be a positive number' }));
+          return;
+        }
+
+        // Use Zod validation from lib
+        createProjectSchema.shape.budgetedHours.parse(numValue);
+
+        // Additional validation using lib function
+        const hoursValidation = validateHours(numValue, { min: 1, max: 10000, allowZero: false });
+        if (!hoursValidation.isValid) {
+          setFieldErrors(prev => ({ ...prev, budgetedHours: hoursValidation.error || 'Invalid hours' }));
+          return;
+        }
+        setFieldErrors(prev => ({ ...prev, budgetedHours: '' }));
+      }
+    } catch (err) {
+      if (err instanceof z.ZodError && err.issues && err.issues.length > 0) {
+        setFieldErrors(prev => ({ ...prev, [field]: err.issues[0].message }));
+      }
+    }
+  };
+
+  // Check if project details are complete (for enabling team assignment)
+  const isProjectDetailsComplete = () => {
+    return (
+      title.trim().length >= 3 &&
+      startDate &&
+      durationInWeeks && parseInt(durationInWeeks) >= 1
+      // Note: description and budgetedHours are optional at this stage
+      // Users can select team first, see suggested budget, then set budget
+    );
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -254,57 +322,35 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
     setError(null);
     setIsLoading(true);
 
-    // Validation
-    if (!selectedProductManagerId) {
-      setError('You must assign a Product Manager to the project.');
+    // Use comprehensive validation from lib
+    const validationResult = validateProjectCreation({
+      title,
+      description,
+      startDate,
+      durationInWeeks: parseInt(durationInWeeks, 10),
+      budgetedHours: parseInt(budgetedHours, 10),
+      productManagerId: selectedProductManagerId,
+      consultantIds: selectedConsultantIds,
+      allocations: consultantAllocations
+    });
+
+    if (!validationResult.isValid) {
+      setError(validationResult.error || 'Validation failed');
       setIsLoading(false);
       return;
     }
 
-    if (selectedConsultantIds.length === 0) {
-      setError('You must assign at least one consultant to the project.');
-      setIsLoading(false);
-      return;
-    }
+    // Warn if there's a budget warning (high utilization)
+    if (validationResult.warning) {
+      const allTeamMemberIds = [selectedProductManagerId, ...selectedConsultantIds];
+      const totalAllocatedHours = allTeamMemberIds.reduce((sum, id) => sum + (consultantAllocations[id] || 0), 0);
+      const budget = parseInt(budgetedHours, 10);
 
-    // Validate consultant allocations (including Product Manager)
-    const allTeamMemberIds = [selectedProductManagerId, ...selectedConsultantIds];
-    const totalAllocatedHours = allTeamMemberIds.reduce((sum, id) => {
-      return sum + (consultantAllocations[id] || 0);
-    }, 0);
-
-    if (totalAllocatedHours === 0) {
-      setError('You must allocate hours to at least one team member (including Product Manager).');
-      setIsLoading(false);
-      return;
-    }
-
-    // Check for team members with zero hours
-    const teamMembersWithoutHours = allTeamMemberIds.filter(id => !consultantAllocations[id] || consultantAllocations[id] <= 0);
-    if (teamMembersWithoutHours.length > 0) {
-      setError('All team members (including Product Manager) must have allocated hours greater than 0.');
-      setIsLoading(false);
-      return;
-    }
-
-    if (!budgetedHours || parseInt(budgetedHours, 10) <= 0) {
-      setError('You must specify a valid budget in hours.');
-      setIsLoading(false);
-      return;
-    }
-
-    if (parseInt(durationInWeeks, 10) <= 0) {
-      setError('Duration must be at least 1 week.');
-      setIsLoading(false);
-      return;
-    }
-
-    // Warn if total allocated hours exceed budget
-    const budget = parseInt(budgetedHours, 10);
-    if (totalAllocatedHours > budget) {
-      if (!confirm(`Total allocated hours (${totalAllocatedHours}) exceed project budget (${budget}). Do you want to continue?`)) {
-        setIsLoading(false);
-        return;
+      if (totalAllocatedHours > budget) {
+        if (!confirm(`${validationResult.warning}\n\nTotal allocated hours (${totalAllocatedHours}) exceed project budget (${budget}). Do you want to continue?`)) {
+          setIsLoading(false);
+          return;
+        }
       }
     }
 
@@ -335,18 +381,65 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
     }
   };
 
-  // Calculate suggested budget based on duration and team size
+  // Calculate suggested budget based on duration, team size, and actual availability
   const getSuggestedBudget = () => {
-    if (!durationInWeeks || selectedConsultantIds.length === 0) return 0;
-    
+    if (!durationInWeeks || !startDate) return 0;
+
     const weeks = parseInt(durationInWeeks, 10) || 0;
-    const teamSize = selectedConsultantIds.length;
-    const averageHoursPerWeek = 30; // Conservative estimate
-    
-    return weeks * teamSize * averageHoursPerWeek;
+
+    // Include both PM and consultants in team size
+    const allTeamMembers = selectedProductManagerId ? [selectedProductManagerId, ...selectedConsultantIds] : selectedConsultantIds;
+    const teamSize = allTeamMembers.length;
+
+    if (teamSize === 0) return 0;
+
+    // Calculate realistic estimate based on availability data
+    let totalEstimate = 0;
+
+    allTeamMembers.forEach(memberId => {
+      const availability = consultantAvailability[memberId];
+
+      if (availability) {
+        // Use their current availability as a baseline
+        // Assume they can dedicate 50% of available time to this project (conservative)
+        const avgAvailablePerWeek = 40 - availability.averageHoursPerWeek;
+        const estimatedHoursPerWeek = Math.max(5, avgAvailablePerWeek * 0.5); // Min 5h/week if available
+        totalEstimate += estimatedHoursPerWeek * weeks;
+      } else {
+        // Fallback: assume 20h/week per person (conservative baseline)
+        totalEstimate += 20 * weeks;
+      }
+    });
+
+    // PM typically works less hours on execution (more oversight)
+    if (selectedProductManagerId && consultantAvailability[selectedProductManagerId]) {
+      const pmEstimate = 15 * weeks; // ~15h/week for PM is typical
+      // Subtract the higher estimate and add the more realistic PM estimate
+      const pmOriginalEstimate = consultantAvailability[selectedProductManagerId]
+        ? Math.max(5, (40 - consultantAvailability[selectedProductManagerId].averageHoursPerWeek) * 0.5) * weeks
+        : 20 * weeks;
+      totalEstimate = totalEstimate - pmOriginalEstimate + pmEstimate;
+    }
+
+    return Math.round(totalEstimate);
   };
 
   const suggestedBudget = getSuggestedBudget();
+
+  // Calculate budget validation
+  const getBudgetValidation = (): ValidationResult | null => {
+    if (!budgetedHours || !Object.keys(consultantAllocations).length) return null;
+
+    const budget = parseInt(budgetedHours, 10);
+    const allTeamMemberIds = [selectedProductManagerId, ...selectedConsultantIds].filter(id => id);
+    const totalAllocated = allTeamMemberIds.reduce((sum, id) => sum + (consultantAllocations[id] || 0), 0);
+
+    if (totalAllocated === 0) return null;
+
+    return validateProjectBudget(budget, totalAllocated, title || 'this project');
+  };
+
+  const budgetValidation = getBudgetValidation();
 
   if (!isOpen) return null;
 
@@ -405,15 +498,26 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
               <div className="flex justify-between items-center text-xs">
                 <span className={`font-medium ${
                   parseInt(budgetedHours) >= [selectedProductManagerId, ...selectedConsultantIds].reduce((sum, id) => sum + (consultantAllocations[id] || 0), 0)
-                    ? 'text-green-700'
-                    : 'text-red-700'
+                    ? 'text-green-700 dark:text-green-400'
+                    : 'text-red-700 dark:text-red-400'
                 }`}>
                   Remaining: {parseInt(budgetedHours) - [selectedProductManagerId, ...selectedConsultantIds].reduce((sum, id) => sum + (consultantAllocations[id] || 0), 0)} hours
                 </span>
-                <span className="text-gray-600">
+                <span className="text-gray-600 dark:text-gray-400">
                   Team Members: {[selectedProductManagerId, ...selectedConsultantIds].filter(id => id).length}
                 </span>
               </div>
+              {/* Budget Validation Feedback */}
+              {budgetValidation && (budgetValidation.error || budgetValidation.warning) && (
+                <div className={`mt-3 p-2 rounded-lg border text-xs flex items-center gap-2 ${
+                  budgetValidation.error
+                    ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700 text-red-700 dark:text-red-400'
+                    : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700 text-yellow-700 dark:text-yellow-400'
+                }`}>
+                  <FaExclamationTriangle className="w-3 h-3 flex-shrink-0" />
+                  <span className="font-medium">{budgetValidation.error || budgetValidation.warning}</span>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -444,10 +548,21 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                       id="title"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      className="block w-full px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
+                      onBlur={(e) => validateField('title', e.target.value)}
+                      className={`block w-full px-3 py-2 rounded-lg border-2 ${
+                        fieldErrors.title
+                          ? 'border-red-500 dark:border-red-500'
+                          : 'border-gray-200 dark:border-gray-600'
+                      } dark:bg-gray-900 dark:placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200`}
                       required
                       placeholder="e.g., Website Redesign Project"
                     />
+                    {fieldErrors.title && (
+                      <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                        <FaExclamationTriangle className="w-3 h-3" />
+                        {fieldErrors.title}
+                      </p>
+                    )}
                   </div>
                   
                   <div>
@@ -458,10 +573,21 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                       id="description"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
+                      onBlur={(e) => validateField('description', e.target.value)}
                       rows={3}
-                      className="block w-full px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 resize-none"
-                      placeholder="Describe the project objectives, scope, and expected outcomes..."
+                      className={`block w-full px-3 py-2 rounded-lg border-2 ${
+                        fieldErrors.description
+                          ? 'border-red-500 dark:border-red-500'
+                          : 'border-gray-200 dark:border-gray-600'
+                      } dark:bg-gray-900 dark:placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 resize-none`}
+                      placeholder="Describe the project objectives, scope, and expected outcomes... (optional)"
                     />
+                    {fieldErrors.description && (
+                      <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                        <FaExclamationTriangle className="w-3 h-3" />
+                        {fieldErrors.description}
+                      </p>
+                    )}
                   </div>
                 </div>
                 
@@ -477,11 +603,22 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                       id="startDate"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="block w-full px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
+                      onBlur={(e) => validateField('startDate', e.target.value)}
+                      className={`block w-full px-3 py-2 rounded-lg border-2 ${
+                        fieldErrors.startDate
+                          ? 'border-red-500 dark:border-red-500'
+                          : 'border-gray-200 dark:border-gray-600'
+                      } dark:bg-gray-900 dark:placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200`}
                       required
                     />
+                    {fieldErrors.startDate && (
+                      <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                        <FaExclamationTriangle className="w-3 h-3" />
+                        {fieldErrors.startDate}
+                      </p>
+                    )}
                   </div>
-                  
+
                   <div>
                     <label htmlFor="durationInWeeks" className="block text-sm font-semibold text-card-foreground mb-2 flex items-center gap-2">
                       <FaClock className="w-3 h-3 text-purple-600" />
@@ -492,11 +629,23 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                       id="durationInWeeks"
                       value={durationInWeeks}
                       onChange={(e) => setDurationInWeeks(e.target.value)}
-                      className="block w-full px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
+                      onBlur={(e) => validateField('durationInWeeks', e.target.value)}
+                      className={`block w-full px-3 py-2 rounded-lg border-2 ${
+                        fieldErrors.durationInWeeks
+                          ? 'border-red-500 dark:border-red-500'
+                          : 'border-gray-200 dark:border-gray-600'
+                      } dark:bg-gray-900 dark:placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200`}
                       min="1"
+                      max="104"
                       required
                       placeholder="12"
                     />
+                    {fieldErrors.durationInWeeks && (
+                      <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                        <FaExclamationTriangle className="w-3 h-3" />
+                        {fieldErrors.durationInWeeks}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -522,7 +671,12 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                     id="budgetedHours"
                     value={budgetedHours}
                     onChange={(e) => setBudgetedHours(e.target.value)}
-                    className="flex-1 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:placeholder-gray-400 rounded-l-lg focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
+                    onBlur={(e) => validateField('budgetedHours', e.target.value)}
+                    className={`flex-1 px-3 py-2 border-2 ${
+                      fieldErrors.budgetedHours
+                        ? 'border-red-500 dark:border-red-500'
+                        : 'border-gray-200 dark:border-gray-600'
+                    } dark:bg-gray-900 dark:placeholder-gray-400 rounded-l-lg focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200`}
                     min="1"
                     required
                     placeholder="480"
@@ -531,6 +685,12 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                     hours
                   </span>
                 </div>
+                {fieldErrors.budgetedHours && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                    <FaExclamationTriangle className="w-3 h-3" />
+                    {fieldErrors.budgetedHours}
+                  </p>
+                )}
                 
                 {suggestedBudget > 0 && (
                   <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
@@ -553,14 +713,54 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
             </div>
 
             {/* Team Assignment */}
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-800/20 p-6 rounded-lg border border-purple-100 dark:border-purple-800">
+            <div className={`bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-800/20 p-6 rounded-lg border border-purple-100 dark:border-purple-800 ${
+              !isProjectDetailsComplete() ? 'opacity-50 pointer-events-none' : ''
+            }`}>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-8 h-8 bg-purple-600 text-white rounded-lg flex items-center justify-center">
                   <FaUsers className="w-4 h-4" />
                 </div>
                 <h2 className="text-lg font-bold text-foreground">Team Assignment</h2>
               </div>
-              
+
+              {/* Blocking Message */}
+              {!isProjectDetailsComplete() && (
+                <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-yellow-800 dark:text-yellow-300">
+                    <FaInfoCircle className="w-4 h-4" />
+                    <span className="font-medium">Complete Project Details first to assign team members</span>
+                  </div>
+                  <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1 ml-6">
+                    Fill in project title, start date, and duration to continue.
+                  </p>
+                </div>
+              )}
+
+              {/* Availability Legend */}
+              {startDate && durationInWeeks && (
+                <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                  <p className="text-xs font-medium text-card-foreground mb-2">Availability Legend for Project Period:</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      <span>Available (≤15h/week)</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                      <span>Partially Busy (16-30h)</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                      <span>Busy (31-40h)</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                      <span>Overloaded (40h+)</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-6">
                 {/* Product Manager Selection */}
                 <div>
@@ -628,13 +828,10 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                                         )}
                                         <span>{availability.averageHoursPerWeek}h/wk</span>
                                       </div>
-                                    ) : startDate && durationInWeeks ? (
-                                      <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
-                                        <FaCheckCircle className="w-2 h-2" />
-                                        <span>0h/wk</span>
-                                      </div>
                                     ) : (
-                                      <span className="text-xs text-muted-foreground">Set dates</span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {startDate && durationInWeeks ? 'No data' : 'Set dates'}
+                                      </span>
                                     )}
                                   </div>
                                 </div>
@@ -685,31 +882,6 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                             </div>
                           );
                         })}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Availability Legend */}
-                  {startDate && durationInWeeks && (
-                    <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                      <p className="text-xs font-medium text-card-foreground mb-2">Availability Legend for Project Period:</p>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                          <span>Available (≤15h/week)</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                          <span>Partially Busy (16-30h)</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                          <span>Busy (31-40h)</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                          <span>Overloaded (40h+)</span>
-                        </div>
                       </div>
                     </div>
                   )}
@@ -776,13 +948,10 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                                         )}
                                         <span>{availability.averageHoursPerWeek}h/wk</span>
                                       </div>
-                                    ) : startDate && durationInWeeks ? (
-                                      <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
-                                        <FaCheckCircle className="w-2 h-2" />
-                                        <span>0h/wk</span>
-                                      </div>
                                     ) : (
-                                      <span className="text-xs text-muted-foreground">Set dates</span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {startDate && durationInWeeks ? 'No data' : 'Set dates'}
+                                      </span>
                                     )}
                                   </div>
                                 </div>
@@ -851,7 +1020,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
                               <input
                                 type="number"
                                 min="0"
@@ -861,6 +1030,14 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                                 placeholder="0"
                               />
                               <span className="text-sm font-medium text-gray-600 dark:text-gray-400">hours</span>
+                              <button
+                                type="button"
+                                onClick={removeProductManager}
+                                className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center justify-center"
+                                title="Remove Product Manager"
+                              >
+                                <FaTimes className="w-3 h-3" />
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -892,7 +1069,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
                               <input
                                 type="number"
                                 min="0"
@@ -902,25 +1079,19 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                                 placeholder="0"
                               />
                               <span className="text-sm font-medium text-gray-600 dark:text-gray-400">hours</span>
+                              <button
+                                type="button"
+                                onClick={() => removeConsultant(consultantId)}
+                                className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center justify-center"
+                                title="Remove Consultant"
+                              >
+                                <FaTimes className="w-3 h-3" />
+                              </button>
                             </div>
                           </div>
                         );
                       })}
                     </div>
-
-                    {/* Allocation Summary */}
-                    {Object.keys(consultantAllocations).length > 0 && (
-                      <div className="mt-4 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-                        <div className="text-center">
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
-                            All allocations are tracked in the progress indicator above
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Scroll up to see budget progress and remaining hours
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
 
