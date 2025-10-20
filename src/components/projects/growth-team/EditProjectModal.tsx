@@ -128,9 +128,44 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
           }
         });
 
-        // Convert array to object keyed by consultant ID
-        const availabilityMap = response.data.reduce((acc: any, item: any) => {
-          acc[item.consultant.id] = item;
+        // Convert array to object keyed by consultant ID with calculated status
+        const availabilityMap = response.data.consultants.reduce((acc: any, item: any) => {
+          // Calculate status and color based on averageHoursPerWeek
+          let availabilityStatus = 'available';
+          let availabilityColor = 'bg-green-100 text-green-800';
+
+          if (item.averageHoursPerWeek > 40) {
+            availabilityStatus = 'overloaded';
+            availabilityColor = 'bg-red-100 text-red-800';
+          } else if (item.averageHoursPerWeek > 30) {
+            availabilityStatus = 'busy';
+            availabilityColor = 'bg-orange-100 text-orange-800';
+          } else if (item.averageHoursPerWeek > 15) {
+            availabilityStatus = 'partially-busy';
+            availabilityColor = 'bg-yellow-100 text-yellow-800';
+          }
+
+          // Add project allocations for detailed view
+          const projectAllocations: Record<string, number> = {};
+          if (item.weeklyBreakdown && item.weeklyBreakdown.length > 0) {
+            item.weeklyBreakdown.forEach((week: any) => {
+              if (week.projects) {
+                week.projects.forEach((project: any) => {
+                  if (!projectAllocations[project.projectTitle]) {
+                    projectAllocations[project.projectTitle] = 0;
+                  }
+                  projectAllocations[project.projectTitle] += project.hours;
+                });
+              }
+            });
+          }
+
+          acc[item.consultant.id] = {
+            ...item,
+            availabilityStatus,
+            availabilityColor,
+            projectAllocations
+          };
           return acc;
         }, {});
 

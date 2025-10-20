@@ -18,7 +18,7 @@ interface Sprint {
 interface PhaseAllocation {
   id: string;
   totalHours: number;
-  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
   rejectionReason?: string | null;
   phase: {
     id: string;
@@ -570,19 +570,18 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                       startsInText = 'In progress';
                     }
 
-                    // Wrapper component for clickable/non-clickable cards
-                    const CardWrapper = isApproved ? Link : 'div';
-                    const wrapperProps = isApproved ? { href: `/dashboard/weekly-planner?phaseAllocationId=${allocation.id}` } : {};
+                    // Render different wrappers based on approval status
+                    const cardClassName = `rounded-xl shadow-sm border-l-4 transition-all block ${
+                      allocation.approvalStatus === 'APPROVED' ? 'border-l-green-500 bg-gradient-to-r from-green-50 to-white dark:from-green-900/20 dark:to-gray-800 cursor-pointer hover:shadow-lg hover:scale-[1.02]' :
+                      allocation.approvalStatus === 'REJECTED' ? 'border-l-red-500 bg-gradient-to-r from-red-50 to-white dark:from-red-900/20 dark:to-gray-800' :
+                      'border-l-yellow-500 bg-gradient-to-r from-yellow-50 to-white dark:from-yellow-900/20 dark:to-gray-800'
+                    } p-5`;
 
-                    return (
-                      <CardWrapper
+                    return isApproved ? (
+                      <Link
                         key={allocation.id}
-                        {...wrapperProps}
-                        className={`rounded-xl shadow-sm border-l-4 transition-all block ${
-                          allocation.approvalStatus === 'APPROVED' ? 'border-l-green-500 bg-gradient-to-r from-green-50 to-white dark:from-green-900/20 dark:to-gray-800 cursor-pointer hover:shadow-lg hover:scale-[1.02]' :
-                          allocation.approvalStatus === 'REJECTED' ? 'border-l-red-500 bg-gradient-to-r from-red-50 to-white dark:from-red-900/20 dark:to-gray-800' :
-                          'border-l-yellow-500 bg-gradient-to-r from-yellow-50 to-white dark:from-yellow-900/20 dark:to-gray-800'
-                        } p-5`}>
+                        href={`/dashboard/weekly-planner?phaseAllocationId=${allocation.id}`}
+                        className={cardClassName}>
                         <div className="flex justify-between items-start mb-3">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
@@ -727,7 +726,75 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                             <span>Click to plan hours in weekly planner</span>
                           </div>
                         )}
-                      </CardWrapper>
+                      </Link>
+                    ) : (
+                      <div
+                        key={allocation.id}
+                        className={cardClassName}>
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-semibold text-foreground">{allocation.phase.name}</h3>
+                              {/* Starts in indicator */}
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                daysUntilStart > 7 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' :
+                                daysUntilStart > 0 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                                daysUntilStart === 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                              }`}>
+                                {startsInText}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{allocation.phase.project.title}</p>
+                            {allocation.approvalStatus === 'REJECTED' && allocation.rejectionReason && (
+                              <p className="text-xs text-red-600 dark:text-red-400 mt-1">Rejected: {allocation.rejectionReason}</p>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            {/* Approval Status */}
+                            <div className="flex items-center gap-2">
+                              {getStatusIcon(planningStatus.status)}
+                              <span className="text-sm font-medium">{planningStatus.label}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-600 dark:text-gray-400">Allocated:</span>
+                            <span className="ml-2 font-medium text-foreground">{formatHours(allocation.totalHours)}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600 dark:text-gray-400">Sprints:</span>
+                            <span className="ml-2 font-medium text-foreground">
+                              {allocation.phase.sprints.length > 0
+                                ? `${allocation.phase.sprints[0].sprintNumber}-${allocation.phase.sprints[allocation.phase.sprints.length-1].sprintNumber}`
+                                : 'None'
+                              }
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Phase Timeline Info */}
+                        <div className="mt-3 text-xs text-muted-foreground flex justify-between">
+                          <span>
+                            {formatDate(new Date(allocation.phase.startDate))} - {formatDate(new Date(allocation.phase.endDate))}
+                          </span>
+                          <span className="font-medium text-gray-600 dark:text-gray-400">
+                            Status: {allocation.approvalStatus.toLowerCase()}
+                          </span>
+                        </div>
+
+                        {/* Show message for non-approved phases */}
+                        <div className="mt-3 p-3 rounded-lg bg-gray-100 dark:bg-gray-800">
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            {allocation.approvalStatus === 'PENDING'
+                              ? 'This phase allocation is pending Growth Team approval. Weekly planning will be available once approved.'
+                              : 'This phase allocation was rejected and cannot be used for weekly planning.'
+                            }
+                          </div>
+                        </div>
+                      </div>
                     );
                   })
                 )}

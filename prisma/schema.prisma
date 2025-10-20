@@ -90,23 +90,44 @@ model Sprint {
 }
 
 model PhaseAllocation {
-  id                    String             @id @default(cuid())
+  id                    String                  @id @default(cuid())
   phaseId               String
   consultantId          String
   totalHours            Float
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
   consultantDescription String?
-  approvalStatus        ApprovalStatus     @default(PENDING)
+  approvalStatus        ApprovalStatus          @default(PENDING)
   approvedBy            String?
   approvedAt            DateTime?
   rejectionReason       String?
-  consultant            User               @relation(fields: [consultantId], references: [id])
-  phase                 Phase              @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  consultant            User                    @relation(fields: [consultantId], references: [id])
+  phase                 Phase                   @relation(fields: [phaseId], references: [id], onDelete: Cascade)
   weeklyAllocations     WeeklyAllocation[]
-  approver              User?              @relation("PhaseAllocationApprover", fields: [approvedBy], references: [id])
+  approver              User?                   @relation("PhaseAllocationApprover", fields: [approvedBy], references: [id])
+  unplannedExpiredHours UnplannedExpiredHours?
 
   @@unique([phaseId, consultantId])
+}
+
+model UnplannedExpiredHours {
+  id                String              @id @default(cuid())
+  phaseAllocationId String              @unique
+  unplannedHours    Float               // Hours that were never planned before phase ended
+  status            ExpiredHoursStatus  @default(EXPIRED)
+  detectedAt        DateTime            @default(now())
+  handledAt         DateTime?           // When PM forfeited or reallocated
+  handledBy         String?             // PM who handled it
+  reallocatedToPhaseId String?          // If reallocated, which phase
+  reallocatedToAllocationId String?     // If reallocated, the new allocation created
+  notes             String?             // PM notes/reason for forfeit or reallocation
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  phaseAllocation   PhaseAllocation     @relation(fields: [phaseAllocationId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([detectedAt])
 }
 
 model WeeklyAllocation {
@@ -266,8 +287,14 @@ enum ApprovalStatus {
   PENDING
   APPROVED
   REJECTED
-  EXPIRED    // Phase ended with unplanned hours
-  FORFEITED  // Hours were forfeited by PM
+  EXPIRED    // Phase ended with unplanned hours (deprecated - use UnplannedExpiredHours table)
+  FORFEITED  // Hours were forfeited by PM (deprecated - use UnplannedExpiredHours table)
+}
+
+enum ExpiredHoursStatus {
+  EXPIRED       // Hours detected as unplanned after phase end
+  FORFEITED     // PM chose to forfeit these hours
+  REALLOCATED   // PM reallocated to another phase (pending GT approval)
 }
 
 enum PlanningStatus {

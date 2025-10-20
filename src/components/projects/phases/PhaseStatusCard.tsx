@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { FaCheckCircle, FaExclamationTriangle, FaClock, FaChartPie, FaPlay, FaEdit, FaHourglassHalf, FaTimesCircle, FaExternalLinkAlt, FaChevronDown, FaChevronUp, FaLock } from 'react-icons/fa';
+import { FaCheckCircle, FaExclamationTriangle, FaClock, FaChartPie, FaPlay, FaEdit, FaHourglassHalf, FaTimesCircle, FaExternalLinkAlt, FaChevronDown, FaChevronUp, FaLock, FaExchangeAlt } from 'react-icons/fa';
 import { getPhaseStatus, getStatusColorClasses, getProgressBarColor, formatHours } from '@/lib/phase-status';
 import { generateColorFromString } from '@/lib/colors';
 import { formatDate } from '@/lib/dates';
@@ -32,6 +32,12 @@ interface IndividualAllocation {
   plannedHours: number;
   approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
   rejectionReason?: string | null;
+  unplannedExpiredHours?: {
+    id: string;
+    unplannedHours: number;
+    status: 'EXPIRED' | 'FORFEITED' | 'REALLOCATED';
+    detectedAt: Date | string;
+  } | null;
 }
 
 interface Sprint {
@@ -383,20 +389,27 @@ export default function PhaseStatusCard({
             {individualAllocations.map((allocation) => {
               const isOwnAllocation = currentUserId && allocation.consultantId === currentUserId;
 
-              const isExpired = allocation.approvalStatus === 'EXPIRED';
-              const isForfeited = allocation.approvalStatus === 'FORFEITED';
-              const isClickable = isExpired && canManageProject && onExpiredAllocationClick;
+              // With Option C, check unplannedExpiredHours instead of approvalStatus
+              const hasUnplannedExpired = allocation.unplannedExpiredHours && allocation.unplannedExpiredHours.status === 'EXPIRED';
+              const hasUnplannedForfeited = allocation.unplannedExpiredHours && allocation.unplannedExpiredHours.status === 'FORFEITED';
+              const hasUnplannedReallocated = allocation.unplannedExpiredHours && allocation.unplannedExpiredHours.status === 'REALLOCATED';
+
+              // Legacy: Still support old EXPIRED/FORFEITED status for backwards compatibility
+              const isExpired = allocation.approvalStatus === 'EXPIRED' || hasUnplannedExpired;
+              const isForfeited = allocation.approvalStatus === 'FORFEITED' || hasUnplannedForfeited;
+              // Only clickable if expired and NOT yet handled (not forfeited or reallocated)
+              const isClickable = hasUnplannedExpired && !hasUnplannedForfeited && !hasUnplannedReallocated && canManageProject && onExpiredAllocationClick;
 
               return (
               <div key={allocation.id}>
                 <div
-                  className={`relative overflow-hidden flex items-center justify-between p-3 rounded-lg ${
+                  className={`relative overflow-hidden rounded-lg ${
                     allocation.approvalStatus === 'PENDING' ? 'bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700' :
                     allocation.approvalStatus === 'REJECTED' ? 'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700' :
-                    allocation.approvalStatus === 'EXPIRED' ? 'bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600' :
-                    allocation.approvalStatus === 'FORFEITED' ? 'bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600' :
+                    isExpired ? 'bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600' :
+                    isForfeited ? 'bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600' :
                     'bg-gray-50 dark:bg-gray-700/50 border border-transparent dark:border-gray-600'
-                  } ${isOwnAllocation ? 'hover:ring-2 hover:ring-blue-500 dark:hover:ring-blue-400 transition-all' : ''} ${isClickable ? 'cursor-pointer hover:ring-2 hover:ring-yellow-500 dark:hover:ring-yellow-400 transition-all' : ''}`}
+                  } ${isClickable ? 'cursor-pointer hover:ring-2 hover:ring-blue-500 dark:hover:ring-blue-400 transition-all' : ''}`}
                   onClick={isClickable ? () => onExpiredAllocationClick!(allocation) : undefined}
                 >
                   {/* Diagonal stripes for pending/rejected/expired allocations */}
@@ -426,7 +439,7 @@ export default function PhaseStatusCard({
                          }}>
                     </div>
                   )}
-                  {allocation.approvalStatus === 'EXPIRED' && (
+                  {isExpired && (
                     <div className="absolute inset-0 pointer-events-none opacity-30"
                          style={{
                            backgroundImage: `repeating-linear-gradient(
@@ -440,7 +453,9 @@ export default function PhaseStatusCard({
                     </div>
                   )}
 
-                  <div className="flex items-center gap-3 relative z-10">
+                  {/* Main allocation row */}
+                  <div className="flex items-center justify-between p-3">
+                    <div className="flex items-center gap-3 relative z-10">
                     <span className={`px-2 py-1 rounded text-sm font-medium ${generateColorFromString(allocation.consultantId)}`}>
                       {allocation.consultantName}
                     </span>
@@ -456,32 +471,38 @@ export default function PhaseStatusCard({
                         Rejected
                       </span>
                     )}
-                    {allocation.approvalStatus === 'EXPIRED' && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-200 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 rounded-full text-xs font-medium">
+                    {(hasUnplannedExpired || (allocation.approvalStatus === 'EXPIRED' && allocation.plannedHours < allocation.hours)) && !hasUnplannedForfeited && !hasUnplannedReallocated && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-300 rounded-full text-xs font-medium">
                         <FaExclamationTriangle className="w-2 h-2" />
                         Expired - Click to Handle
                       </span>
                     )}
-                    {allocation.approvalStatus === 'FORFEITED' && (
+                    {hasUnplannedForfeited && !hasUnplannedExpired && (
                       <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-300 rounded-full text-xs font-medium">
                         <FaTimesCircle className="w-2 h-2" />
-                        Forfeited
+                        {formatHours(allocation.unplannedExpiredHours!.unplannedHours)} Forfeited
+                      </span>
+                    )}
+                    {hasUnplannedReallocated && !hasUnplannedExpired && !hasUnplannedForfeited && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-200 dark:bg-blue-800/50 text-blue-800 dark:text-blue-300 rounded-full text-xs font-medium">
+                        <FaExchangeAlt className="w-2 h-2" />
+                        {formatHours(allocation.unplannedExpiredHours!.unplannedHours)} Reallocated
                       </span>
                     )}
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                       {formatHours(allocation.hours)} allocated
                     </div>
-                  </div>
-                
-                <div className="flex items-center gap-4">
+                    </div>
+
+                    <div className="flex items-center gap-4">
                   <div className="text-sm">
                     <span className="text-gray-600 dark:text-gray-400">{formatHours(allocation.plannedHours)} planned</span>
                     <span className="text-muted-foreground mx-2">•</span>
                     <span className="text-gray-600 dark:text-gray-400">{formatHours(allocation.hours - allocation.plannedHours)} remaining</span>
                   </div>
 
-                  {/* Plan Hours Button - Only show for own allocations */}
-                  {isOwnAllocation && allocation.approvalStatus === 'APPROVED' && (
+                  {/* Plan Hours Button - Only show for own allocations and when phase is not locked */}
+                  {isOwnAllocation && allocation.approvalStatus === 'APPROVED' && !phaseLocked && (
                     <Link
                       href={`/dashboard/weekly-planner?phaseAllocationId=${allocation.id}`}
                       className="flex items-center gap-1 px-3 py-1 text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors shadow-sm"
@@ -526,8 +547,48 @@ export default function PhaseStatusCard({
                       </span>
                     </div>
                   </div>
+                    </div>
+                  </div>
+
+                  {/* Unplanned Hours Info Banner - Inside the card */}
+                  {isExpired && allocation.plannedHours > 0 && (
+                    <div className="px-3 pb-3">
+                      <div className="p-3 bg-green-50 dark:bg-green-900/20 border-l-2 border-green-400 dark:border-green-600 rounded text-xs">
+                        <div className="flex items-start gap-2">
+                          <FaCheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                          <div className="text-green-800 dark:text-green-300 space-y-1">
+                            <p className="font-semibold">
+                              ✓ {formatHours(allocation.plannedHours)} of planned work is valid and approved
+                            </p>
+                            <p className="text-green-700 dark:text-green-400">
+                              {allocation.unplannedExpiredHours ? (
+                                <>
+                                  {allocation.unplannedExpiredHours.status === 'EXPIRED' && (
+                                    <>
+                                      {formatHours(allocation.unplannedExpiredHours.unplannedHours)} unplanned hours need handling
+                                      {canManageProject && ' - Click above to forfeit or reallocate'}
+                                    </>
+                                  )}
+                                  {allocation.unplannedExpiredHours.status === 'FORFEITED' && (
+                                    <>{formatHours(allocation.unplannedExpiredHours.unplannedHours)} unplanned hours were forfeited</>
+                                  )}
+                                  {allocation.unplannedExpiredHours.status === 'REALLOCATED' && (
+                                    <>{formatHours(allocation.unplannedExpiredHours.unplannedHours)} unplanned hours reallocated to another phase</>
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  {formatHours(allocation.hours - allocation.plannedHours)} unplanned hours need handling
+                                  {canManageProject && ' - Click above to forfeit or reallocate'}
+                                </>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
 
               {/* Rejection Reason */}
               {allocation.approvalStatus === 'REJECTED' && allocation.rejectionReason && (

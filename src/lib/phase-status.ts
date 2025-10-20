@@ -118,24 +118,39 @@ export function getPhaseStatus(phase: PhaseWithAllocations, currentDate: Date = 
 
 /**
  * Calculate planning completion status
- * Excludes FORFEITED and EXPIRED allocations from the calculation
+ * - FORFEITED allocations are excluded entirely
+ * - EXPIRED allocations: Only count their planned hours (not the original totalHours)
+ *   This ensures partially planned EXPIRED allocations show their planned work in phase progress
+ * - APPROVED/PENDING allocations: Count full totalHours
  */
 function getPlanningStatus(phase: PhaseWithAllocations): PlanningStatus {
-  // Filter out FORFEITED and EXPIRED allocations
-  // These hours should not be counted towards the planning total
-  const activeAllocations = phase.allocations.filter(
-    allocation => allocation.approvalStatus !== 'FORFEITED' && allocation.approvalStatus !== 'EXPIRED'
-  );
+  // Calculate totalAllocatedHours:
+  // - For APPROVED/PENDING/REJECTED: Use full totalHours
+  // - For EXPIRED: Use only the planned hours (the valid portion)
+  // - For FORFEITED: Exclude entirely
+  let totalAllocatedHours = 0;
+  let totalDistributedHours = 0;
 
-  const totalAllocatedHours = activeAllocations.reduce(
-    (sum, allocation) => sum + allocation.totalHours, 0
-  );
+  phase.allocations.forEach(allocation => {
+    // Skip FORFEITED entirely
+    if (allocation.approvalStatus === 'FORFEITED') {
+      return;
+    }
 
-  const totalDistributedHours = activeAllocations.reduce(
-    (sum, allocation) => sum + allocation.weeklyAllocations.reduce(
-      (weekSum, week) => weekSum + week.plannedHours, 0
-    ), 0
-  );
+    const plannedHours = allocation.weeklyAllocations.reduce(
+      (sum, week) => sum + week.plannedHours, 0
+    );
+
+    // For EXPIRED allocations: Only count the planned portion
+    if (allocation.approvalStatus === 'EXPIRED') {
+      totalAllocatedHours += plannedHours;
+      totalDistributedHours += plannedHours;
+    } else {
+      // For all other statuses: Count full allocation
+      totalAllocatedHours += allocation.totalHours;
+      totalDistributedHours += plannedHours;
+    }
+  });
 
   const remainingToDistribute = totalAllocatedHours - totalDistributedHours;
   const completionPercentage = totalAllocatedHours > 0
@@ -191,20 +206,23 @@ function getTimeStatus(phase: PhaseWithAllocations, currentDate: Date): TimeStat
 
 /**
  * Enhanced work completion based on actual weekly allocations
- * Excludes FORFEITED and EXPIRED allocations from work progress
+ * - FORFEITED allocations are excluded entirely
+ * - EXPIRED allocations: Their planned work (weeklyAllocations) is included in work progress
+ *   This ensures partially planned EXPIRED allocations contribute to phase progress
  */
 function getWorkStatusEnhanced(phase: PhaseWithAllocations, currentDate: Date): WorkStatus {
   const currentWeekStart = getWeekStart(currentDate);
   const currentWeekNumber = getWeekNumber(currentDate);
   const currentYear = currentDate.getFullYear();
 
-  // Filter out FORFEITED and EXPIRED allocations
-  const activeAllocations = phase.allocations.filter(
-    allocation => allocation.approvalStatus !== 'FORFEITED' && allocation.approvalStatus !== 'EXPIRED'
+  // Filter out FORFEITED allocations only
+  // Include EXPIRED allocations so their planned work counts toward progress
+  const allocationsWithPlannedWork = phase.allocations.filter(
+    allocation => allocation.approvalStatus !== 'FORFEITED'
   );
 
   // Get all weekly allocations across all consultants and group by week
-  const allWeeklyAllocations = activeAllocations.flatMap(allocation =>
+  const allWeeklyAllocations = allocationsWithPlannedWork.flatMap(allocation =>
     allocation.weeklyAllocations
   );
   

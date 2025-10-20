@@ -30,6 +30,17 @@ interface PhaseAllocation {
   plannedHours: number;
   approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
   rejectionReason?: string | null;
+  unplannedExpiredHours?: {
+    id: string;
+    unplannedHours: number;
+    status: 'EXPIRED' | 'FORFEITED' | 'REALLOCATED';
+    detectedAt: Date | string; // Allow both Date and string from API
+    handledAt?: Date | null;
+    handledBy?: string | null;
+    reallocatedToPhaseId?: string | null;
+    reallocatedToAllocationId?: string | null;
+    notes?: string | null;
+  } | null;
 }
 
 interface PhaseWithAllocations extends Phase {
@@ -210,9 +221,18 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
   const canManageAllocations = isProductManager; // Only Product Managers can manage allocations
 
   // Calculate project-level statistics from phase allocations (for phase allocation display)
+  // For allocations with expired hours that have been reallocated, only count the planned hours
   const totalPhaseAllocatedHours = project.phases.reduce((total, phase) => {
-    return total + (phase.phaseAllocations?.reduce((phaseTotal, allocation) =>
-      phaseTotal + allocation.hours, 0) || 0);
+    return total + (phase.phaseAllocations?.reduce((phaseTotal, allocation) => {
+      // If hours have been reallocated or forfeited, only count the planned hours that remain valid
+      if (allocation.unplannedExpiredHours &&
+          (allocation.unplannedExpiredHours.status === 'REALLOCATED' ||
+           allocation.unplannedExpiredHours.status === 'FORFEITED')) {
+        return phaseTotal + allocation.plannedHours;
+      }
+      // Otherwise count the full allocated hours
+      return phaseTotal + allocation.hours;
+    }, 0) || 0);
   }, 0);
 
   // Calculate total from Growth Team's original allocations (for team allocation display)
@@ -348,10 +368,27 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                         {project.productManager.name}
                         {(() => {
                           const pmConsultant = project.consultants.find(c => c.userId === project.productManagerId);
-                          const pmAllocatedHours = pmConsultant?.allocatedHours || 0;
+                          const pmTotalHours = pmConsultant?.allocatedHours || 0;
+
+                          // Calculate hours allocated to phases for this consultant
+                          const pmPhaseHours = project.phases.reduce((total, phase) => {
+                            return total + (phase.phaseAllocations?.reduce((phaseTotal, allocation) => {
+                              if (allocation.consultantId === project.productManagerId) {
+                                // For reallocated/forfeited allocations, only count the planned hours
+                                if (allocation.unplannedExpiredHours &&
+                                    (allocation.unplannedExpiredHours.status === 'REALLOCATED' ||
+                                     allocation.unplannedExpiredHours.status === 'FORFEITED')) {
+                                  return phaseTotal + allocation.plannedHours;
+                                }
+                                return phaseTotal + allocation.hours;
+                              }
+                              return phaseTotal;
+                            }, 0) || 0);
+                          }, 0);
+
                           return (
                             <span className="ml-2 text-xs bg-white dark:bg-gray-900 bg-opacity-30 dark:bg-opacity-30 px-1 py-0.5 rounded">
-                              {pmAllocatedHours}h
+                              {pmPhaseHours}h / {pmTotalHours}h
                             </span>
                           );
                         })()}
@@ -362,14 +399,34 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                   <div className="flex items-center gap-2 text-sm">
                     <span className="text-gray-600 dark:text-gray-400 font-medium">Team Members:</span>
                     <div className="flex flex-wrap gap-2">
-                      {project.consultants.filter(c => c.role !== 'PRODUCT_MANAGER').map(c => (
-                        <span key={c.userId} className={`rounded-md px-3 py-1 text-sm font-semibold ${generateColorFromString(c.userId)}`}>
-                          {c.user.name}
-                          <span className="ml-2 text-xs bg-white dark:bg-gray-900 bg-opacity-30 dark:bg-opacity-30 px-1 py-0.5 rounded">
-                            {c.allocatedHours || 0}h
+                      {project.consultants.filter(c => c.role !== 'PRODUCT_MANAGER').map(c => {
+                        const totalHours = c.allocatedHours || 0;
+
+                        // Calculate hours allocated to phases for this consultant
+                        const phaseHours = project.phases.reduce((total, phase) => {
+                          return total + (phase.phaseAllocations?.reduce((phaseTotal, allocation) => {
+                            if (allocation.consultantId === c.userId) {
+                              // For reallocated/forfeited allocations, only count the planned hours
+                              if (allocation.unplannedExpiredHours &&
+                                  (allocation.unplannedExpiredHours.status === 'REALLOCATED' ||
+                                   allocation.unplannedExpiredHours.status === 'FORFEITED')) {
+                                return phaseTotal + allocation.plannedHours;
+                              }
+                              return phaseTotal + allocation.hours;
+                            }
+                            return phaseTotal;
+                          }, 0) || 0);
+                        }, 0);
+
+                        return (
+                          <span key={c.userId} className={`rounded-md px-3 py-1 text-sm font-semibold ${generateColorFromString(c.userId)}`}>
+                            {c.user.name}
+                            <span className="ml-2 text-xs bg-white dark:bg-gray-900 bg-opacity-30 dark:bg-opacity-30 px-1 py-0.5 rounded">
+                              {phaseHours}h / {totalHours}h
+                            </span>
                           </span>
-                        </span>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -426,30 +483,42 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {project.phases.map(phase => (
-                      <PhaseStatusCard
-                        key={phase.id}
-                        phase={{
-                          id: phase.id,
-                          name: phase.name,
-                          description: phase.description || undefined,
-                          startDate: phase.startDate,
-                          endDate: phase.endDate,
-                          sprints: phase.sprints,
-                          allocations: phase.allocations
-                        }}
-                        individualAllocations={phase.phaseAllocations}
-                        showDetails={true}
-                        showIndividualAllocations={true}
-                        canManageProject={canManagePhases}
-                        canManageAllocations={canManageAllocations}
-                        currentUserId={session.user.id}
-                        onEditPhase={() => setEditPhaseModal({ isOpen: true, phase })}
-                        onManageAllocations={() => openAllocationModal(phase)}
-                        onExpiredAllocationClick={(allocation) => handleExpiredAllocationClick(allocation, phase)}
-                        className="shadow-md"
-                      />
-                    ))}
+                    {project.phases.map(phase => {
+                      // Filter out allocations that have been reallocated with 0 planned hours
+                      // These allocations no longer have any valid work in this phase
+                      const visibleAllocations = phase.phaseAllocations.filter(allocation => {
+                        // If allocation has been reallocated AND has no planned hours, hide it
+                        if (allocation.unplannedExpiredHours?.status === 'REALLOCATED' && allocation.plannedHours === 0) {
+                          return false;
+                        }
+                        return true;
+                      });
+
+                      return (
+                        <PhaseStatusCard
+                          key={phase.id}
+                          phase={{
+                            id: phase.id,
+                            name: phase.name,
+                            description: phase.description || undefined,
+                            startDate: phase.startDate,
+                            endDate: phase.endDate,
+                            sprints: phase.sprints,
+                            allocations: phase.allocations
+                          }}
+                          individualAllocations={visibleAllocations}
+                          showDetails={true}
+                          showIndividualAllocations={true}
+                          canManageProject={canManagePhases}
+                          canManageAllocations={canManageAllocations}
+                          currentUserId={session.user.id}
+                          onEditPhase={() => setEditPhaseModal({ isOpen: true, phase })}
+                          onManageAllocations={() => openAllocationModal(phase)}
+                          onExpiredAllocationClick={(allocation) => handleExpiredAllocationClick(allocation, phase)}
+                          className="shadow-md"
+                        />
+                      );
+                    })}
                   </div>
                 )}
 
@@ -577,9 +646,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
         )}
 
         {editPhaseModal.isOpen && editPhaseModal.phase && project.sprints && (
-          <EditPhaseModal 
+          <EditPhaseModal
             phase={editPhaseModal.phase}
             projectSprints={project.sprints || []}
+            existingPhases={project.phases.map(p => ({
+              id: p.id,
+              name: p.name,
+              sprints: p.sprints
+            }))}
             onClose={() => {
               setEditPhaseModal({ isOpen: false, phase: null });
               fetchProjectDetails();
@@ -610,7 +684,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
               consultantName: expiredAllocationModal.allocation.consultantName,
               totalHours: expiredAllocationModal.allocation.hours,
               plannedHours: expiredAllocationModal.allocation.plannedHours,
-              unplannedHours: expiredAllocationModal.allocation.hours - expiredAllocationModal.allocation.plannedHours
+              // Use the actual unplannedHours from the database if available, otherwise calculate
+              unplannedHours: expiredAllocationModal.allocation.unplannedExpiredHours?.unplannedHours ??
+                              (expiredAllocationModal.allocation.hours - expiredAllocationModal.allocation.plannedHours)
             }}
             onClose={() => setExpiredAllocationModal({ isOpen: false, allocation: null })}
             onForfeit={handleForfeit}
@@ -623,11 +699,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
             projectId={projectId}
             expiredAllocation={{
               id: reallocationModal.expiredAllocation.id,
+              unplannedExpiredHoursId: reallocationModal.expiredAllocation.unplannedExpiredHours?.id,
               phaseId: reallocationModal.expiredAllocation.phaseId,
               phaseName: reallocationModal.expiredAllocation.phaseName,
               consultantId: reallocationModal.expiredAllocation.consultantId,
               consultantName: reallocationModal.expiredAllocation.consultantName,
-              unplannedHours: reallocationModal.expiredAllocation.hours - reallocationModal.expiredAllocation.plannedHours
+              // Use the actual unplannedHours from the database if available, otherwise calculate
+              unplannedHours: reallocationModal.expiredAllocation.unplannedExpiredHours?.unplannedHours ??
+                              (reallocationModal.expiredAllocation.hours - reallocationModal.expiredAllocation.plannedHours)
             }}
             availablePhases={project.phases
               .filter(phase =>

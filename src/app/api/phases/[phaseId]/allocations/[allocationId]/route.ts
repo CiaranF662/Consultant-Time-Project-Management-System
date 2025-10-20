@@ -65,26 +65,53 @@ export async function PATCH(
 
     // Handle forfeit action
     if (action === 'forfeit') {
-      // Verify allocation is EXPIRED
-      if (allocation.approvalStatus !== 'EXPIRED') {
+      // Get the UnplannedExpiredHours record
+      const expiredRecord = await prisma.unplannedExpiredHours.findUnique({
+        where: { phaseAllocationId: allocationId }
+      });
+
+      if (!expiredRecord) {
         return new NextResponse(
-          JSON.stringify({ error: 'Only EXPIRED allocations can be forfeited' }),
+          JSON.stringify({ error: 'No unplanned expired hours found for this allocation' }),
+          { status: 404 }
+        );
+      }
+
+      if (expiredRecord.status !== 'EXPIRED') {
+        return new NextResponse(
+          JSON.stringify({ error: 'These hours have already been handled' }),
           { status: 400 }
         );
       }
 
-      // Calculate unplanned hours
+      const unplannedHours = expiredRecord.unplannedHours;
+
+      // Calculate planned hours
       const totalPlanned = allocation.weeklyAllocations.reduce(
         (sum, w) => sum + (w.approvedHours ?? w.proposedHours ?? 0),
         0
       );
-      const unplannedHours = allocation.totalHours - totalPlanned;
 
-      // Update status to FORFEITED
-      await prisma.phaseAllocation.update({
-        where: { id: allocationId },
-        data: { approvalStatus: 'FORFEITED' }
-      });
+      // Update in a transaction to ensure consistency
+      await prisma.$transaction([
+        // Update UnplannedExpiredHours status to FORFEITED
+        prisma.unplannedExpiredHours.update({
+          where: { id: expiredRecord.id },
+          data: {
+            status: 'FORFEITED',
+            handledAt: new Date(),
+            handledBy: session.user.id
+          }
+        }),
+        // Reduce original allocation's totalHours and set status back to APPROVED
+        prisma.phaseAllocation.update({
+          where: { id: allocationId },
+          data: {
+            totalHours: totalPlanned, // Reduce to only the planned hours
+            approvalStatus: 'APPROVED' // Set back to APPROVED (no longer EXPIRED)
+          }
+        })
+      ]);
 
       // Notify Growth Team (FYI)
       const growthTeamIds = await getGrowthTeamMemberIds();
@@ -95,15 +122,16 @@ export async function PATCH(
         await createNotificationsForUsers(
           growthTeamIds,
           NotificationType.PHASE_ALLOCATION_REJECTED, // Reuse existing type
-          'Phase Allocation Forfeited',
-          `${pmName} has forfeited ${unplannedHours.toFixed(1)}h for ${consultantName} in "${allocation.phase.name}" (${allocation.phase.project.title}).`,
+          'Unplanned Hours Forfeited',
+          `${pmName} has forfeited ${unplannedHours.toFixed(1)}h for ${consultantName} in "${allocation.phase.name}" (${allocation.phase.project.title}). ${totalPlanned.toFixed(1)}h remain allocated.`,
           `/dashboard/projects/${allocation.phase.project.id}`,
           {
             phaseAllocationId: allocation.id,
             phaseId: allocation.phase.id,
             projectId: allocation.phase.project.id,
             consultantId: allocation.consultantId,
-            forfeitedHours: Math.round(unplannedHours * 10) / 10
+            forfeitedHours: Math.round(unplannedHours * 10) / 10,
+            plannedHours: Math.round(totalPlanned * 10) / 10
           }
         );
       }
@@ -112,20 +140,127 @@ export async function PATCH(
       await createNotificationsForUsers(
         [allocation.consultantId],
         NotificationType.PHASE_ALLOCATION_REJECTED, // Reuse existing type
-        'Phase Allocation Forfeited',
-        `Your unplanned hours (${unplannedHours.toFixed(1)}h) for "${allocation.phase.name}" have been forfeited and will not be allocated to another phase.`,
+        'Unplanned Hours Forfeited',
+        `Your unplanned hours (${unplannedHours.toFixed(1)}h) for "${allocation.phase.name}" have been forfeited. Your ${totalPlanned.toFixed(1)}h of planned work remains valid.`,
         `/dashboard/projects/${allocation.phase.project.id}`,
         {
           phaseAllocationId: allocation.id,
           phaseId: allocation.phase.id,
           projectId: allocation.phase.project.id,
-          forfeitedHours: Math.round(unplannedHours * 10) / 10
+          forfeitedHours: Math.round(unplannedHours * 10) / 10,
+          plannedHours: Math.round(totalPlanned * 10) / 10
         }
       );
 
       return NextResponse.json({
         success: true,
-        message: `Successfully forfeited ${unplannedHours.toFixed(1)} hours`
+        message: `Successfully forfeited ${unplannedHours.toFixed(1)} hours. ${totalPlanned.toFixed(1)} hours of planned work remain valid.`
+      });
+    }
+
+    // Handle reallocate action
+    if (action === 'reallocate') {
+      const { targetPhaseId, newAllocationId, notes } = body;
+
+      // Get the UnplannedExpiredHours record
+      const expiredRecord = await prisma.unplannedExpiredHours.findUnique({
+        where: { phaseAllocationId: allocationId }
+      });
+
+      if (!expiredRecord) {
+        return new NextResponse(
+          JSON.stringify({ error: 'No unplanned expired hours found for this allocation' }),
+          { status: 404 }
+        );
+      }
+
+      if (expiredRecord.status !== 'EXPIRED') {
+        return new NextResponse(
+          JSON.stringify({ error: 'These hours have already been handled' }),
+          { status: 400 }
+        );
+      }
+
+      const unplannedHours = expiredRecord.unplannedHours;
+
+      // Calculate planned hours
+      const totalPlanned = allocation.weeklyAllocations.reduce(
+        (sum, w) => sum + (w.approvedHours ?? w.proposedHours ?? 0),
+        0
+      );
+
+      // Update in a transaction to ensure consistency
+      await prisma.$transaction([
+        // Update UnplannedExpiredHours status to REALLOCATED
+        prisma.unplannedExpiredHours.update({
+          where: { id: expiredRecord.id },
+          data: {
+            status: 'REALLOCATED',
+            handledAt: new Date(),
+            handledBy: session.user.id,
+            reallocatedToPhaseId: targetPhaseId,
+            reallocatedToAllocationId: newAllocationId,
+            notes: notes
+          }
+        }),
+        // Reduce original allocation's totalHours and set status back to APPROVED
+        prisma.phaseAllocation.update({
+          where: { id: allocationId },
+          data: {
+            totalHours: totalPlanned, // Reduce to only the planned hours
+            approvalStatus: 'APPROVED' // Set back to APPROVED (no longer EXPIRED)
+          }
+        })
+      ]);
+
+      // Get target phase info
+      const targetPhase = await prisma.phase.findUnique({
+        where: { id: targetPhaseId },
+        select: { name: true }
+      });
+
+      // Notify Growth Team (needs approval)
+      const growthTeamIds = await getGrowthTeamMemberIds();
+      if (growthTeamIds.length > 0) {
+        const pmName = session.user.name || session.user.email || 'Product Manager';
+        const consultantName = allocation.consultant.name || allocation.consultant.email || 'Consultant';
+
+        await createNotificationsForUsers(
+          growthTeamIds,
+          NotificationType.PHASE_ALLOCATION_PENDING, // Needs GT approval
+          'Reallocation Request Pending Approval',
+          `${pmName} requests to reallocate ${unplannedHours.toFixed(1)}h for ${consultantName} from "${allocation.phase.name}" to "${targetPhase?.name}". ${totalPlanned.toFixed(1)}h remain in original phase.`,
+          `/dashboard/hour-approvals`,
+          {
+            phaseAllocationId: newAllocationId,
+            originalPhaseId: allocation.phase.id,
+            targetPhaseId: targetPhaseId,
+            consultantId: allocation.consultantId,
+            reallocatedHours: Math.round(unplannedHours * 10) / 10,
+            plannedHours: Math.round(totalPlanned * 10) / 10
+          }
+        );
+      }
+
+      // Notify Consultant (FYI)
+      await createNotificationsForUsers(
+        [allocation.consultantId],
+        NotificationType.PHASE_ALLOCATION_PENDING,
+        'Hours Reallocation Pending',
+        `Your ${unplannedHours.toFixed(1)}h of unplanned hours from "${allocation.phase.name}" are being reallocated to "${targetPhase?.name}". Pending Growth Team approval. Your ${totalPlanned.toFixed(1)}h of planned work remains valid.`,
+        `/dashboard/projects/${allocation.phase.project.id}`,
+        {
+          phaseAllocationId: newAllocationId,
+          originalPhaseId: allocation.phase.id,
+          targetPhaseId: targetPhaseId,
+          reallocatedHours: Math.round(unplannedHours * 10) / 10,
+          plannedHours: Math.round(totalPlanned * 10) / 10
+        }
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: `Successfully created reallocation request for ${unplannedHours.toFixed(1)} hours. Pending Growth Team approval.`
       });
     }
 

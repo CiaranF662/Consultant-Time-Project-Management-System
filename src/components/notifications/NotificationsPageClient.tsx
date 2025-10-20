@@ -19,6 +19,7 @@ type NotificationType =
   | 'PHASE_ALLOCATION_APPROVED'
   | 'PHASE_ALLOCATION_REJECTED'
   | 'PHASE_ALLOCATION_MODIFIED'
+  | 'PHASE_ALLOCATION_EXPIRED'
   | 'WEEKLY_ALLOCATION_PENDING'
   | 'WEEKLY_ALLOCATION_APPROVED'
   | 'WEEKLY_ALLOCATION_MODIFIED'
@@ -57,6 +58,7 @@ const notificationTypeLabels = {
   PHASE_ALLOCATION_APPROVED: 'Phase Allocation Approved',
   PHASE_ALLOCATION_REJECTED: 'Phase Allocation Rejected',
   PHASE_ALLOCATION_MODIFIED: 'Phase Allocation Modified',
+  PHASE_ALLOCATION_EXPIRED: 'Phase Allocation Expired',
   WEEKLY_ALLOCATION_PENDING: 'Weekly Allocation Pending',
   WEEKLY_ALLOCATION_APPROVED: 'Weekly Allocation Approved',
   WEEKLY_ALLOCATION_MODIFIED: 'Weekly Allocation Modified',

@@ -1,4 +1,4 @@
-import { FaTimes, FaCheck, FaClock } from 'react-icons/fa';
+import { FaTimes, FaCheck, FaClock, FaLock } from 'react-icons/fa';
 import { formatHours } from '@/lib/dates';
 
 interface WeekData {
@@ -37,6 +37,7 @@ interface WeeklyAllocationCardProps {
   localStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'MODIFIED';
   otherPhases: OtherPhase[];
   onHourChange: (value: string) => void;
+  isWeekLocked?: boolean; // Week has passed and cannot be edited
 }
 
 export default function WeeklyAllocationCard({
@@ -48,7 +49,8 @@ export default function WeeklyAllocationCard({
   weeklyAllocation,
   localStatus,
   otherPhases,
-  onHourChange
+  onHourChange,
+  isWeekLocked = false
 }: WeeklyAllocationCardProps) {
   const planningStatus = localStatus || weeklyAllocation?.planningStatus;
   const isRejected = planningStatus === 'REJECTED';
@@ -58,6 +60,7 @@ export default function WeeklyAllocationCard({
 
   return (
     <div className={`border rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-300 ${
+      isWeekLocked ? 'border-gray-400 dark:border-gray-600 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 opacity-75' :
       isRejected ? 'border-red-300 dark:border-red-700 bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20' :
       isApproved ? 'border-emerald-300 dark:border-emerald-700 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20' :
       isPending ? 'border-orange-300 dark:border-orange-700 bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20' :
@@ -69,13 +72,19 @@ export default function WeeklyAllocationCard({
             {week.label}
           </div>
           {/* Enhanced Status indicator */}
-          {isRejected && (
+          {isWeekLocked && (
+            <div className="flex items-center gap-2 px-3 py-1 bg-gray-200 dark:bg-gray-700 border border-gray-400 dark:border-gray-600 rounded-full">
+              <FaLock className="w-3 h-3 text-gray-600 dark:text-gray-400" />
+              <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Week Ended</span>
+            </div>
+          )}
+          {!isWeekLocked && isRejected && (
             <div className="flex items-center gap-2 px-3 py-1 bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700 rounded-full">
               <FaTimes className="w-3 h-3 text-red-600 dark:text-red-400" />
               <span className="text-xs font-bold text-red-800 dark:text-red-200">Rejected</span>
             </div>
           )}
-          {isApproved && (
+          {!isWeekLocked && isApproved && (
             <div className="flex items-center gap-2 px-3 py-1 bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-300 dark:border-emerald-700 rounded-full">
               <FaCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
               <span className="text-xs font-bold text-emerald-800 dark:text-emerald-200">
@@ -83,7 +92,7 @@ export default function WeeklyAllocationCard({
               </span>
             </div>
           )}
-          {isPending && (
+          {!isWeekLocked && isPending && (
             <div className="flex items-center gap-2 px-3 py-1 bg-orange-100 dark:bg-orange-900/40 border border-orange-300 dark:border-orange-700 rounded-full">
               <FaClock className="w-3 h-3 text-orange-600 dark:text-orange-400" />
               <span className="text-xs font-bold text-orange-800 dark:text-orange-200">Pending</span>
@@ -130,15 +139,17 @@ export default function WeeklyAllocationCard({
           step="0.5"
           value={currentHours || ''}
           onChange={(e) => onHourChange(e.target.value)}
-          className={`block w-full px-4 py-3 text-sm border rounded-xl focus:outline-none focus:ring-2 transition-all duration-200 font-medium text-foreground ${
-            error ? 'border-red-300 dark:border-red-700 focus:ring-red-500 bg-red-50 dark:bg-red-900/20' :
-            hasUnsavedChanges ? 'border-yellow-300 dark:border-yellow-700 focus:ring-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' :
-            isRejected ? 'border-red-300 dark:border-red-700 focus:ring-red-500 bg-white dark:bg-gray-900' :
-            isApproved ? 'border-emerald-300 dark:border-emerald-700 focus:ring-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' :
-            isPending ? 'border-orange-300 dark:border-orange-700 focus:ring-orange-500 bg-orange-50 dark:bg-orange-900/20' :
-            'border-gray-300 dark:border-gray-600 focus:ring-blue-500 bg-white dark:bg-gray-800'
+          disabled={isWeekLocked}
+          className={`block w-full px-4 py-3 text-sm border rounded-xl focus:outline-none focus:ring-2 transition-all duration-200 font-medium ${
+            isWeekLocked ? 'bg-gray-200 dark:bg-gray-700 border-gray-400 dark:border-gray-600 text-gray-600 dark:text-gray-400 cursor-not-allowed' :
+            error ? 'border-red-300 dark:border-red-700 focus:ring-red-500 bg-red-50 dark:bg-red-900/20 text-foreground' :
+            hasUnsavedChanges ? 'border-yellow-300 dark:border-yellow-700 focus:ring-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 text-foreground' :
+            isRejected ? 'border-red-300 dark:border-red-700 focus:ring-red-500 bg-white dark:bg-gray-900 text-foreground' :
+            isApproved ? 'border-emerald-300 dark:border-emerald-700 focus:ring-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-foreground' :
+            isPending ? 'border-orange-300 dark:border-orange-700 focus:ring-orange-500 bg-orange-50 dark:bg-orange-900/20 text-foreground' :
+            'border-gray-300 dark:border-gray-600 focus:ring-blue-500 bg-white dark:bg-gray-800 text-foreground'
           }`}
-          placeholder={isRejected ? "Enter new hours" : "Enter hours"}
+          placeholder={isWeekLocked ? "Week has ended" : isRejected ? "Enter new hours" : "Enter hours"}
         />
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs font-medium text-muted-foreground">
           hrs

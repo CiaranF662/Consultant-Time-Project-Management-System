@@ -16,6 +16,7 @@ type NotificationType =
   | 'PHASE_ALLOCATION_APPROVED'
   | 'PHASE_ALLOCATION_REJECTED'
   | 'PHASE_ALLOCATION_MODIFIED'
+  | 'PHASE_ALLOCATION_EXPIRED'
   | 'WEEKLY_ALLOCATION_PENDING'
   | 'WEEKLY_ALLOCATION_APPROVED'
   | 'WEEKLY_ALLOCATION_MODIFIED'
@@ -102,6 +103,12 @@ const notificationTypeConfig = {
     color: 'blue',
     bgColor: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700',
     iconColor: 'text-blue-600 dark:text-blue-400'
+  },
+  PHASE_ALLOCATION_EXPIRED: {
+    icon: '⏱️',
+    color: 'orange',
+    bgColor: 'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-700',
+    iconColor: 'text-orange-600 dark:text-orange-400'
   },
   WEEKLY_ALLOCATION_PENDING: {
     icon: '📅',

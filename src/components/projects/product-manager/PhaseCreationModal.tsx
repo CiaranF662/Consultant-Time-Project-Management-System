@@ -14,6 +14,12 @@ interface Consultant {
   role?: 'PRODUCT_MANAGER' | 'TEAM_MEMBER';
 }
 
+interface Phase {
+  id: string;
+  name: string;
+  sprints: Sprint[];
+}
+
 interface PhaseCreationModalProps {
   project: {
     id: string;
@@ -40,6 +46,9 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
   const [consultantHours, setConsultantHours] = useState<Record<string, number>>({});
   const [consultantSearchQuery, setConsultantSearchQuery] = useState('');
   const [showConsultantDropdown, setShowConsultantDropdown] = useState(false);
+
+  // Phase sprint assignments
+  const [existingPhases, setExistingPhases] = useState<Phase[]>([]);
 
   // State
   const [isLoading, setIsLoading] = useState(false);
@@ -93,12 +102,21 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
       }));
       setConsultants(teamMembers);
 
-      // Calculate allocated hours from existing phases
+      // Calculate allocated hours from existing phases and fetch phase-sprint mappings
       const { data: projectData } = await axios.get(`/api/projects/${project.id}`);
       const allocatedToPhasesMap: Record<string, number> = {};
+      const phases: Phase[] = [];
 
       if (projectData.phases) {
         projectData.phases.forEach((phase: any) => {
+          // Store phase with sprint assignments
+          phases.push({
+            id: phase.id,
+            name: phase.name,
+            sprints: phase.sprints || []
+          });
+
+          // Calculate allocated hours
           if (phase.allocations) {
             phase.allocations.forEach((allocation: any) => {
               // Exclude FORFEITED and EXPIRED allocations from the calculation
@@ -117,10 +135,18 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
       }
 
       setAllocatedToPhases(allocatedToPhasesMap);
+      setExistingPhases(phases);
     } catch (error) {
       console.error('Failed to fetch project consultants:', error);
       setError('Failed to load project team data.');
     }
+  };
+
+  // Get phases assigned to a specific sprint
+  const getPhasesForSprint = (sprintId: string): Phase[] => {
+    return existingPhases.filter(phase =>
+      phase.sprints.some(sprint => sprint.id === sprintId)
+    );
   };
 
   // Check if Sprint is available for selection
@@ -497,6 +523,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                 {availableSprints.map((sprint) => {
                   const isAvailable = isSprintAvailableForSelection(sprint);
                   const isSelected = selectedSprintIds.includes(sprint.id);
+                  const assignedPhases = getPhasesForSprint(sprint.id);
 
                   return (
                     <div
@@ -523,11 +550,23 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                           className={`ml-3 flex-1 cursor-pointer ${isAvailable ? 'text-foreground' : 'text-muted-foreground'}`}
                         >
                           <div className="flex items-center justify-between">
-                            <div>
+                            <div className="flex items-center gap-2">
                               <span className="font-medium">Sprint {sprint.sprintNumber}</span>
-                              {!isAvailable && <span className="text-red-500 text-sm ml-2">(Past sprint)</span>}
+                              {!isAvailable && <span className="text-red-500 text-sm">(Past sprint)</span>}
+                              {assignedPhases.length > 0 && (
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  {assignedPhases.map((phase) => (
+                                    <span
+                                      key={phase.id}
+                                      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-700"
+                                    >
+                                      {phase.name}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-sm text-muted-foreground whitespace-nowrap ml-2">
                               {new Date(sprint.startDate).toLocaleDateString('en-GB')} - {new Date(sprint.endDate).toLocaleDateString('en-GB')}
                             </div>
                           </div>

@@ -89,105 +89,122 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Calculate weekly availability for each consultant
-    const consultantAvailability = await Promise.all(
-      consultants.map(async (consultant) => {
-        // Get weekly breakdown
-        const weeklyBreakdown = await Promise.all(
-          weeks.map(async (week) => {
-            // Get ALL allocations for this consultant for this week across ALL projects
-            const allocations = await prisma.weeklyAllocation.findMany({
-              where: {
-                consultantId: consultant.id,
-                weekNumber: week.weekNumber,
-                year: week.year,
-                planningStatus: {
-                  in: ['APPROVED', 'PENDING', 'MODIFIED']
-                }
-              },
+    // Build week conditions for OR query
+    const weekConditions = weeks.map(week => ({
+      weekNumber: week.weekNumber,
+      year: week.year
+    }));
+
+    // Fetch ALL allocations for ALL consultants in a single query
+    const allAllocations = await prisma.weeklyAllocation.findMany({
+      where: {
+        consultantId: { in: consultants.map(c => c.id) },
+        OR: weekConditions,
+        planningStatus: {
+          in: ['APPROVED', 'PENDING', 'MODIFIED']
+        }
+      },
+      include: {
+        phaseAllocation: {
+          include: {
+            phase: {
               include: {
-                phaseAllocation: {
-                  include: {
-                    phase: {
-                      include: {
-                        project: {
-                          select: {
-                            id: true,
-                            title: true
-                          }
-                        }
-                      }
-                    }
+                project: {
+                  select: {
+                    id: true,
+                    title: true
                   }
                 }
               }
-            });
+            }
+          }
+        }
+      }
+    });
 
-            const totalHours = allocations.reduce(
-              (sum, alloc) => sum + (alloc.approvedHours || alloc.proposedHours || 0),
-              0
-            );
+    // Group allocations by consultant and week
+    const allocationsByConsultant = allAllocations.reduce((acc, alloc) => {
+      if (!acc[alloc.consultantId]) {
+        acc[alloc.consultantId] = [];
+      }
+      acc[alloc.consultantId].push(alloc);
+      return acc;
+    }, {} as Record<string, typeof allAllocations>);
 
-            // Group by project for details
-            const projectBreakdown = allocations.reduce((acc, alloc) => {
-              const projId = alloc.phaseAllocation.phase.project.id;
-              const projTitle = alloc.phaseAllocation.phase.project.title;
+    // Calculate weekly availability for each consultant
+    const consultantAvailability = consultants.map((consultant) => {
+      const consultantAllocs = allocationsByConsultant[consultant.id] || [];
 
-              if (!acc[projId]) {
-                acc[projId] = {
-                  projectId: projId,
-                  projectTitle: projTitle,
-                  hours: 0
-                };
-              }
-
-              acc[projId].hours += alloc.approvedHours || alloc.proposedHours || 0;
-
-              return acc;
-            }, {} as Record<string, { projectId: string; projectTitle: string; hours: number }>);
-
-            return {
-              weekStart: week.weekStart,
-              weekEnd: week.weekEnd,
-              weekNumber: week.weekNumber,
-              year: week.year,
-              totalHours,
-              availableHours: Math.max(0, 40 - totalHours),
-              status: totalHours <= 15 ? 'available' : totalHours <= 30 ? 'partially-busy' : totalHours <= 40 ? 'busy' : 'overloaded',
-              projects: Object.values(projectBreakdown)
-            };
-          })
+      // Build weekly breakdown
+      const weeklyBreakdown = weeks.map((week) => {
+        // Filter allocations for this specific week
+        const weekAllocations = consultantAllocs.filter(
+          alloc => alloc.weekNumber === week.weekNumber && alloc.year === week.year
         );
 
-        // Calculate overall stats
-        const totalAllocatedHours = weeklyBreakdown.reduce((sum, week) => sum + week.totalHours, 0);
-        const averageHoursPerWeek = weeks.length > 0 ? totalAllocatedHours / weeks.length : 0;
+        const totalHours = weekAllocations.reduce(
+          (sum, alloc) => sum + (alloc.approvedHours || alloc.proposedHours || 0),
+          0
+        );
 
-        let overallStatus: 'available' | 'partially-busy' | 'busy' | 'overloaded';
-        if (averageHoursPerWeek <= 15) {
-          overallStatus = 'available';
-        } else if (averageHoursPerWeek <= 30) {
-          overallStatus = 'partially-busy';
-        } else if (averageHoursPerWeek <= 40) {
-          overallStatus = 'busy';
-        } else {
-          overallStatus = 'overloaded';
-        }
+        // Group by project for details
+        const projectBreakdown = weekAllocations.reduce((acc, alloc) => {
+          const projId = alloc.phaseAllocation.phase.project.id;
+          const projTitle = alloc.phaseAllocation.phase.project.title;
+
+          if (!acc[projId]) {
+            acc[projId] = {
+              projectId: projId,
+              projectTitle: projTitle,
+              hours: 0
+            };
+          }
+
+          acc[projId].hours += alloc.approvedHours || alloc.proposedHours || 0;
+
+          return acc;
+        }, {} as Record<string, { projectId: string; projectTitle: string; hours: number }>);
 
         return {
-          consultant: {
-            id: consultant.id,
-            name: consultant.name,
-            email: consultant.email
-          },
-          allocatedHours: projectAllocationsMap[consultant.id] || 0,
-          overallStatus,
-          averageHoursPerWeek: Math.round(averageHoursPerWeek * 10) / 10,
-          totalAllocatedHours: Math.round(totalAllocatedHours * 10) / 10,
-          weeklyBreakdown
+          weekStart: week.weekStart,
+          weekEnd: week.weekEnd,
+          weekNumber: week.weekNumber,
+          year: week.year,
+          totalHours,
+          availableHours: Math.max(0, 40 - totalHours),
+          status: totalHours <= 15 ? 'available' : totalHours <= 30 ? 'partially-busy' : totalHours <= 40 ? 'busy' : 'overloaded',
+          projects: Object.values(projectBreakdown)
         };
-      })
-    );
+      });
+
+      // Calculate overall stats
+      const totalAllocatedHours = weeklyBreakdown.reduce((sum, week) => sum + week.totalHours, 0);
+      const averageHoursPerWeek = weeks.length > 0 ? totalAllocatedHours / weeks.length : 0;
+
+      let overallStatus: 'available' | 'partially-busy' | 'busy' | 'overloaded';
+      if (averageHoursPerWeek <= 15) {
+        overallStatus = 'available';
+      } else if (averageHoursPerWeek <= 30) {
+        overallStatus = 'partially-busy';
+      } else if (averageHoursPerWeek <= 40) {
+        overallStatus = 'busy';
+      } else {
+        overallStatus = 'overloaded';
+      }
+
+      return {
+        consultant: {
+          id: consultant.id,
+          name: consultant.name,
+          email: consultant.email
+        },
+        allocatedHours: projectAllocationsMap[consultant.id] || 0,
+        overallStatus,
+        averageHoursPerWeek: Math.round(averageHoursPerWeek * 10) / 10,
+        totalAllocatedHours: Math.round(totalAllocatedHours * 10) / 10,
+        weeklyBreakdown
+      };
+    });
 
     return NextResponse.json({
       weeks: weeks.map(w => ({

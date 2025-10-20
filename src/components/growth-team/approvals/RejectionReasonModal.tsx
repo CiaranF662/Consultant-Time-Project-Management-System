@@ -12,6 +12,16 @@ interface RejectionReasonModalProps {
   isSubmitting?: boolean;
 }
 
+const REJECTION_REASONS = [
+  'Allocation exceeds consultant\'s available capacity',
+  'Insufficient budget remaining for this allocation',
+  'Phase timeline conflicts with consultant\'s existing commitments',
+  'Consultant not qualified for this phase work',
+  'Allocation hours don\'t align with phase requirements',
+  'Project priorities have changed',
+  'Other'
+] as const;
+
 export default function RejectionReasonModal({
   isOpen,
   onClose,
@@ -20,22 +30,25 @@ export default function RejectionReasonModal({
   itemName = 'this allocation',
   isSubmitting = false
 }: RejectionReasonModalProps) {
-  const [reason, setReason] = useState('');
+  const [selectedReason, setSelectedReason] = useState('');
+  const [customReason, setCustomReason] = useState('');
   const [error, setError] = useState('');
   const modalRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const selectRef = useRef<HTMLSelectElement>(null);
 
-  // Focus textarea when modal opens
+  // Focus select when modal opens
   useEffect(() => {
-    if (isOpen && textareaRef.current) {
-      textareaRef.current.focus();
+    if (isOpen && selectRef.current) {
+      selectRef.current.focus();
     }
   }, [isOpen]);
 
   // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
-      setReason('');
+      setSelectedReason('');
+      setCustomReason('');
       setError('');
     }
   }, [isOpen]);
@@ -74,17 +87,23 @@ export default function RejectionReasonModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!reason.trim()) {
-      setError('Please provide a rejection reason');
+    if (!selectedReason) {
+      setError('Please select a rejection reason');
       return;
     }
 
-    if (reason.trim().length < 10) {
-      setError('Rejection reason must be at least 10 characters');
+    if (selectedReason === 'Other' && !customReason.trim()) {
+      setError('Please provide a custom rejection reason');
       return;
     }
 
-    onSubmit(reason.trim());
+    if (selectedReason === 'Other' && customReason.trim().length < 10) {
+      setError('Custom reason must be at least 10 characters');
+      return;
+    }
+
+    const finalReason = selectedReason === 'Other' ? customReason.trim() : selectedReason;
+    onSubmit(finalReason);
   };
 
   if (!isOpen) return null;
@@ -128,23 +147,52 @@ export default function RejectionReasonModal({
             <label htmlFor="rejection-reason" className="block text-sm font-medium text-card-foreground mb-2">
               Rejection Reason <span className="text-red-500 dark:text-red-400">*</span>
             </label>
-            <textarea
-              ref={textareaRef}
+            <select
+              ref={selectRef}
               id="rejection-reason"
-              value={reason}
+              value={selectedReason}
               onChange={(e) => {
-                setReason(e.target.value);
+                setSelectedReason(e.target.value);
                 setError('');
               }}
-              placeholder="e.g., This allocation exceeds the consultant's available hours for this phase. Please reduce by 10 hours."
-              rows={4}
               disabled={isSubmitting}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-foreground placeholder-gray-500 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed resize-none"
-            />
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-foreground rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
+            >
+              <option value="">Select a reason...</option>
+              {REJECTION_REASONS.map((reason) => (
+                <option key={reason} value={reason}>
+                  {reason}
+                </option>
+              ))}
+            </select>
             <p className="mt-1 text-xs text-muted-foreground">
-              Minimum 10 characters. Be specific about what needs to change.
+              Select the primary reason for rejecting this allocation
             </p>
           </div>
+
+          {selectedReason === 'Other' && (
+            <div>
+              <label htmlFor="custom-reason" className="block text-sm font-medium text-card-foreground mb-2">
+                Custom Reason <span className="text-red-500 dark:text-red-400">*</span>
+              </label>
+              <textarea
+                ref={textareaRef}
+                id="custom-reason"
+                value={customReason}
+                onChange={(e) => {
+                  setCustomReason(e.target.value);
+                  setError('');
+                }}
+                placeholder="e.g., This allocation exceeds the consultant's available hours for this phase. Please reduce by 10 hours."
+                rows={4}
+                disabled={isSubmitting}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-foreground placeholder-gray-500 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed resize-none"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Minimum 10 characters. Be specific about what needs to change.
+              </p>
+            </div>
+          )}
 
           {error && (
             <div className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
@@ -164,7 +212,7 @@ export default function RejectionReasonModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || !reason.trim()}
+              disabled={isSubmitting || !selectedReason || (selectedReason === 'Other' && !customReason.trim())}
               className="px-6 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2"
             >
               {isSubmitting ? (

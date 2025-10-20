@@ -44,7 +44,8 @@ export async function GET(
                 },
                 weeklyAllocations: {
                   orderBy: { weekStartDate: 'asc' }
-                }
+                },
+                unplannedExpiredHours: true
               }
             }
           },
@@ -65,7 +66,7 @@ export async function GET(
           select: { id: true, name: true, email: true }
         }
       },
-    });
+    }) as any;
 
     // Get all approved weekly allocations for this project
     const approvedWeeklyAllocations = await prisma.weeklyAllocation.findMany({
@@ -89,9 +90,9 @@ export async function GET(
     // Transform the data to match frontend expectations
     const transformedProject = {
       ...project,
-      phases: project.phases.map(phase => ({
+      phases: project.phases.map((phase: any) => ({
         ...phase,
-        phaseAllocations: phase.allocations.map(allocation => {
+        phaseAllocations: phase.allocations.map((allocation: any) => {
           // Get approved weekly allocations for this specific allocation
           const approvedWeeklyForThisAllocation = approvedWeeklyAllocations.filter(
             wa => wa.phaseAllocationId === allocation.id
@@ -107,11 +108,12 @@ export async function GET(
             hours: allocation.totalHours,
             plannedHours: totalPlannedHours,
             approvalStatus: allocation.approvalStatus,
-            rejectionReason: allocation.rejectionReason
+            rejectionReason: allocation.rejectionReason,
+            unplannedExpiredHours: allocation.unplannedExpiredHours
           };
         }),
         // Keep allocations for phase status calculation
-        allocations: phase.allocations.map(allocation => {
+        allocations: phase.allocations.map((allocation: any) => {
           // Get approved weekly allocations for this specific allocation
           const approvedWeeklyForThisAllocation = approvedWeeklyAllocations.filter(
             wa => wa.phaseAllocationId === allocation.id
@@ -133,7 +135,8 @@ export async function GET(
             totalHours: allocation.totalHours,
             approvalStatus: allocation.approvalStatus,
             rejectionReason: allocation.rejectionReason,
-            weeklyAllocations: combinedWeeklyAllocations
+            weeklyAllocations: combinedWeeklyAllocations,
+            unplannedExpiredHours: allocation.unplannedExpiredHours
           };
         })
       }))

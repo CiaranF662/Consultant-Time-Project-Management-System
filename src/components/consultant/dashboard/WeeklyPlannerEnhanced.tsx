@@ -1556,6 +1556,14 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                                           // Get other phases planned for this same week
                                           const otherPhases = getOtherPhasesForWeek(weekNumber, year, phaseAlloc.id);
 
+                                          // Check if week has ended (past weeks cannot be edited)
+                                          // Week is locked if the week end date is before the start of today
+                                          const today = new Date();
+                                          today.setHours(0, 0, 0, 0); // Start of today
+                                          const weekEndDate = new Date(week.weekEnd);
+                                          weekEndDate.setHours(23, 59, 59, 999); // End of week end date
+                                          const isWeekLocked = weekEndDate < today;
+
                                           return (
                                             <WeeklyAllocationCard
                                               key={key}
@@ -1568,6 +1576,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                                               localStatus={localStatus}
                                               otherPhases={otherPhases}
                                               onHourChange={(value) => handleHourChange(phaseAlloc.id, weekNumber, year, value)}
+                                              isWeekLocked={isWeekLocked}
                                             />
                                           );
                                         })}

@@ -129,10 +129,26 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
             availabilityColor = 'bg-yellow-100 text-yellow-800';
           }
 
+          // Add project allocations for detailed view
+          const projectAllocations: Record<string, number> = {};
+          if (item.weeklyBreakdown && item.weeklyBreakdown.length > 0) {
+            item.weeklyBreakdown.forEach((week: any) => {
+              if (week.projects) {
+                week.projects.forEach((project: any) => {
+                  if (!projectAllocations[project.projectTitle]) {
+                    projectAllocations[project.projectTitle] = 0;
+                  }
+                  projectAllocations[project.projectTitle] += project.hours;
+                });
+              }
+            });
+          }
+
           acc[item.consultant.id] = {
             ...item,
             availabilityStatus,
-            availabilityColor
+            availabilityColor,
+            projectAllocations
           };
           return acc;
         }, {});
@@ -146,8 +162,8 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
       }
     };
 
-    const timeoutId = setTimeout(fetchAvailability, 300);
-    return () => clearTimeout(timeoutId);
+    // Add immediate fetch on mount if dates are already set
+    fetchAvailability();
   }, [isOpen, startDate, durationInWeeks]);
 
   // Click outside handler for dropdowns and modal

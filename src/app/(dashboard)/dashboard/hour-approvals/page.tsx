@@ -32,6 +32,16 @@ async function getHourApprovalsData() {
               id: true,
               title: true
             }
+          },
+          sprints: {
+            select: {
+              id: true,
+              startDate: true,
+              endDate: true
+            },
+            orderBy: {
+              sprintNumber: 'asc'
+            }
           }
         }
       }
@@ -40,6 +50,41 @@ async function getHourApprovalsData() {
       createdAt: 'desc'
     }
   });
+
+  // For each pending allocation, check if it's a reallocation by looking for UnplannedExpiredHours pointing to it
+  const allocationsWithReallocationInfo = await Promise.all(
+    pendingAllocations.map(async (allocation) => {
+      const reallocationSource = await prisma.unplannedExpiredHours.findFirst({
+        where: {
+          reallocatedToAllocationId: allocation.id,
+          status: 'REALLOCATED'
+        },
+        include: {
+          phaseAllocation: {
+            include: {
+              phase: {
+                select: {
+                  id: true,
+                  name: true,
+                  project: {
+                    select: {
+                      id: true,
+                      title: true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      return {
+        ...allocation,
+        reallocationSource
+      };
+    })
+  );
 
   // Get pending hour change requests
   const pendingHourChanges = await prisma.hourChangeRequest.findMany({
@@ -208,7 +253,7 @@ async function getHourApprovalsData() {
   }, {} as any);
 
   return {
-    pendingAllocations,
+    pendingAllocations: allocationsWithReallocationInfo,
     pendingHourChanges: hourChangesWithPhaseData,
     pendingWeeklyAllocations: { grouped: groupedWeeklyAllocations, raw: pendingWeeklyAllocations }
   };

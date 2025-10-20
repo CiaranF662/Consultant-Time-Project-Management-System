@@ -22,13 +22,21 @@ interface EditPhaseModalProps {
   onDelete: () => void;
 }
 
-export default function EditPhaseModal({ phase, projectSprints, onClose, onDelete }: EditPhaseModalProps) {
+export default function EditPhaseModal({ phase, projectSprints, existingPhases = [], onClose, onDelete }: EditPhaseModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [name, setName] = useState(phase.name);
   const [description, setDescription] = useState(phase.description || '');
   const [selectedSprintIds, setSelectedSprintIds] = useState<string[]>(phase.sprints?.map(s => s.id) || []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Get phases assigned to a specific sprint (excluding the current phase being edited)
+  const getPhasesForSprint = (sprintId: string) => {
+    return existingPhases.filter(p =>
+      p.id !== phase.id && // Exclude current phase
+      p.sprints.some(sprint => sprint.id === sprintId)
+    );
+  };
 
   // Click outside handler
   useEffect(() => {
@@ -285,6 +293,7 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
                   const isAvailable = isSprintAvailableForSelection(sprint);
                   const isSelected = selectedSprintIds.includes(sprint.id);
                   const isPastSprint = new Date(sprint.endDate) < new Date();
+                  const assignedPhases = getPhasesForSprint(sprint.id);
 
                   return (
                     <div
@@ -311,18 +320,30 @@ export default function EditPhaseModal({ phase, projectSprints, onClose, onDelet
                           className={`ml-3 flex-1 cursor-pointer ${isAvailable ? 'text-foreground' : 'text-muted-foreground'}`}
                         >
                           <div className="flex items-center justify-between">
-                            <div>
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-medium">Sprint {sprint.sprintNumber}</span>
                               {sprint.sprintNumber === 0 && (
-                                <span className="ml-2 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 px-2 py-0.5 rounded-full">
+                                <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 px-2 py-0.5 rounded-full">
                                   Project Kickoff
                                 </span>
                               )}
                               {isPastSprint && !isSelected && (
-                                <span className="text-red-500 dark:text-red-400 text-sm ml-2">(Past sprint)</span>
+                                <span className="text-red-500 dark:text-red-400 text-sm">(Past sprint)</span>
+                              )}
+                              {assignedPhases.length > 0 && (
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  {assignedPhases.map((p) => (
+                                    <span
+                                      key={p.id}
+                                      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-700"
+                                    >
+                                      {p.name}
+                                    </span>
+                                  ))}
+                                </div>
                               )}
                             </div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-sm text-muted-foreground whitespace-nowrap ml-2">
                               {formatDate(sprint.startDate)} - {formatDate(sprint.endDate)}
                             </div>
                           </div>

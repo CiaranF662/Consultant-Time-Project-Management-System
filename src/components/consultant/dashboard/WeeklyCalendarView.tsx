@@ -7,7 +7,7 @@ import { formatHours, formatDate } from '@/lib/dates';
 interface PhaseAllocation {
   id: string;
   totalHours: number;
-  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
   phase: {
     id: string;
     name: string;
@@ -100,7 +100,7 @@ export default function WeeklyCalendarView({ phaseAllocations }: WeeklyCalendarV
         phase: string;
         hours: number;
         status: 'PENDING' | 'APPROVED' | 'MODIFIED' | 'REJECTED';
-        approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+        approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
         color: string;
         phaseId: string;
       }> = [];

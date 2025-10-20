@@ -27,6 +27,11 @@ interface PhaseAllocation {
       id: string;
       title: string;
     };
+    sprints: Array<{
+      id: string;
+      startDate: Date;
+      endDate: Date;
+    }>;
   };
 }
 

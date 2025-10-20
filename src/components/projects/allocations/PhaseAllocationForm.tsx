@@ -33,7 +33,7 @@ interface PhaseAllocationFormProps {
     consultantId: string;
     consultantName: string;
     hours: number;
-    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
     rejectionReason?: string | null;
   }[];
 }
@@ -59,11 +59,14 @@ export default function PhaseAllocationForm({
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<Record<string, string>>({});
+  const [consultantAvailability, setConsultantAvailability] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (isOpen) {
       fetchProjectConsultants();
       initializeAllocations();
+      fetchConsultantAvailability();
       setError(null);
     }
   }, [isOpen, existingAllocations]);
@@ -161,6 +164,29 @@ export default function PhaseAllocationForm({
     }
   };
 
+  const fetchConsultantAvailability = async () => {
+    try {
+      // Fetch consultant workload availability for this phase
+      const response = await axios.get(`/api/phases/${phaseId}/consultant-availability`);
+
+      // Build a map of consultant ID -> total available hours during phase
+      const availabilityMap: Record<string, number> = {};
+
+      response.data.consultants.forEach((consultant: any) => {
+        const totalAvailable = consultant.weeklyBreakdown.reduce(
+          (sum: number, week: any) => sum + week.availableHours,
+          0
+        );
+        availabilityMap[consultant.consultant.id] = totalAvailable;
+      });
+
+      setConsultantAvailability(availabilityMap);
+    } catch (error) {
+      console.error('Failed to fetch consultant availability:', error);
+      // Don't show error to user, just log it - availability is informational
+    }
+  };
+
   const handleConsultantToggle = (consultantId: string) => {
     if (selectedConsultantIds.includes(consultantId)) {
       setSelectedConsultantIds(prev => prev.filter(id => id !== consultantId));
@@ -186,6 +212,20 @@ export default function PhaseAllocationForm({
 
   const updateConsultantHours = (consultantId: string, hours: number) => {
     setConsultantHours(prev => ({ ...prev, [consultantId]: hours }));
+
+    // Check for warnings based on available capacity during phase
+    const newWarnings = { ...warnings };
+    const availableCapacity = consultantAvailability[consultantId];
+    const consultant = consultants.find(c => c.id === consultantId);
+
+    if (availableCapacity !== undefined && hours > availableCapacity && consultant) {
+      const overBy = Math.round((hours - availableCapacity) * 10) / 10;
+      newWarnings[consultantId] = `⚠️ Allocation (${hours}h) exceeds available capacity (${availableCapacity}h) by ${overBy}h during this phase. This may result in unplanned hours.`;
+    } else {
+      delete newWarnings[consultantId];
+    }
+
+    setWarnings(newWarnings);
   };
 
   const getFilteredConsultants = () => {
@@ -509,6 +549,20 @@ export default function PhaseAllocationForm({
                                 </button>
                               </div>
                             </div>
+
+                            {/* Capacity warning - now displayed below the card */}
+                            {warnings[consultantId] && (
+                              <div className="mt-3 p-2.5 bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 rounded-lg">
+                                <div className="flex items-start gap-2">
+                                  <div className="text-orange-500 dark:text-orange-400 mt-0.5">
+                                    <FaInfoCircle className="w-3.5 h-3.5" />
+                                  </div>
+                                  <div className="text-xs text-orange-700 dark:text-orange-300 leading-relaxed">
+                                    {warnings[consultantId]}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -543,6 +597,7 @@ export default function PhaseAllocationForm({
                         const projectAllocated = consultant.allocatedHours || 0;
                         const currentAllocatedToPhases = allocatedToPhases[consultant.id] || 0;
                         const availableHours = projectAllocated - currentAllocatedToPhases;
+                        const phaseAvailableCapacity = consultantAvailability[consultant.id] || 0;
 
                         return (
                           <button
@@ -569,9 +624,9 @@ export default function PhaseAllocationForm({
                                 <div className="text-xs text-gray-600 dark:text-gray-400">{consultant.email}</div>
                               </div>
                               <div className="text-right">
-                                <div className="text-xs text-muted-foreground">Available</div>
-                                <div className={`text-sm font-semibold ${availableHours > 0 ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
-                                  {availableHours}h
+                                <div className="text-xs text-muted-foreground">Phase Capacity</div>
+                                <div className={`text-sm font-semibold ${phaseAvailableCapacity > 0 ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
+                                  {phaseAvailableCapacity}h
                                 </div>
                               </div>
                             </div>
@@ -628,7 +683,7 @@ export default function PhaseAllocationForm({
             type="button"
             onClick={onClose}
             className="py-2 px-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-card-foreground bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-200"
-            disabled={isSaving}
+                            disabled={isSaving}
           >
             Cancel
           </button>

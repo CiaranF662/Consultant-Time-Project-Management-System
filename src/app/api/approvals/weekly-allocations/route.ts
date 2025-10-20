@@ -46,6 +46,7 @@ export async function GET(request: Request) {
         }
       },
       orderBy: [
+        { updatedAt: 'desc' }, // Most recently updated first
         { weekStartDate: 'asc' },
         { consultant: { name: 'asc' } }
       ]

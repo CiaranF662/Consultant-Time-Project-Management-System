@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { FaExchangeAlt, FaTimes, FaInfoCircle, FaUser, FaCalendarAlt, FaExclamationTriangle } from 'react-icons/fa';
 import axios from 'axios';
+import { isPhaseLocked } from '@/lib/phase-lock';
 
 interface Phase {
   id: string;
@@ -14,7 +15,8 @@ interface Phase {
 interface ReallocationFormModalProps {
   projectId: string;
   expiredAllocation: {
-    id: string;
+    id: string; // PhaseAllocation ID
+    unplannedExpiredHoursId?: string; // UnplannedExpiredHours ID
     phaseId: string;
     phaseName: string;
     consultantId: string;
@@ -26,6 +28,15 @@ interface ReallocationFormModalProps {
   onSuccess: () => void;
 }
 
+const REALLOCATION_REASONS = [
+  'Hours were planned but not needed before phase ended',
+  'Work was delayed and needs to continue in next phase',
+  'Scope changed and work moved to different phase',
+  'Phase ended earlier than expected with hours remaining',
+  'Consultant was unavailable during the phase timeline',
+  'Other'
+] as const;
+
 export default function ReallocationFormModal({
   projectId,
   expiredAllocation,
@@ -35,9 +46,15 @@ export default function ReallocationFormModal({
 }: ReallocationFormModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [selectedPhaseId, setSelectedPhaseId] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
+  const [selectedReason, setSelectedReason] = useState<string>('');
+  const [customReason, setCustomReason] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Filter out locked phases (phases that have ended)
+  const activePhases = useMemo(() => {
+    return availablePhases.filter(phase => !isPhaseLocked(phase));
+  }, [availablePhases]);
 
   // Click outside handler
   useEffect(() => {
@@ -67,34 +84,86 @@ export default function ReallocationFormModal({
     };
   }, [onClose]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
 
     if (!selectedPhaseId) {
       setError('Please select a phase to reallocate to');
       return;
     }
 
-    if (!description.trim()) {
-      setError('Please provide a description for this reallocation request');
+    if (!selectedReason) {
+      setError('Please select a reason for reallocation');
+      return;
+    }
+
+    if (selectedReason === 'Other' && !customReason.trim()) {
+      setError('Please provide a custom reason for reallocation');
       return;
     }
 
     setIsSubmitting(true);
     setError(null);
 
+    const finalReason = selectedReason === 'Other' ? customReason : selectedReason;
+
+    console.log('Full expiredAllocation object:', expiredAllocation);
+    console.log('Submitting reallocation:', {
+      selectedPhaseId,
+      finalReason,
+      consultantId: expiredAllocation.consultantId,
+      hours: expiredAllocation.unplannedHours
+    });
+
     try {
-      // Create a new phase allocation with PENDING status
+      // First, check if consultant already has an allocation in the target phase
+      const existingAllocationsResponse = await axios.get(`/api/phases/${selectedPhaseId}/allocations`);
+      const existingAllocation = existingAllocationsResponse.data.find(
+        (alloc: any) => alloc.consultantId === expiredAllocation.consultantId
+      );
+
+      let totalHoursForNewAllocation;
+      if (existingAllocation) {
+        // Add to existing allocation
+        totalHoursForNewAllocation = existingAllocation.totalHours + expiredAllocation.unplannedHours;
+        console.log(`Consultant already has ${existingAllocation.totalHours}h in target phase. Adding ${expiredAllocation.unplannedHours}h for total of ${totalHoursForNewAllocation}h`);
+      } else {
+        // No existing allocation, create new one
+        totalHoursForNewAllocation = expiredAllocation.unplannedHours;
+        console.log(`Creating new allocation of ${totalHoursForNewAllocation}h`);
+      }
+
+      // POST endpoint expects flat object, not an array
+      const payload = {
+        consultantId: expiredAllocation.consultantId,
+        totalHours: totalHoursForNewAllocation
+      };
+
+      console.log('POST payload:', JSON.stringify(payload, null, 2));
+
+      // 1. Create or update phase allocation with PENDING status
       // This will go through the existing phase allocation approval workflow
-      await axios.post(`/api/phases/${selectedPhaseId}/allocations`, {
-        allocations: [
+      const response = await axios.post(`/api/phases/${selectedPhaseId}/allocations`, payload);
+
+      console.log('Created new allocation:', response.data);
+
+      // 2. Mark the UnplannedExpiredHours as REALLOCATED (if we have the ID)
+      if (expiredAllocation.unplannedExpiredHoursId) {
+        await axios.patch(
+          `/api/phases/${expiredAllocation.phaseId}/allocations/${expiredAllocation.id}`,
           {
-            consultantId: expiredAllocation.consultantId,
-            hours: expiredAllocation.unplannedHours,
-            description: `Reallocated from "${expiredAllocation.phaseName}": ${description}`
+            action: 'reallocate',
+            targetPhaseId: selectedPhaseId,
+            newAllocationId: response.data.id, // Use the returned allocation ID
+            notes: finalReason
           }
-        ]
-      });
+        );
+        console.log('Marked unplanned hours as reallocated');
+      } else {
+        console.log('No UnplannedExpiredHours record to mark - skipping PATCH');
+      }
 
       onSuccess();
       onClose();
@@ -105,7 +174,7 @@ export default function ReallocationFormModal({
     }
   };
 
-  const selectedPhase = availablePhases.find(p => p.id === selectedPhaseId);
+  const selectedPhase = activePhases.find(p => p.id === selectedPhaseId);
 
   return (
     <div
@@ -201,16 +270,18 @@ export default function ReallocationFormModal({
                   required
                 >
                   <option value="">Select a phase...</option>
-                  {availablePhases.map((phase) => (
+                  {activePhases.map((phase) => (
                     <option key={phase.id} value={phase.id}>
-                      {phase.name} ({new Date(phase.startDate).toLocaleDateString()} - {new Date(phase.endDate).toLocaleDateString()})
+                      {phase.name}
                     </option>
                   ))}
                 </select>
-                {availablePhases.length === 0 && (
+                {activePhases.length === 0 && (
                   <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg">
                     <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                      No other phases available for reallocation. The consultant must have access to the target phase.
+                      {availablePhases.length === 0
+                        ? 'No other phases available for reallocation. The consultant must have access to the target phase.'
+                        : 'No active phases available for reallocation. All other phases have ended.'}
                     </p>
                   </div>
                 )}
@@ -255,22 +326,48 @@ export default function ReallocationFormModal({
               <h2 className="text-lg font-bold text-foreground">Reason for Reallocation</h2>
             </div>
 
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Explanation <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                disabled={isSubmitting}
-                rows={4}
-                className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-foreground focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 disabled:opacity-50 disabled:cursor-not-allowed resize-none transition-all"
-                placeholder="Explain why these hours need to be reallocated to this phase..."
-                required
-              />
-              <p className="mt-2 text-xs text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/50 p-2 rounded">
-                This explanation will be visible to the Growth Team when they review your reallocation request.
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="reason" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Select Reason <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="reason"
+                  value={selectedReason}
+                  onChange={(e) => setSelectedReason(e.target.value)}
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-foreground focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  required
+                >
+                  <option value="">Select a reason...</option>
+                  {REALLOCATION_REASONS.map((reason) => (
+                    <option key={reason} value={reason}>
+                      {reason}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedReason === 'Other' && (
+                <div>
+                  <label htmlFor="customReason" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Custom Reason <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    id="customReason"
+                    value={customReason}
+                    onChange={(e) => setCustomReason(e.target.value)}
+                    disabled={isSubmitting}
+                    rows={4}
+                    className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-foreground focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 disabled:opacity-50 disabled:cursor-not-allowed resize-none transition-all"
+                    placeholder="Please explain your specific reason for reallocation..."
+                    required
+                  />
+                </div>
+              )}
+
+              <p className="text-xs text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/50 p-2 rounded">
+                This reason will be visible to the Growth Team when they review your reallocation request.
               </p>
             </div>
           </div>
@@ -288,15 +385,15 @@ export default function ReallocationFormModal({
           </button>
 
           <button
-            type="submit"
-            onClick={(e) => {
-              e.preventDefault();
-              const form = e.currentTarget.closest('form');
-              if (form) {
-                form.requestSubmit();
-              }
-            }}
-            disabled={isSubmitting || !selectedPhaseId || !description.trim()}
+            type="button"
+            onClick={handleSubmit}
+            disabled={
+              isSubmitting ||
+              !selectedPhaseId ||
+              !selectedReason ||
+              (selectedReason === 'Other' && !customReason.trim()) ||
+              activePhases.length === 0
+            }
             className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
           >
             {isSubmitting ? (

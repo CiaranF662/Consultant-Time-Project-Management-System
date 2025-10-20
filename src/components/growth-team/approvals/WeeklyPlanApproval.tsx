@@ -15,6 +15,7 @@ interface WeeklyAllocation {
   weekStartDate: Date;
   weekEndDate: Date;
   createdAt?: Date;
+  updatedAt?: Date;
   consultantId: string;
   consultant: {
     id: string;
@@ -199,8 +200,9 @@ export default function WeeklyPlanApproval({
     const grouped = new Map<string, typeof filtered>();
 
     filtered.forEach(allocation => {
-      // Create a group key based on consultant and submission time (rounded to nearest minute)
-      const submissionTime = new Date(allocation.createdAt || allocation.weekStartDate);
+      // Create a group key based on consultant and most recent update time (rounded to nearest minute)
+      // Use updatedAt to reflect modifications, fall back to createdAt or weekStartDate
+      const submissionTime = new Date(allocation.updatedAt || allocation.createdAt || allocation.weekStartDate);
       const roundedTime = Math.floor(submissionTime.getTime() / (1000 * 60)) * (1000 * 60); // Round to minute
       const groupKey = `${allocation.consultant.id}-${roundedTime}`;
 
@@ -216,7 +218,7 @@ export default function WeeklyPlanApproval({
         return {
           id: key,
           consultant: allocations[0].consultant,
-          submissionTime: new Date(allocations[0].createdAt || allocations[0].weekStartDate),
+          submissionTime: new Date(allocations[0].updatedAt || allocations[0].createdAt || allocations[0].weekStartDate),
           allocations: allocations.sort((a, b) => new Date(a.weekStartDate).getTime() - new Date(b.weekStartDate).getTime()),
           totalHours: allocations.reduce((sum, alloc) => sum + (alloc.proposedHours || 0), 0),
           earliestWeek: new Date(Math.min(...allocations.map(a => new Date(a.weekStartDate).getTime()))),

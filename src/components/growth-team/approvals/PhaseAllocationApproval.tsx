@@ -33,6 +33,21 @@ interface PhaseAllocation {
       endDate: Date;
     }>;
   };
+  reallocationSource?: {
+    id: string;
+    unplannedHours: number;
+    notes: string | null;
+    phaseAllocation: {
+      phase: {
+        id: string;
+        name: string;
+        project: {
+          id: string;
+          title: string;
+        };
+      };
+    };
+  } | null;
 }
 
 interface PhaseAllocationApprovalProps {
@@ -401,11 +416,11 @@ export default function PhaseAllocationApproval({
         </div>
       ) : (
         getFilteredAndSortedAllocations().map((allocation) => {
-          // Check if this is a reallocation request
-          const isReallocation = allocation.consultantDescription?.startsWith('Reallocated from');
-          const reallocationMatch = isReallocation ? allocation.consultantDescription?.match(/Reallocated from "([^"]+)": (.+)/) : null;
-          const originalPhaseName = reallocationMatch?.[1];
-          const reallocationReason = reallocationMatch?.[2];
+          // Check if this is a reallocation request using the new reallocationSource field
+          const isReallocation = !!allocation.reallocationSource;
+          const originalPhaseName = allocation.reallocationSource?.phaseAllocation.phase.name;
+          const originalProjectName = allocation.reallocationSource?.phaseAllocation.phase.project.title;
+          const reallocationReason = allocation.reallocationSource?.notes;
 
           return (
           <div key={allocation.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
@@ -433,17 +448,22 @@ export default function PhaseAllocationApproval({
                           {allocation.phase.description}
                         </p>
                       )}
-                      {isReallocation && originalPhaseName && reallocationReason && (
+                      {isReallocation && (
                         <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
                           <div className="flex items-start gap-2">
                             <FaInfoCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                             <div className="flex-1 text-xs">
                               <p className="font-semibold text-amber-900 dark:text-amber-100 mb-1">
-                                Reallocated from: <span className="font-bold">"{originalPhaseName}"</span>
+                                Reallocated from: <span className="font-bold">{originalProjectName && `${originalProjectName} • `}"{originalPhaseName}"</span>
                               </p>
-                              <p className="text-amber-800 dark:text-amber-300">
-                                <span className="font-medium">Reason:</span> {reallocationReason}
+                              <p className="text-amber-800 dark:text-amber-300 mb-1">
+                                <span className="font-medium">Hours being reallocated:</span> {formatHours(allocation.reallocationSource?.unplannedHours || 0)}
                               </p>
+                              {reallocationReason && (
+                                <p className="text-amber-800 dark:text-amber-300">
+                                  <span className="font-medium">Reason:</span> {reallocationReason}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </div>
