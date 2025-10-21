@@ -32,6 +32,8 @@ interface PhaseCreationModalProps {
 
 export default function PhaseCreationModal({ project, onClose, onPhaseCreated }: PhaseCreationModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const modalContentRef = useRef<HTMLDivElement>(null);
   const consultantDropdownRef = useRef<HTMLDivElement>(null);
 
   // Phase details
@@ -88,6 +90,16 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose]);
+
+  // Scroll to error when error is set
+  useEffect(() => {
+    if (error && errorRef.current && modalContentRef.current) {
+      modalContentRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  }, [error]);
 
   const fetchProjectConsultants = async () => {
     try {
@@ -452,10 +464,10 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
         </div>
 
         {/* Modal Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div ref={modalContentRef} className="flex-1 overflow-y-auto">
           <form onSubmit={handleSubmit} className="space-y-6 p-6">
             {error && (
-              <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+              <div ref={errorRef} className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
                 <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
                   <FaExclamationTriangle className="w-4 h-4" />
                   <span className="text-sm font-medium">{error}</span>

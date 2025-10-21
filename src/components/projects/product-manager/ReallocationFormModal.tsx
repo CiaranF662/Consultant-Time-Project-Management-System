@@ -45,6 +45,8 @@ export default function ReallocationFormModal({
   onSuccess
 }: ReallocationFormModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const modalContentRef = useRef<HTMLFormElement>(null);
   const [selectedPhaseId, setSelectedPhaseId] = useState<string>('');
   const [selectedReason, setSelectedReason] = useState<string>('');
   const [customReason, setCustomReason] = useState<string>('');
@@ -83,6 +85,16 @@ export default function ReallocationFormModal({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose]);
+
+  // Scroll to error when error is set
+  useEffect(() => {
+    if (error && errorRef.current && modalContentRef.current) {
+      modalContentRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  }, [error]);
 
   const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
     if (e) {
@@ -211,9 +223,9 @@ export default function ReallocationFormModal({
         </div>
 
         {/* Modal Content */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+        <form onSubmit={handleSubmit} ref={modalContentRef} className="flex-1 overflow-y-auto p-6 space-y-6">
           {error && (
-            <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+            <div ref={errorRef} className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
               <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
                 <FaExclamationTriangle className="w-4 h-4" />
                 <span className="text-sm font-medium">{error}</span>

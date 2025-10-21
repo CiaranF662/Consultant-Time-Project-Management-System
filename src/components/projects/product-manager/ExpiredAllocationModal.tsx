@@ -27,6 +27,8 @@ export default function ExpiredAllocationModal({
   onReallocationRequest
 }: ExpiredAllocationModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const modalContentRef = useRef<HTMLDivElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,6 +59,16 @@ export default function ExpiredAllocationModal({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose]);
+
+  // Scroll to error when error is set
+  useEffect(() => {
+    if (error && errorRef.current && modalContentRef.current) {
+      modalContentRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  }, [error]);
 
   const handleForfeit = async () => {
     if (!confirm(`Are you sure you want to forfeit ${allocation.unplannedHours.toFixed(1)} hours? This action cannot be undone.`)) {
@@ -112,9 +124,9 @@ export default function ExpiredAllocationModal({
         </div>
 
         {/* Modal Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div ref={modalContentRef} className="flex-1 overflow-y-auto p-6 space-y-6">
           {error && (
-            <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+            <div ref={errorRef} className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
               <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
                 <FaExclamationTriangle className="w-4 h-4" />
                 <span className="text-sm font-medium">{error}</span>

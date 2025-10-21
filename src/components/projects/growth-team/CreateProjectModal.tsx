@@ -48,6 +48,8 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
   const pmDropdownRef = useRef<HTMLDivElement>(null);
   const consultantDropdownRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const modalContentRef = useRef<HTMLDivElement>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -207,6 +209,16 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);
+
+  // Scroll to error when error is set
+  useEffect(() => {
+    if (error && errorRef.current && modalContentRef.current) {
+      modalContentRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  }, [error]);
 
   // Filter consultants based on search query
   const getFilteredConsultants = (searchQuery: string, excludeIds: string[] = []) => {
@@ -539,9 +551,14 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
         )}
 
         {/* Modal Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div ref={modalContentRef} className="flex-1 overflow-y-auto">
           <form onSubmit={handleSubmit} className="space-y-6 p-6">
-            
+            {error && (
+              <div ref={errorRef} className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+                <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>
+              </div>
+            )}
+
             {/* Basic Project Information */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-800/20 p-6 rounded-lg border border-blue-100 dark:border-blue-800">
               <div className="flex items-center gap-3 mb-4">
@@ -1152,12 +1169,6 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                 )}
               </div>
             </div>
-
-            {error && (
-              <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
-                <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>
-              </div>
-            )}
           </form>
         </div>
 

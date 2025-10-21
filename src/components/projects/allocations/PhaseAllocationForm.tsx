@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { FaTimes, FaPlus, FaTrash, FaSave, FaUsers, FaClock, FaInfoCircle, FaUser, FaHourglassHalf, FaSearch, FaTimesCircle } from 'react-icons/fa';
 import { generateColorFromString } from '@/lib/colors';
+import { sortConsultantIds, calculateAvailabilityStatus, type ConsultantAvailabilityStatus } from '@/lib/consultant-sorting';
 import ConsultantScheduleView from './ConsultantScheduleView';
 
 interface Consultant {
@@ -48,6 +49,8 @@ export default function PhaseAllocationForm({
   existingAllocations = []
 }: PhaseAllocationFormProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const modalContentRef = useRef<HTMLDivElement>(null);
   const [consultants, setConsultants] = useState<Consultant[]>([]);
   const [allocations, setAllocations] = useState<PhaseAllocation[]>([]);
   const [allocatedToPhases, setAllocatedToPhases] = useState<Record<string, number>>({});
@@ -61,6 +64,7 @@ export default function PhaseAllocationForm({
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<Record<string, string>>({});
   const [consultantAvailability, setConsultantAvailability] = useState<Record<string, number>>({});
+  const [consultantAvailabilityStatus, setConsultantAvailabilityStatus] = useState<Record<string, ConsultantAvailabilityStatus>>({});
 
   useEffect(() => {
     if (isOpen) {
@@ -169,18 +173,23 @@ export default function PhaseAllocationForm({
       // Fetch consultant workload availability for this phase
       const response = await axios.get(`/api/phases/${phaseId}/consultant-availability`);
 
-      // Build a map of consultant ID -> total available hours during phase
+      // Build maps for consultant ID -> total available hours and availability status
       const availabilityMap: Record<string, number> = {};
+      const statusMap: Record<string, ConsultantAvailabilityStatus> = {};
 
       response.data.consultants.forEach((consultant: any) => {
         const totalAvailable = consultant.weeklyBreakdown.reduce(
           (sum: number, week: any) => sum + week.availableHours,
           0
         );
-        availabilityMap[consultant.consultant.id] = totalAvailable;
+        const consultantId = consultant.consultant.id;
+
+        availabilityMap[consultantId] = totalAvailable;
+        statusMap[consultantId] = consultant.overallStatus;
       });
 
       setConsultantAvailability(availabilityMap);
+      setConsultantAvailabilityStatus(statusMap);
     } catch (error) {
       console.error('Failed to fetch consultant availability:', error);
       // Don't show error to user, just log it - availability is informational
@@ -239,6 +248,23 @@ export default function PhaseAllocationForm({
     return Object.values(consultantHours).reduce((sum, hours) => sum + (hours || 0), 0);
   };
 
+  // Get sorted consultant IDs for consistent ordering
+  const getSortedConsultantIds = () => {
+    const consultantDataMap: Record<string, { name: string; availabilityStatus?: ConsultantAvailabilityStatus }> = {};
+
+    selectedConsultantIds.forEach(id => {
+      const consultant = consultants.find(c => c.id === id);
+      if (consultant) {
+        consultantDataMap[id] = {
+          name: consultant.name,
+          availabilityStatus: consultantAvailabilityStatus[id]
+        };
+      }
+    });
+
+    return sortConsultantIds(selectedConsultantIds, consultantDataMap);
+  };
+
   // Click outside handler for dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -252,6 +278,16 @@ export default function PhaseAllocationForm({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Scroll to error when error is set
+  useEffect(() => {
+    if (error && errorRef.current && modalContentRef.current) {
+      modalContentRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  }, [error]);
 
   const validateAllocations = () => {
     setError(null);
@@ -339,9 +375,19 @@ export default function PhaseAllocationForm({
         </div>
 
         {/* Modal Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div ref={modalContentRef} className="flex-1 overflow-y-auto">
           <div className="space-y-6 p-6">
-            
+
+            {/* Error Message */}
+            {error && (
+              <div ref={errorRef} className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+                <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
+                  <FaTimesCircle className="w-4 h-4" />
+                  <span className="text-sm font-medium">{error}</span>
+                </div>
+              </div>
+            )}
+
             {/* Hour Allocation Section */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 p-6 rounded-lg border border-blue-100 dark:border-blue-800">
               <div className="flex items-center gap-3 mb-4">
@@ -400,7 +446,7 @@ export default function PhaseAllocationForm({
                     </div>
 
                     <div className="space-y-3">
-                      {selectedConsultantIds.map((consultantId) => {
+                      {getSortedConsultantIds().map((consultantId) => {
                         const consultant = consultants.find(c => c.id === consultantId);
                         const projectAllocated = consultant?.allocatedHours || 0;
                         const currentAllocatedToPhases = allocatedToPhases[consultantId] || 0;
@@ -644,7 +690,7 @@ export default function PhaseAllocationForm({
               <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 p-6 rounded-lg border border-indigo-100 dark:border-indigo-800">
                 <ConsultantScheduleView
                   phaseId={phaseId}
-                  selectedConsultantIds={selectedConsultantIds}
+                  selectedConsultantIds={getSortedConsultantIds()}
                 />
               </div>
             )}
@@ -666,12 +712,6 @@ export default function PhaseAllocationForm({
                     <div className="text-sm text-green-700 dark:text-green-300">Consultants</div>
                   </div>
                 </div>
-              </div>
-            )}
-
-            {error && (
-              <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
-                <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>
               </div>
             )}
           </div>

@@ -164,8 +164,11 @@ export default function ConsultantScheduleView({
   }
 
   // Filter to show only selected consultants if any are selected
+  // Preserve the order of selectedConsultantIds (which is already sorted in PhaseAllocationForm)
   const filteredAvailability = selectedConsultantIds.length > 0
-    ? availability.filter(a => selectedConsultantIds.includes(a.consultant.id))
+    ? selectedConsultantIds
+        .map(id => availability.find(a => a.consultant.id === id))
+        .filter((a): a is ConsultantAvailability => a !== undefined)
     : availability;
 
   return (
