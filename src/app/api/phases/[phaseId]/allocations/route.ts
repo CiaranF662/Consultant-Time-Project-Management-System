@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth, isAuthError } from '@/lib/api-auth';
 import { ProjectRole, NotificationType, UserRole } from '@prisma/client';
 import { getGrowthTeamMemberIds, createNotificationsForUsers, NotificationTemplates } from '@/lib/notifications';
-import { createPhaseAllocationSchema, bulkUpdatePhaseAllocationsSchema, safeValidateRequestBody, formatValidationErrors } from '@/lib/validation-schemas';
+import { createPhaseAllocationSchema, safeValidateRequestBody, formatValidationErrors } from '@/lib/validation-schemas';
 import { logError, logApiRequest, logValidationError, logAuthorizationFailure } from '@/lib/error-logger';
 import { isPhaseLocked } from '@/lib/phase-lock';
 
@@ -10,7 +10,7 @@ import { prisma } from "@/lib/prisma";
 
 // GET all allocations for a phase
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ phaseId: string }> }
 ) {
   const { phaseId } = await params;
@@ -18,7 +18,7 @@ export async function GET(
 
   const auth = await requireAuth();
   if (isAuthError(auth)) return auth;
-  const { session, user } = auth;
+  const { session } = auth;
 
   try {
     const allocations = await prisma.phaseAllocation.findMany({
@@ -109,14 +109,115 @@ export async function POST(
 
     const { consultantId, totalHours } = validation.data;
 
-    // Check if allocation already exists
-    const existing = await prisma.phaseAllocation.findUnique({
+    // Get consultant name for error messages
+    const consultant = await prisma.user.findUnique({
+      where: { id: consultantId },
+      select: { name: true, email: true }
+    });
+    const consultantName = consultant?.name || consultant?.email || 'Consultant';
+
+    // BUDGET VALIDATION 1: Per-Consultant Project Budget
+    // Get consultant's project assignment to check their allocated hours budget
+    const consultantAssignment = await prisma.consultantsOnProjects.findUnique({
       where: {
-        phaseId_consultantId: {
-          phaseId,
-          consultantId
+        userId_projectId: {
+          userId: consultantId,
+          projectId: phase.project.id
         }
-      },
+      }
+    });
+
+    if (consultantAssignment && consultantAssignment.allocatedHours) {
+      // Calculate total hours already allocated to this consultant across all phases in this project
+      const allPhaseAllocations = await prisma.phaseAllocation.findMany({
+        where: {
+          phase: { projectId: phase.project.id },
+          consultantId: consultantId,
+          approvalStatus: { in: ['PENDING', 'APPROVED'] }, // Count both pending and approved
+          parentAllocationId: null // Only count parent allocations (not child reallocations)
+        } as any
+      });
+
+      // Sum up total hours, excluding the current allocation if updating
+      const currentAllocationTotal = allPhaseAllocations
+        .filter(alloc => alloc.phaseId !== phaseId) // Exclude current phase (will be replaced)
+        .reduce((sum, alloc) => sum + alloc.totalHours, 0);
+
+      // Add child reallocations that are pending
+      const pendingChildAllocations = await prisma.phaseAllocation.findMany({
+        where: {
+          phase: { projectId: phase.project.id },
+          consultantId: consultantId,
+          approvalStatus: 'PENDING',
+          parentAllocationId: { not: null } // Only child reallocations
+        } as any
+      });
+
+      const pendingChildTotal = pendingChildAllocations.reduce((sum, alloc) => sum + alloc.totalHours, 0);
+
+      const newTotal = currentAllocationTotal + pendingChildTotal + totalHours;
+      const budget = consultantAssignment.allocatedHours;
+
+      if (newTotal > budget) {
+        return new NextResponse(JSON.stringify({
+          error: `Budget exceeded: This allocation would bring ${consultantName || 'the consultant'}'s total to ${newTotal}h, exceeding their project budget of ${budget}h.`,
+          consultantId,
+          currentTotal: currentAllocationTotal + pendingChildTotal,
+          requestedHours: totalHours,
+          newTotal,
+          budget,
+          overage: newTotal - budget
+        }), { status: 400 });
+      }
+    }
+
+    // BUDGET VALIDATION 2: Project Total Budget (Warning)
+    // Calculate total allocated hours across all consultants in the project
+    const allProjectAllocations = await prisma.phaseAllocation.findMany({
+      where: {
+        phase: { projectId: phase.project.id },
+        approvalStatus: { in: ['PENDING', 'APPROVED'] },
+        parentAllocationId: null // Only parent allocations
+      } as any
+    });
+
+    const projectAllocatedTotal = allProjectAllocations
+      .filter(alloc => !(alloc.phaseId === phaseId && alloc.consultantId === consultantId)) // Exclude current if updating
+      .reduce((sum, alloc) => sum + alloc.totalHours, 0);
+
+    // Include pending child reallocations
+    const allPendingChildren = await prisma.phaseAllocation.findMany({
+      where: {
+        phase: { projectId: phase.project.id },
+        approvalStatus: 'PENDING',
+        parentAllocationId: { not: null }
+      } as any
+    });
+
+    const projectPendingChildTotal = allPendingChildren.reduce((sum, alloc) => sum + alloc.totalHours, 0);
+
+    const newProjectTotal = projectAllocatedTotal + projectPendingChildTotal + totalHours;
+    const projectBudget = phase.project.budgetedHours;
+
+    // Store warning for response (don't block, just warn)
+    let budgetWarning = null;
+    if (projectBudget && newProjectTotal > projectBudget) {
+      budgetWarning = {
+        message: `Warning: Project total allocations (${newProjectTotal}h) would exceed project budget (${projectBudget}h) by ${newProjectTotal - projectBudget}h`,
+        projectTotal: newProjectTotal,
+        projectBudget,
+        overage: newProjectTotal - projectBudget
+      };
+    }
+
+    // Check if allocation already exists (find the parent allocation, not child reallocations)
+    const existing = await prisma.phaseAllocation.findFirst({
+      where: {
+        phaseId,
+        consultantId,
+        isReallocation: false, // Only find parent allocations, not child reallocations
+        parentAllocationId: null
+      } as any,
       include: {
         weeklyAllocations: {
           where: {
@@ -135,8 +236,6 @@ export async function POST(
 
       // Business rule validation for hour changes
       if (existing.totalHours !== totalHours) {
-        const unplannedHours = existing.totalHours - totalPlannedHours;
-
         // If consultant has fully utilized their allocation, PM can only increase hours
         if (totalPlannedHours >= existing.totalHours && totalHours < existing.totalHours) {
           return new NextResponse(JSON.stringify({
@@ -157,7 +256,142 @@ export async function POST(
         }
       }
 
-      // Update existing allocation - requires Growth Team approval if hours changed
+      // HYBRID REALLOCATION LOGIC
+      // Check if this is a reallocation (from query params or body)
+      const url = new URL(request.url);
+      const isReallocation = url.searchParams.get('isReallocation') === 'true' || body.isReallocation === true;
+      const reallocatedFromPhaseId = url.searchParams.get('reallocatedFromPhaseId') || body.reallocatedFromPhaseId;
+      const reallocatedFromUnplannedId = url.searchParams.get('reallocatedFromUnplannedId') || body.reallocatedFromUnplannedId;
+
+      if (isReallocation && reallocatedFromPhaseId) {
+        const reallocatedHours = totalHours - existing.totalHours;
+
+        // Scenario 1: Original APPROVED + Reallocation PENDING → Keep separate
+        if (existing.approvalStatus === 'APPROVED') {
+          // Create a new child allocation for the reallocation
+          allocation = await prisma.phaseAllocation.create({
+            data: {
+              phaseId,
+              consultantId,
+              totalHours: reallocatedHours,
+              approvalStatus: 'PENDING',
+              isReallocation: true,
+              reallocatedFromPhaseId,
+              reallocatedFromUnplannedId,
+              parentAllocationId: existing.id
+            } as any,
+            include: {
+              consultant: true,
+              phase: {
+                include: {
+                  project: {
+                    include: {
+                      consultants: {
+                        where: { role: ProjectRole.PRODUCT_MANAGER },
+                        include: { user: true }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          } as any);
+
+          console.log(`[SCENARIO 1] Created separate reallocation ${allocation.id} as child of approved allocation ${existing.id}`);
+        }
+        // Scenario 2: Both PENDING → Merge into one allocation
+        else if (existing.approvalStatus === 'PENDING') {
+          // Update existing allocation with merged hours and composition metadata
+          const existingAny = existing as any;
+          const compositionMetadata = existingAny.isComposite && existingAny.compositionMetadata
+            ? [...(existingAny.compositionMetadata as any[]), {
+                reallocatedHours,
+                reallocatedFromPhaseId,
+                reallocatedFromUnplannedId,
+                timestamp: new Date().toISOString()
+              }]
+            : [{
+                originalHours: existing.totalHours,
+                timestamp: existing.createdAt.toISOString()
+              }, {
+                reallocatedHours,
+                reallocatedFromPhaseId,
+                reallocatedFromUnplannedId,
+                timestamp: new Date().toISOString()
+              }];
+
+          allocation = await prisma.phaseAllocation.update({
+            where: { id: existing.id },
+            data: {
+              totalHours,
+              isComposite: true,
+              compositionMetadata,
+              updatedAt: new Date() // Update timestamp to reflect latest activity
+            } as any,
+            include: {
+              consultant: true,
+              phase: {
+                include: {
+                  project: {
+                    include: {
+                      consultants: {
+                        where: { role: ProjectRole.PRODUCT_MANAGER },
+                        include: { user: true }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          } as any);
+
+          console.log(`[SCENARIO 2] Merged reallocation into existing pending allocation ${existing.id}. New total: ${totalHours}h`);
+        } else {
+          // Shouldn't happen, but handle gracefully
+          return new NextResponse(JSON.stringify({
+            error: 'Cannot reallocate to an allocation with status: ' + existing.approvalStatus
+          }), { status: 400 });
+        }
+
+        // Send notifications for reallocation
+        try {
+          const growthTeamIds = await getGrowthTeamMemberIds();
+          const allocationAny = allocation as any;
+          const consultantName = allocationAny.consultant?.name || allocationAny.consultant?.email || 'Consultant';
+          const pmName = allocationAny.phase?.project?.consultants?.[0]?.user?.name || 'Product Manager';
+
+          if (growthTeamIds.length > 0) {
+            const message = existing.approvalStatus === 'APPROVED'
+              ? `${pmName} reallocated ${reallocatedHours}h from another phase to "${allocationAny.phase?.name}" for ${consultantName}. This is in addition to their existing ${existing.totalHours}h allocation (already approved).`
+              : `${pmName} reallocated ${reallocatedHours}h from another phase to "${allocationAny.phase?.name}" for ${consultantName}. This has been merged with their pending ${existing.totalHours}h allocation for a total of ${totalHours}h.`;
+
+            await createNotificationsForUsers(
+              growthTeamIds,
+              NotificationType.PHASE_ALLOCATION_PENDING,
+              'Phase Reallocation Requires Approval',
+              message,
+              `/dashboard/hour-approvals`,
+              {
+                projectId: allocationAny.phase?.project?.id,
+                phaseId: allocationAny.phase?.id,
+                allocationId: allocation.id,
+                isReallocation: true
+              }
+            );
+          }
+        } catch (error) {
+          console.error('Failed to send reallocation notifications:', error);
+        }
+
+        // Include budget warning if present
+        const response: any = { ...allocation };
+        if (budgetWarning) {
+          response.budgetWarning = budgetWarning;
+        }
+        return NextResponse.json(response, { status: 201 });
+      }
+
+      // Normal update (not a reallocation)
       const dataToUpdate: any = { totalHours };
       const hoursChanged = existing.totalHours !== totalHours;
 
@@ -194,15 +428,16 @@ export async function POST(
         try {
           const growthTeamIds = await getGrowthTeamMemberIds();
           const productManagerId = session.user.id;
-          const consultantName = allocation.consultant.name || allocation.consultant.email || 'Consultant';
-          const pmName = allocation.phase.project.consultants[0]?.user.name || 'Product Manager';
+          const allocationAny = allocation as any;
+          const consultantName = allocationAny.consultant?.name || allocationAny.consultant?.email || 'Consultant';
+          const pmName = allocationAny.phase?.project?.consultants?.[0]?.user?.name || 'Product Manager';
 
           // Notify Growth Team about updated allocation
           if (growthTeamIds.length > 0) {
             const growthTemplate = NotificationTemplates.PHASE_ALLOCATION_PENDING_FOR_GROWTH(
               consultantName,
-              allocation.phase.name,
-              allocation.phase.project.title,
+              allocationAny.phase?.name || 'Phase',
+              allocationAny.phase?.project?.title || 'Project',
               allocation.totalHours,
               pmName
             );
@@ -214,8 +449,8 @@ export async function POST(
               growthTemplate.message,
               `/dashboard/hour-approvals`,
               {
-                projectId: allocation.phase.project.id,
-                phaseId: allocation.phase.id,
+                projectId: allocationAny.phase?.project?.id,
+                phaseId: allocationAny.phase?.id,
                 allocationId: allocation.id,
                 updated: true
               }
@@ -226,7 +461,7 @@ export async function POST(
           if (productManagerId !== session.user.id) {
             const pmTemplate = NotificationTemplates.PHASE_ALLOCATION_PENDING_FOR_PM(
               consultantName,
-              allocation.phase.name,
+              allocationAny.phase?.name || 'Phase',
               allocation.totalHours
             );
 
@@ -235,10 +470,10 @@ export async function POST(
               NotificationType.PHASE_ALLOCATION_PENDING,
               pmTemplate.title,
               pmTemplate.message,
-              `/dashboard/projects/${allocation.phase.project.id}`,
+              `/dashboard/projects/${allocationAny.phase?.project?.id}`,
               {
-                projectId: allocation.phase.project.id,
-                phaseId: allocation.phase.id,
+                projectId: allocationAny.phase?.project?.id,
+                phaseId: allocationAny.phase?.id,
                 allocationId: allocation.id,
                 updated: true
               }
@@ -249,15 +484,25 @@ export async function POST(
         }
       }
     } else {
+      // No existing allocation - check if this is a reallocation
+      const url = new URL(request.url);
+      const isReallocation = url.searchParams.get('isReallocation') === 'true' || body.isReallocation === true;
+      const reallocatedFromPhaseId = url.searchParams.get('reallocatedFromPhaseId') || body.reallocatedFromPhaseId;
+      const reallocatedFromUnplannedId = url.searchParams.get('reallocatedFromUnplannedId') || body.reallocatedFromUnplannedId;
+
       // Create new allocation (requires Growth Team approval)
       allocation = await prisma.phaseAllocation.create({
         data: {
           phaseId,
           consultantId,
           totalHours,
-          approvalStatus: 'PENDING'
-        },
-        include: { 
+          approvalStatus: 'PENDING',
+          // If this is a reallocation, mark it as such
+          isReallocation: isReallocation || false,
+          reallocatedFromPhaseId: isReallocation ? reallocatedFromPhaseId : null,
+          reallocatedFromUnplannedId: isReallocation ? reallocatedFromUnplannedId : null
+        } as any,
+        include: {
           consultant: true,
           phase: {
             include: {
@@ -272,22 +517,23 @@ export async function POST(
             }
           }
         }
-      });
-      
+      } as any);
+
       // Send notifications for new allocation
       try {
         const growthTeamIds = await getGrowthTeamMemberIds();
         const productManagerId = session.user.id;
-        const consultantName = allocation.consultant.name || allocation.consultant.email || 'Consultant';
-        const pmName = allocation.phase.project.consultants[0]?.user.name || 'Product Manager';
+        const allocationAny = allocation as any;
+        const consultantName = allocationAny.consultant?.name || allocationAny.consultant?.email || 'Consultant';
+        const pmName = allocationAny.phase?.project?.consultants?.[0]?.user?.name || 'Product Manager';
 
         // Notify Growth Team about pending allocation
         console.log('Growth Team IDs found:', growthTeamIds);
         if (growthTeamIds.length > 0) {
           const growthTemplate = NotificationTemplates.PHASE_ALLOCATION_PENDING_FOR_GROWTH(
             consultantName,
-            allocation.phase.name,
-            allocation.phase.project.title,
+            allocationAny.phase?.name || 'Phase',
+            allocationAny.phase?.project?.title || 'Project',
             allocation.totalHours,
             pmName
           );
@@ -305,8 +551,8 @@ export async function POST(
             growthTemplate.message,
             `/dashboard/hour-approvals`,
             {
-              projectId: allocation.phase.project.id,
-              phaseId: allocation.phase.id,
+              projectId: allocationAny.phase?.project?.id,
+              phaseId: allocationAny.phase?.id,
               allocationId: allocation.id
             }
           );
@@ -318,7 +564,7 @@ export async function POST(
         if (productManagerId !== consultantId) {
           const pmTemplate = NotificationTemplates.PHASE_ALLOCATION_PENDING_FOR_PM(
             consultantName,
-            allocation.phase.name,
+            allocationAny.phase?.name || 'Phase',
             allocation.totalHours
           );
 
@@ -327,10 +573,10 @@ export async function POST(
             NotificationType.PHASE_ALLOCATION_PENDING,
             pmTemplate.title,
             pmTemplate.message,
-            `/dashboard/projects/${allocation.phase.project.id}`,
+            `/dashboard/projects/${allocationAny.phase?.project?.id}`,
             {
-              projectId: allocation.phase.project.id,
-              phaseId: allocation.phase.id,
+              projectId: allocationAny.phase?.project?.id,
+              phaseId: allocationAny.phase?.id,
               allocationId: allocation.id
             }
           );
@@ -343,7 +589,12 @@ export async function POST(
       }
     }
 
-    return NextResponse.json(allocation, { status: existing ? 200 : 201 });
+    // Include budget warning if present
+    const response: any = { ...allocation };
+    if (budgetWarning) {
+      response.budgetWarning = budgetWarning;
+    }
+    return NextResponse.json(response, { status: existing ? 200 : 201 });
   } catch (error) {
     console.error('Error creating/updating phase allocation:', error);
     return new NextResponse(JSON.stringify({ error: 'Failed to save allocation' }), { status: 500 });
@@ -357,7 +608,7 @@ export async function PUT(
 ) {
   const auth = await requireAuth();
   if (isAuthError(auth)) return auth;
-  const { session, user } = auth;
+  const { session } = auth;
 
   const { phaseId } = await params;
 
@@ -454,6 +705,73 @@ export async function PUT(
             plannedHours: totalPlannedHours,
             minimumAllowedHours: totalPlannedHours,
             currentAllocation: existing.totalHours
+          }), { status: 400 });
+        }
+      }
+    }
+
+    // BUDGET VALIDATION for bulk updates
+    // Validate each allocation against per-consultant budget
+    for (const allocation of allocations) {
+      const consultantId = allocation.consultantId;
+      const newHours = parseFloat(allocation.totalHours);
+
+      // Get consultant assignment for budget
+      const consultantAssignment = await prisma.consultantsOnProjects.findUnique({
+        where: {
+          userId_projectId: {
+            userId: consultantId,
+            projectId: phase.project.id
+          }
+        }
+      });
+
+      if (consultantAssignment && consultantAssignment.allocatedHours) {
+        // Calculate total hours already allocated to this consultant across all phases
+        const allPhaseAllocations = await prisma.phaseAllocation.findMany({
+          where: {
+            phase: { projectId: phase.project.id },
+            consultantId: consultantId,
+            approvalStatus: { in: ['PENDING', 'APPROVED'] },
+            parentAllocationId: null
+          } as any
+        });
+
+        // Sum up total hours, excluding the current phase allocation
+        const currentAllocationTotal = allPhaseAllocations
+          .filter(alloc => alloc.phaseId !== phaseId)
+          .reduce((sum, alloc) => sum + alloc.totalHours, 0);
+
+        // Add pending child reallocations
+        const pendingChildAllocations = await prisma.phaseAllocation.findMany({
+          where: {
+            phase: { projectId: phase.project.id },
+            consultantId: consultantId,
+            approvalStatus: 'PENDING',
+            parentAllocationId: { not: null }
+          } as any
+        });
+
+        const pendingChildTotal = pendingChildAllocations.reduce((sum, alloc) => sum + alloc.totalHours, 0);
+
+        const newTotal = currentAllocationTotal + pendingChildTotal + newHours;
+        const budget = consultantAssignment.allocatedHours;
+
+        if (newTotal > budget) {
+          const consultant = await prisma.user.findUnique({
+            where: { id: consultantId },
+            select: { name: true, email: true }
+          });
+          const consultantName = consultant?.name || consultant?.email || 'Consultant';
+
+          return new NextResponse(JSON.stringify({
+            error: `Budget exceeded: Allocating ${newHours}h to ${consultantName} would bring their total to ${newTotal}h, exceeding their project budget of ${budget}h.`,
+            consultantId,
+            currentTotal: currentAllocationTotal + pendingChildTotal,
+            requestedHours: newHours,
+            newTotal,
+            budget,
+            overage: newTotal - budget
           }), { status: 400 });
         }
       }

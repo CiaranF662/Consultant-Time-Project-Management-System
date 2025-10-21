@@ -38,6 +38,22 @@ interface IndividualAllocation {
     status: 'EXPIRED' | 'FORFEITED' | 'REALLOCATED';
     detectedAt: Date | string;
   } | null;
+  // Reallocation tracking
+  isReallocation?: boolean;
+  reallocatedFromPhaseId?: string | null;
+  reallocatedFromPhaseName?: string | null;
+  parentAllocationId?: string | null;
+  parentAllocation?: IndividualAllocation | null;
+  childAllocations?: IndividualAllocation[];
+  // Composition tracking
+  isComposite?: boolean;
+  compositionMetadata?: Array<{
+    originalHours?: number;
+    reallocatedHours?: number;
+    reallocatedFromPhaseId?: string;
+    reallocatedFromUnplannedId?: string;
+    timestamp: string;
+  }> | null;
 }
 
 interface Sprint {
@@ -386,7 +402,9 @@ export default function PhaseStatusCard({
         <div className="p-4 border-t border-gray-100 dark:border-gray-800">
           <h4 className="font-medium text-foreground mb-3">Individual Allocations</h4>
           <div className="space-y-2">
-            {individualAllocations.map((allocation) => {
+            {individualAllocations
+              .filter(allocation => !allocation.parentAllocationId) // Only show parent allocations (child reallocations will be nested)
+              .map((allocation) => {
               const isOwnAllocation = currentUserId && allocation.consultantId === currentUserId;
 
               // With Option C, check unplannedExpiredHours instead of approvalStatus
@@ -595,6 +613,114 @@ export default function PhaseStatusCard({
                 <div className="ml-3 mt-1 p-2 bg-red-50 dark:bg-red-900/20 border-l-2 border-red-400 dark:border-red-600 rounded text-xs">
                   <span className="font-semibold text-red-800 dark:text-red-300">Rejection Reason: </span>
                   <span className="text-red-700 dark:text-red-400">{allocation.rejectionReason}</span>
+                </div>
+              )}
+
+              {/* Composition Breakdown (Scenario 2: Merged pending allocation) */}
+              {allocation.isComposite && allocation.compositionMetadata && allocation.compositionMetadata.length > 0 && (
+                <div className="ml-3 mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400 dark:border-blue-600 rounded text-xs">
+                  <div className="flex items-start gap-2">
+                    <FaExchangeAlt className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                    <div className="text-blue-800 dark:text-blue-300 space-y-1">
+                      <p className="font-semibold">This allocation includes reallocated hours:</p>
+                      {allocation.compositionMetadata.map((comp, idx) => (
+                        <div key={idx} className="pl-2 text-blue-700 dark:text-blue-400">
+                          {comp.originalHours ? (
+                            <p>• {formatHours(comp.originalHours)} original allocation</p>
+                          ) : (
+                            <p>• {formatHours(comp.reallocatedHours || 0)} reallocated from another phase</p>
+                          )}
+                        </div>
+                      ))}
+                      <p className="text-blue-700 dark:text-blue-400 pt-1">
+                        Total: {formatHours(allocation.hours)} pending approval
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Child Reallocations (Scenario 1: Keep separate until approved) */}
+              {allocation.childAllocations && allocation.childAllocations.length > 0 && (
+                <div className="ml-6 mt-3 space-y-2">
+                  {allocation.childAllocations.map((childAllocation) => {
+                    const consultantColor = generateColorFromString(allocation.consultantId);
+
+                    return (
+                      <div key={childAllocation.id} className="relative">
+                        {/* Enhanced connector line with consultant's color accent */}
+                        <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-blue-400 dark:bg-blue-500 -ml-3"></div>
+                        <div className="absolute left-0 top-6 w-3 h-0.5 bg-blue-400 dark:bg-blue-500 -ml-3"></div>
+                        {/* Vertical connector to parent */}
+                        <div className="absolute left-0 top-0 w-0.5 h-3 bg-blue-400 dark:bg-blue-500 -ml-3 -mt-3"></div>
+
+                        <div className={`relative overflow-hidden rounded-lg border-l-4 ${
+                          childAllocation.approvalStatus === 'PENDING' ? 'bg-orange-50 dark:bg-orange-900/30 border-t border-r border-b border-orange-200 dark:border-orange-700 border-l-blue-500 dark:border-l-blue-400' :
+                          childAllocation.approvalStatus === 'REJECTED' ? 'bg-red-50 dark:bg-red-900/30 border-t border-r border-b border-red-200 dark:border-red-700 border-l-blue-500 dark:border-l-blue-400' :
+                          'bg-gray-50 dark:bg-gray-700/50 border-t border-r border-b border-transparent dark:border-gray-600 border-l-blue-500 dark:border-l-blue-400'
+                        }`}>
+                          {/* Diagonal stripes */}
+                          {childAllocation.approvalStatus === 'PENDING' && (
+                            <div className="absolute inset-0 pointer-events-none opacity-20"
+                                 style={{
+                                   backgroundImage: `repeating-linear-gradient(
+                                     45deg,
+                                     transparent,
+                                     transparent 8px,
+                                     rgba(249, 115, 22, 0.3) 8px,
+                                     rgba(249, 115, 22, 0.3) 16px
+                                   )`
+                                 }}>
+                            </div>
+                          )}
+
+                          <div className="flex items-center justify-between p-3">
+                            <div className="flex items-center gap-2 relative z-10">
+                              <FaExchangeAlt className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                              {/* Show consultant name badge to make link crystal clear */}
+                              <span className={`px-2 py-1 rounded text-xs font-medium ${consultantColor}`}>
+                                {allocation.consultantName}
+                              </span>
+                              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                                +{formatHours(childAllocation.hours)} reallocated
+                              </span>
+                              {childAllocation.reallocatedFromPhaseName && (
+                                <span className="text-xs text-muted-foreground">
+                                  from "{childAllocation.reallocatedFromPhaseName}"
+                                </span>
+                              )}
+                              {childAllocation.approvalStatus === 'PENDING' && (
+                                <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-200 dark:bg-orange-900/50 text-orange-800 dark:text-orange-300 rounded-full text-xs font-medium">
+                                  <FaHourglassHalf className="w-2 h-2" />
+                                  Pending Approval
+                                </span>
+                              )}
+                              {childAllocation.approvalStatus === 'REJECTED' && (
+                                <span className="flex items-center gap-1 px-2 py-0.5 bg-red-200 dark:bg-red-900/50 text-red-800 dark:text-red-300 rounded-full text-xs font-medium">
+                                  <FaTimesCircle className="w-2 h-2" />
+                                  Rejected
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="text-sm text-gray-600 dark:text-gray-400 italic">
+                              Will merge with allocation above after approval
+                            </div>
+                          </div>
+
+                          {/* Rejection Reason for child */}
+                          {childAllocation.approvalStatus === 'REJECTED' && childAllocation.rejectionReason && (
+                            <div className="px-3 pb-3">
+                              <div className="p-2 bg-red-50 dark:bg-red-900/20 border-l-2 border-red-400 dark:border-red-600 rounded text-xs">
+                                <span className="font-semibold text-red-800 dark:text-red-300">Rejection Reason: </span>
+                                <span className="text-red-700 dark:text-red-400">{childAllocation.rejectionReason}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

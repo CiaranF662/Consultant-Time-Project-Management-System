@@ -45,6 +45,13 @@ interface PhaseAllocation {
     weekStartDate: Date;
     weekEndDate: Date;
   }>;
+  // Child allocations (pending reallocations being added to this allocation)
+  childAllocations?: Array<{
+    id: string;
+    totalHours: number;
+    approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+    createdAt: Date;
+  }>;
 }
 
 interface WeeklyPlannerEnhancedProps {
@@ -1156,6 +1163,28 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                                   {phaseAlloc.phase.sprints.length} sprint{phaseAlloc.phase.sprints.length !== 1 ? 's' : ''}
                                 </span>
 
+                                {/* Show pending child reallocation hours indicator */}
+                                {phaseAlloc.childAllocations && phaseAlloc.childAllocations.length > 0 && (
+                                  (() => {
+                                    const totalPendingHours = phaseAlloc.childAllocations.reduce((sum: number, child: any) => sum + child.totalHours, 0);
+                                    const potentialTotalHours = phaseAlloc.totalHours + totalPendingHours;
+
+                                    return (
+                                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-700">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span>
+                                          +{formatHours(totalPendingHours)} pending approval
+                                        </span>
+                                        <span className="text-[10px] opacity-75">
+                                          (will be {formatHours(potentialTotalHours)} total)
+                                        </span>
+                                      </span>
+                                    );
+                                  })()
+                                )}
+
                                 {/* Phase Timeline Status Indicator */}
                                 {(() => {
                                   const today = new Date();
@@ -1390,10 +1419,24 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                           <div className="text-right">
                             <div className="bg-white/70 rounded-xl p-4 shadow-sm border border-gray-200">
                               <div className="space-y-2">
+                                {/* Show approved hours */}
                                 <div className="flex justify-between items-center">
-                                  <span className="text-xs font-medium text-muted-foreground">Allocated</span>
-                                  <span className="text-sm font-bold text-foreground">{formatHours(status.allocated)}</span>
+                                  <span className="text-xs font-medium text-muted-foreground">Approved Hours</span>
+                                  <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatHours(status.allocated)}</span>
                                 </div>
+
+                                {/* Show pending additional hours if any */}
+                                {phaseAlloc.childAllocations && phaseAlloc.childAllocations.length > 0 && (
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-xs font-medium text-amber-600 dark:text-amber-400">+ Pending Hours</span>
+                                    <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
+                                      +{formatHours(phaseAlloc.childAllocations.reduce((sum: number, child: any) => sum + child.totalHours, 0))}
+                                    </span>
+                                  </div>
+                                )}
+
+                                <div className="h-px bg-gray-200 dark:bg-gray-700 my-1"></div>
+
                                 <div className="flex justify-between items-center">
                                   <span className="text-xs font-medium text-muted-foreground">Distributed</span>
                                   <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{formatHours(status.distributed)}</span>
@@ -1431,6 +1474,30 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                             />
                           </div>
                         </div>
+
+                        {/* Info banner for pending hours */}
+                        {phaseAlloc.childAllocations && phaseAlloc.childAllocations.length > 0 && (
+                          <div className="mt-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3">
+                            <div className="flex items-start gap-3">
+                              <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-1">
+                                  Additional Hours Pending Approval
+                                </p>
+                                <p className="text-xs text-amber-800 dark:text-amber-200">
+                                  Your Product Manager has reallocated <span className="font-semibold">
+                                    +{formatHours(phaseAlloc.childAllocations.reduce((sum: number, child: any) => sum + child.totalHours, 0))}
+                                  </span> to this phase. Once the Growth Team approves it, your total will automatically increase to{' '}
+                                  <span className="font-semibold">
+                                    {formatHours(phaseAlloc.totalHours + phaseAlloc.childAllocations.reduce((sum: number, child: any) => sum + child.totalHours, 0))}
+                                  </span> and you can plan those hours.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Sprint-based Weekly Allocation */}

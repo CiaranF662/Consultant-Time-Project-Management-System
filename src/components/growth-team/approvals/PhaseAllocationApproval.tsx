@@ -26,6 +26,11 @@ interface PhaseAllocation {
     project: {
       id: string;
       title: string;
+      productManager: {
+        id: string;
+        name: string | null;
+        email: string | null;
+      } | null;
     };
     sprints: Array<{
       id: string;
@@ -47,6 +52,24 @@ interface PhaseAllocation {
         };
       };
     };
+  } | null;
+  // New hybrid reallocation fields
+  isReallocation?: boolean;
+  isComposite?: boolean;
+  compositionMetadata?: Array<{
+    originalHours?: number;
+    reallocatedHours?: number;
+    reallocatedFromPhaseId?: string;
+    reallocatedFromUnplannedId?: string;
+    timestamp: string;
+  }> | null;
+  parentAllocationId?: string | null;
+  parentAllocation?: {
+    id: string;
+    totalHours: number;
+    approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
+    createdAt: Date;
+    approvedAt: Date | null;
   } | null;
 }
 
@@ -468,6 +491,60 @@ export default function PhaseAllocationApproval({
                           </div>
                         </div>
                       )}
+                      {/* Show existing approved parent allocation for Scenario 1 reallocations */}
+                      {allocation.parentAllocationId && allocation.parentAllocation && (
+                        <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 dark:border-green-400 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <FaInfoCircle className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 text-xs">
+                              <p className="font-semibold text-green-900 dark:text-green-100 mb-1">
+                                Existing Approved Allocation in This Phase
+                              </p>
+                              <p className="text-green-800 dark:text-green-300 mb-1">
+                                This consultant already has <span className="font-bold">{formatHours(allocation.parentAllocation.totalHours)}</span> approved for this phase.
+                              </p>
+                              <p className="text-green-700 dark:text-green-400 text-[11px]">
+                                Approved on {formatDate(new Date(allocation.parentAllocation.approvedAt || allocation.parentAllocation.createdAt))}
+                              </p>
+                              <p className="text-green-800 dark:text-green-300 mt-2 italic">
+                                If you approve this reallocation, the <span className="font-semibold">{formatHours(allocation.totalHours)}</span> will be merged with the existing allocation for a total of <span className="font-bold">{formatHours(allocation.parentAllocation.totalHours + allocation.totalHours)}</span>.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {/* Composition Breakdown (Scenario 2: Merged pending allocations) */}
+                      {allocation.isComposite && allocation.compositionMetadata && allocation.compositionMetadata.length > 0 && (
+                        <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <FaExchangeAlt className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 text-xs">
+                              <p className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                                Composite Allocation (Multiple Sources Merged)
+                              </p>
+                              <div className="space-y-1 pl-2">
+                                {allocation.compositionMetadata.map((comp, idx) => (
+                                  <div key={idx} className="text-blue-800 dark:text-blue-300">
+                                    {comp.originalHours ? (
+                                      <p>• {formatHours(comp.originalHours)} original allocation</p>
+                                    ) : (
+                                      <p>• {formatHours(comp.reallocatedHours || 0)} reallocated from another phase</p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-600">
+                                <p className="font-semibold text-blue-900 dark:text-blue-100">
+                                  Total: {formatHours(allocation.totalHours)} hours pending approval
+                                </p>
+                              </div>
+                              <p className="mt-2 text-blue-700 dark:text-blue-400 italic">
+                                This allocation was merged from multiple pending requests because none were yet approved.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2 mt-1">
                         <p className="text-xs text-muted-foreground">
                           Phase: {formatDate(new Date(allocation.phase.startDate))} - {formatDate(new Date(allocation.phase.endDate))}
@@ -508,8 +585,24 @@ export default function PhaseAllocationApproval({
                   </div>
 
                   <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                    <span>
-                      <span className="font-medium">Requested:</span> {formatDate(new Date(allocation.createdAt))}
+                    <span className="flex items-center gap-1">
+                      <FaUser className="w-3 h-3" />
+                      <span className="font-medium">Requested by:</span> {
+                        allocation.phase.project.productManager
+                          ? (allocation.phase.project.productManager.name || allocation.phase.project.productManager.email)
+                          : 'Unknown Product Manager'
+                      }
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <FaClock className="w-3 h-3" />
+                      <span className="font-medium">on</span> {new Date(allocation.createdAt).toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
                     </span>
                   </div>
 

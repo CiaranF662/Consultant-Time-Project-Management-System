@@ -101,13 +101,30 @@ model PhaseAllocation {
   approvedBy            String?
   approvedAt            DateTime?
   rejectionReason       String?
+
+  // Reallocation tracking
+  isReallocation        Boolean                 @default(false)
+  reallocatedFromPhaseId String?               // Original phase where hours came from
+  reallocatedFromUnplannedId String?           // Link to UnplannedExpiredHours record
+  parentAllocationId    String?                 // For linking reallocations to original allocations
+
+  // Composition tracking (for Scenario 2 - merged pending allocations)
+  isComposite           Boolean                 @default(false)
+  compositionMetadata   Json?                   // Track what was merged: [{originalHours, reallocatedHours, timestamp}]
+
   consultant            User                    @relation(fields: [consultantId], references: [id])
   phase                 Phase                   @relation(fields: [phaseId], references: [id], onDelete: Cascade)
   weeklyAllocations     WeeklyAllocation[]
   approver              User?                   @relation("PhaseAllocationApprover", fields: [approvedBy], references: [id])
   unplannedExpiredHours UnplannedExpiredHours?
 
-  @@unique([phaseId, consultantId])
+  // Relations for parent-child reallocation hierarchy
+  parentAllocation      PhaseAllocation?        @relation("AllocationHierarchy", fields: [parentAllocationId], references: [id], onDelete: SetNull)
+  childAllocations      PhaseAllocation[]       @relation("AllocationHierarchy")
+
+  @@unique([phaseId, consultantId, isReallocation, parentAllocationId])
+  @@index([parentAllocationId])
+  @@index([reallocatedFromPhaseId])
 }
 
 model UnplannedExpiredHours {

@@ -7,7 +7,7 @@ import { logError, logApiRequest, logValidationError, logAuthorizationFailure } 
 import { prisma } from "@/lib/prisma";
 
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId } = await params;
@@ -15,7 +15,7 @@ export async function GET(
 
   const auth = await requireAuth();
   if (isAuthError(auth)) return auth;
-  const { session, user } = auth;
+  const { session } = auth;
   const { id: userId, role } = session.user;
   const userRole = role as UserRole;
 
@@ -45,8 +45,26 @@ export async function GET(
                 weeklyAllocations: {
                   orderBy: { weekStartDate: 'asc' }
                 },
-                unplannedExpiredHours: true
-              }
+                unplannedExpiredHours: true,
+                // Include parent and child allocations for hybrid reallocation display
+                parentAllocation: {
+                  select: {
+                    id: true,
+                    totalHours: true,
+                    approvalStatus: true,
+                    createdAt: true,
+                    approvedAt: true
+                  }
+                },
+                childAllocations: {
+                  include: {
+                    consultant: {
+                      select: { id: true, name: true, email: true }
+                    },
+                    unplannedExpiredHours: true
+                  }
+                }
+              } as any // Cast to any to support parent-child allocation relations
             }
           },
         },
@@ -90,9 +108,12 @@ export async function GET(
     // Transform the data to match frontend expectations
     const transformedProject = {
       ...project,
-      phases: project.phases.map((phase: any) => ({
+      phases: await Promise.all(project.phases.map(async (phase: any) => ({
         ...phase,
-        phaseAllocations: phase.allocations.map((allocation: any) => {
+        phaseAllocations: await Promise.all(
+          phase.allocations
+            .filter((allocation: any) => !allocation.parentAllocationId) // Only include parent allocations (child reallocations are nested)
+            .map(async (allocation: any) => {
           // Get approved weekly allocations for this specific allocation
           const approvedWeeklyForThisAllocation = approvedWeeklyAllocations.filter(
             wa => wa.phaseAllocationId === allocation.id
@@ -100,6 +121,36 @@ export async function GET(
 
           // Calculate planned hours from approved weekly allocations only
           const totalPlannedHours = approvedWeeklyForThisAllocation.reduce((sum, wa) => sum + (wa.approvedHours || 0), 0);
+
+          // Transform child allocations and fetch phase names
+          const childAllocations = allocation.childAllocations ? await Promise.all(
+            allocation.childAllocations.map(async (child: any) => {
+              // Fetch the phase name if there's a reallocatedFromPhaseId
+              let reallocatedFromPhaseName = null;
+              if (child.reallocatedFromPhaseId) {
+                const sourcePhase = await prisma.phase.findUnique({
+                  where: { id: child.reallocatedFromPhaseId },
+                  select: { name: true }
+                });
+                reallocatedFromPhaseName = sourcePhase?.name || null;
+              }
+
+              return {
+                id: child.id,
+                consultantId: child.consultantId,
+                consultantName: child.consultant.name || child.consultant.email || 'Unknown',
+                hours: child.totalHours,
+                plannedHours: 0, // Child reallocations don't have weekly planning yet
+                approvalStatus: child.approvalStatus,
+                rejectionReason: child.rejectionReason,
+                isReallocation: child.isReallocation,
+                reallocatedFromPhaseId: child.reallocatedFromPhaseId,
+                reallocatedFromPhaseName: reallocatedFromPhaseName,
+                parentAllocationId: child.parentAllocationId,
+                unplannedExpiredHours: child.unplannedExpiredHours
+              };
+            })
+          ) : [];
 
           return {
             id: allocation.id,
@@ -109,11 +160,23 @@ export async function GET(
             plannedHours: totalPlannedHours,
             approvalStatus: allocation.approvalStatus,
             rejectionReason: allocation.rejectionReason,
-            unplannedExpiredHours: allocation.unplannedExpiredHours
+            unplannedExpiredHours: allocation.unplannedExpiredHours,
+            // Hybrid reallocation fields
+            isReallocation: allocation.isReallocation,
+            reallocatedFromPhaseId: allocation.reallocatedFromPhaseId,
+            parentAllocationId: allocation.parentAllocationId,
+            parentAllocation: allocation.parentAllocation,
+            isComposite: allocation.isComposite,
+            compositionMetadata: allocation.compositionMetadata,
+            // Transform child allocations
+            childAllocations: childAllocations
           };
-        }),
-        // Keep allocations for phase status calculation
-        allocations: phase.allocations.map((allocation: any) => {
+        })
+        ),
+        // Keep allocations for phase status calculation (filter out child reallocations)
+        allocations: phase.allocations
+          .filter((allocation: any) => !allocation.parentAllocationId) // Only include parent allocations
+          .map((allocation: any) => {
           // Get approved weekly allocations for this specific allocation
           const approvedWeeklyForThisAllocation = approvedWeeklyAllocations.filter(
             wa => wa.phaseAllocationId === allocation.id
@@ -139,7 +202,7 @@ export async function GET(
             unplannedExpiredHours: allocation.unplannedExpiredHours
           };
         })
-      }))
+      })))
     };
 
     return NextResponse.json(transformedProject);
@@ -238,7 +301,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-    request: Request,
+    _request: Request,
     { params }: { params: Promise<{ projectId: string }> }
 ) {
     const { projectId } = await params;

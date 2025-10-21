@@ -119,9 +119,13 @@ export default function ReallocationFormModal({
 
     try {
       // First, check if consultant already has an allocation in the target phase
+      // Only look for PARENT allocations (not child reallocations)
       const existingAllocationsResponse = await axios.get(`/api/phases/${selectedPhaseId}/allocations`);
       const existingAllocation = existingAllocationsResponse.data.find(
-        (alloc: any) => alloc.consultantId === expiredAllocation.consultantId
+        (alloc: any) =>
+          alloc.consultantId === expiredAllocation.consultantId &&
+          !alloc.isReallocation && // Only find parent allocations
+          !alloc.parentAllocationId // Not a child reallocation
       );
 
       let totalHoursForNewAllocation;
@@ -135,16 +139,20 @@ export default function ReallocationFormModal({
         console.log(`Creating new allocation of ${totalHoursForNewAllocation}h`);
       }
 
-      // POST endpoint expects flat object, not an array
+      // POST endpoint expects flat object with reallocation metadata
       const payload = {
         consultantId: expiredAllocation.consultantId,
-        totalHours: totalHoursForNewAllocation
+        totalHours: totalHoursForNewAllocation,
+        isReallocation: true,
+        reallocatedFromPhaseId: expiredAllocation.phaseId,
+        reallocatedFromUnplannedId: expiredAllocation.unplannedExpiredHoursId
       };
 
       console.log('POST payload:', JSON.stringify(payload, null, 2));
 
       // 1. Create or update phase allocation with PENDING status
       // This will go through the existing phase allocation approval workflow
+      // The API will implement hybrid logic based on whether existing allocation is APPROVED or PENDING
       const response = await axios.post(`/api/phases/${selectedPhaseId}/allocations`, payload);
 
       console.log('Created new allocation:', response.data);

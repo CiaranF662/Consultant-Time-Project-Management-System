@@ -21,24 +21,19 @@ async function getHourApprovalsData() {
         }
       },
       phase: {
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          startDate: true,
-          endDate: true,
+        include: {
           project: {
-            select: {
-              id: true,
-              title: true
+            include: {
+              productManager: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true
+                }
+              }
             }
           },
           sprints: {
-            select: {
-              id: true,
-              startDate: true,
-              endDate: true
-            },
             orderBy: {
               sprintNumber: 'asc'
             }
@@ -52,8 +47,9 @@ async function getHourApprovalsData() {
   });
 
   // For each pending allocation, check if it's a reallocation by looking for UnplannedExpiredHours pointing to it
+  // Also fetch parent allocation if this is a Scenario 1 reallocation (child of approved allocation)
   const allocationsWithReallocationInfo = await Promise.all(
-    pendingAllocations.map(async (allocation) => {
+    pendingAllocations.map(async (allocation: any) => {
       const reallocationSource = await prisma.unplannedExpiredHours.findFirst({
         where: {
           reallocatedToAllocationId: allocation.id,
@@ -79,9 +75,28 @@ async function getHourApprovalsData() {
         }
       });
 
+      // Fetch parent allocation if this is a child reallocation (Scenario 1)
+      let parentAllocation = null;
+      if (allocation.parentAllocationId) {
+        parentAllocation = await prisma.phaseAllocation.findUnique({
+          where: { id: allocation.parentAllocationId },
+          select: {
+            id: true,
+            totalHours: true,
+            approvalStatus: true,
+            createdAt: true,
+            approvedAt: true
+          }
+        });
+      }
+
+      // Debug: Log product manager data
+      console.log('Allocation:', allocation.id, 'PM:', allocation.phase?.project?.productManager);
+
       return {
         ...allocation,
-        reallocationSource
+        reallocationSource,
+        parentAllocation
       };
     })
   );

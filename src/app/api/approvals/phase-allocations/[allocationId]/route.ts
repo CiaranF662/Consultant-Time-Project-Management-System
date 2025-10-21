@@ -50,9 +50,11 @@ export async function POST(
               }
             }
           }
-        }
+        },
+        parentAllocation: true, // For Scenario 1 reallocations
+        childAllocations: true  // To check if parent has children
       }
-    });
+    }) as any;
 
     if (!allocation) {
       return new NextResponse(JSON.stringify({ error: 'Allocation not found' }), { status: 404 });
@@ -75,8 +77,67 @@ export async function POST(
 
     let updatedAllocation: typeof allocation | null = null;
 
-    // If rejecting a reallocation, we need to revert the original allocation
-    if (action === 'reject' && isReallocation) {
+    // HYBRID REALLOCATION REJECTION HANDLING
+    // Handle Scenario 1: Reject child reallocation (has parentAllocationId)
+    if (action === 'reject' && allocation.isReallocation && allocation.parentAllocationId) {
+      console.log(`[SCENARIO 1 REJECTION] Rejecting child reallocation ${allocationId}`);
+
+      updatedAllocation = await prisma.$transaction(async (tx) => {
+        // 1. Find the related UnplannedExpiredHours record
+        const unplannedRecord = await tx.unplannedExpiredHours.findFirst({
+          where: {
+            reallocatedToAllocationId: allocationId,
+            status: 'REALLOCATED'
+          }
+        });
+
+        // 2. Delete the rejected child reallocation
+        await tx.phaseAllocation.delete({
+          where: { id: allocationId }
+        });
+
+        // 3. Revert UnplannedExpiredHours back to EXPIRED status
+        if (unplannedRecord) {
+          await tx.unplannedExpiredHours.update({
+            where: { id: unplannedRecord.id },
+            data: {
+              status: 'EXPIRED',
+              handledAt: null,
+              handledBy: null,
+              reallocatedToPhaseId: null,
+              reallocatedToAllocationId: null,
+              notes: `Reallocation rejected by Growth Team: ${rejectionReason}`
+            }
+          });
+        }
+
+        // 4. Return parent allocation for notification purposes
+        const parentAllocation = await tx.phaseAllocation.findUnique({
+          where: { id: allocation.parentAllocationId! },
+          include: {
+            consultant: true,
+            phase: {
+              include: {
+                project: {
+                  include: {
+                    consultants: {
+                      where: { role: ProjectRole.PRODUCT_MANAGER },
+                      include: { user: true }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        return parentAllocation;
+      });
+
+      console.log(`[SCENARIO 1 REJECTION] Reverted reallocation to expired state in original phase`);
+    }
+    // If rejecting a reallocation (old system), we need to revert the original allocation
+    else if (action === 'reject' && isReallocation) {
       // Perform revert in a transaction to ensure atomicity
       updatedAllocation = await prisma.$transaction(async (tx) => {
         // 1. Delete the rejected reallocation (this new allocation that was rejected)
@@ -132,6 +193,48 @@ export async function POST(
         }
 
         return originalAllocation;
+      });
+    }
+    // HYBRID REALLOCATION APPROVAL HANDLING - Scenario 1: Merge child with parent
+    else if ((action === 'approve' || action === 'modify') && allocation.isReallocation && allocation.parentAllocationId) {
+      console.log(`[SCENARIO 1 APPROVAL] Merging child reallocation ${allocationId} with parent ${allocation.parentAllocationId}`);
+
+      updatedAllocation = await prisma.$transaction(async (tx) => {
+        const hoursToAdd = action === 'modify' ? modifiedHours : allocation.totalHours;
+
+        // 1. Merge: Add child allocation hours to parent allocation
+        const mergedParent = await tx.phaseAllocation.update({
+          where: { id: allocation.parentAllocationId! },
+          data: {
+            totalHours: {
+              increment: hoursToAdd
+            }
+          },
+          include: {
+            consultant: true,
+            phase: {
+              include: {
+                project: {
+                  include: {
+                    consultants: {
+                      where: { role: ProjectRole.PRODUCT_MANAGER },
+                      include: { user: true }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        // 2. Delete the child reallocation since it's merged
+        await tx.phaseAllocation.delete({
+          where: { id: allocationId }
+        });
+
+        console.log(`[SCENARIO 1 APPROVAL] Merged ${hoursToAdd}h into parent. Parent now has ${mergedParent.totalHours}h`);
+
+        return mergedParent;
       });
     } else {
       // Normal approval/rejection flow

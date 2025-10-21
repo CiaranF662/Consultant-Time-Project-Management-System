@@ -7,9 +7,12 @@ import WeeklyPlannerEnhanced from '@/components/consultant/dashboard/WeeklyPlann
 import { prisma } from "@/lib/prisma";
 
 async function getPhaseAllocationsForPlanner(userId: string, includeCompleted: boolean = false) {
-  // Get all phase allocations for the consultant - this is what WeeklyPlannerEnhanced needs
+  // Get all phase allocations for the consultant (excluding child reallocations - they'll be nested in parent)
   const phaseAllocations = await prisma.phaseAllocation.findMany({
-    where: { consultantId: userId },
+    where: {
+      consultantId: userId,
+      parentAllocationId: null // Only get parent allocations (not child reallocations)
+    } as any,
     include: {
       phase: {
         include: {
@@ -23,14 +26,27 @@ async function getPhaseAllocationsForPlanner(userId: string, includeCompleted: b
       },
       weeklyAllocations: {
         orderBy: { weekStartDate: 'asc' }
+      },
+      // Include child reallocations (pending hours being added to this allocation)
+      childAllocations: {
+        where: {
+          consultantId: userId, // Only child allocations for the same consultant
+          approvalStatus: 'PENDING' // Only pending child reallocations
+        },
+        select: {
+          id: true,
+          totalHours: true,
+          approvalStatus: true,
+          createdAt: true
+        }
       }
-    },
+    } as any,
     orderBy: {
       phase: {
         startDate: 'asc'
       }
     }
-  });
+  }) as any;
 
   // Filter out completed projects if requested
   if (!includeCompleted) {
