@@ -40,7 +40,7 @@ export async function createMultipleNotifications(notifications: CreateNotificat
         title: notif.title,
         message: notif.message,
         actionUrl: notif.actionUrl || null,
-        metadata: notif.metadata || null,
+        metadata: notif.metadata ? notif.metadata as any : undefined,
       }))
     });
 
