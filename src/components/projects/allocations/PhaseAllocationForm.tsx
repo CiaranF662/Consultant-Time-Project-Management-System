@@ -657,22 +657,32 @@ export default function PhaseAllocationForm({
                             className="w-full text-left px-3 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-50 dark:focus:bg-blue-900/30 focus:outline-none border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                             disabled={isSaving}
                           >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <div className="font-medium text-foreground text-sm">{consultant.name}</div>
+                                  <div className="font-medium text-foreground text-sm truncate">{consultant.name}</div>
                                   {consultant.role === 'PRODUCT_MANAGER' && (
-                                    <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200 text-xs px-2 py-0.5 rounded-full font-medium">
+                                    <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200 text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0">
                                       PM
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-xs text-gray-600 dark:text-gray-400">{consultant.email}</div>
+                                <div className="text-xs text-gray-600 dark:text-gray-400 truncate">{consultant.email}</div>
                               </div>
-                              <div className="text-right">
-                                <div className="text-xs text-muted-foreground">Phase Capacity</div>
-                                <div className={`text-sm font-semibold ${phaseAvailableCapacity > 0 ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
-                                  {phaseAvailableCapacity}h
+                              <div className="flex gap-3 flex-shrink-0">
+                                {/* Project Availability */}
+                                <div className="text-right">
+                                  <div className="text-xs text-muted-foreground whitespace-nowrap">Project</div>
+                                  <div className={`text-sm font-semibold ${availableHours > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                    {availableHours}h
+                                  </div>
+                                </div>
+                                {/* Phase Availability */}
+                                <div className="text-right border-l border-gray-200 dark:border-gray-700 pl-3">
+                                  <div className="text-xs text-muted-foreground whitespace-nowrap">Phase Availability</div>
+                                  <div className={`text-sm font-semibold ${phaseAvailableCapacity > 0 ? 'text-purple-600 dark:text-purple-400' : 'text-orange-600 dark:text-orange-400'}`}>
+                                    {phaseAvailableCapacity}h
+                                  </div>
                                 </div>
                               </div>
                             </div>

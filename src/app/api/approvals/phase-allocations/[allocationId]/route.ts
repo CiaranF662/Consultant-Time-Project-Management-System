@@ -4,6 +4,7 @@ import { UserRole, NotificationType, ProjectRole } from '@prisma/client';
 import { createNotificationsForUsers, NotificationTemplates } from '@/lib/notifications';
 import { sendEmail, renderEmailTemplate } from '@/lib/email';
 import PhaseAllocationEmail from '@/emails/PhaseAllocationEmail';
+import PhaseAllocationRejectionEmail from '@/emails/PhaseAllocationRejectionEmail';
 
 import { prisma } from "@/lib/prisma";
 
@@ -469,6 +470,73 @@ export async function POST(
                 allocationId: allocation.id
               }
             );
+          }
+
+          // Send rejection emails to both consultant and PM
+          try {
+            const emailPromises = [];
+
+            // Email to consultant
+            if (allocation.consultant.email) {
+              const consultantEmailTemplate = PhaseAllocationRejectionEmail({
+                recipientName: allocation.consultant.name || 'Consultant',
+                recipientRole: 'consultant',
+                consultantName: consultantName,
+                phaseName: allocation.phase.name,
+                projectTitle: allocation.phase.project.title,
+                totalHours: allocation.totalHours,
+                rejectionReason,
+                dashboardUrl: `${process.env.NEXTAUTH_URL}/dashboard/weekly-planner`,
+              });
+
+              const { html: consultantHtml, text: consultantText } = await renderEmailTemplate(consultantEmailTemplate);
+
+              emailPromises.push(
+                sendEmail({
+                  to: allocation.consultant.email,
+                  subject: `Phase Allocation Rejected: ${allocation.phase.name}`,
+                  html: consultantHtml,
+                  text: consultantText,
+                }).catch(error => {
+                  console.error(`Failed to send rejection email to consultant ${allocation.consultant.email}:`, error);
+                })
+              );
+            }
+
+            // Email to Product Manager
+            if (productManagerId && productManagerId !== allocation.consultantId) {
+              const pmUser = updatedAllocation.phase.project.consultants[0]?.user;
+              if (pmUser?.email) {
+                const pmEmailTemplate = PhaseAllocationRejectionEmail({
+                  recipientName: pmUser.name || 'Product Manager',
+                  recipientRole: 'pm',
+                  consultantName: consultantName,
+                  phaseName: allocation.phase.name,
+                  projectTitle: allocation.phase.project.title,
+                  totalHours: allocation.totalHours,
+                  rejectionReason,
+                  dashboardUrl: `${process.env.NEXTAUTH_URL}/dashboard/projects/${allocation.phase.project.id}`,
+                });
+
+                const { html: pmHtml, text: pmText } = await renderEmailTemplate(pmEmailTemplate);
+
+                emailPromises.push(
+                  sendEmail({
+                    to: pmUser.email,
+                    subject: `Phase Allocation Rejected: ${consultantName} - ${allocation.phase.name}`,
+                    html: pmHtml,
+                    text: pmText,
+                  }).catch(error => {
+                    console.error(`Failed to send rejection email to PM ${pmUser.email}:`, error);
+                  })
+                );
+              }
+            }
+
+            // Send all emails in parallel
+            await Promise.allSettled(emailPromises);
+          } catch (emailError) {
+            console.error('Failed to send rejection emails:', emailError);
           }
         }
       }

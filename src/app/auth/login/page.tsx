@@ -1,20 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, CheckCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Check for verification success
+  useEffect(() => {
+    if (searchParams.get('verified') === 'true') {
+      setSuccessMessage('Email verified successfully! You can now log in to your account.');
+    }
+  }, [searchParams]);
 
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
 
     try {
       const result = await signIn('credentials', {
@@ -24,7 +34,12 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError('Invalid email or password. Please try again.');
+        // Check if error is related to email verification
+        if (result.error.includes('verify your email')) {
+          setError(result.error);
+        } else {
+          setError('Invalid email or password. Please try again.');
+        }
       } else if (result?.ok) {
         router.push('/dashboard');
       }
@@ -54,9 +69,32 @@ export default function LoginPage() {
 
         {/* Main Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+          {successMessage && (
+            <div className="mb-6 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 p-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-green-800 dark:text-green-300 font-medium">
+                  {successMessage}
+                </p>
+              </div>
+            </div>
+          )}
+
           {error && (
-            <div className="mb-6 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 p-4 text-center text-sm text-red-600 dark:text-red-400">
-              {error}
+            <div className="mb-6 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 p-4">
+              <p className="text-sm text-red-800 dark:text-red-300 text-center font-medium mb-2">
+                {error}
+              </p>
+              {error.includes('verify your email') && (
+                <div className="text-center mt-3">
+                  <Link
+                    href="/auth/pending-verification"
+                    className="text-sm text-red-700 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 underline font-medium"
+                  >
+                    Resend verification email
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
 import { UserRole } from '@prisma/client';
-import { BarChart3, User, Users2 } from 'lucide-react';
+import { BarChart3, User, Users2, CheckCircle, Mail } from 'lucide-react';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -15,6 +15,8 @@ export default function RegisterPage() {
   // Add state to manage the selected role, defaulting to CONSULTANT
   const [role, setRole] = useState<UserRole>(UserRole.CONSULTANT);
   const [error, setError] = useState('');
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,12 +42,9 @@ export default function RegisterPage() {
         role,
       });
 
-      // Redirect based on the role selected
-      if (role === UserRole.GROWTH_TEAM) {
-        router.push('/auth/pending-approval');
-      } else {
-        router.push('/auth/login?status=registered');
-      }
+      // Show success message with email verification instructions
+      setRegisteredEmail(email);
+      setRegistrationSuccess(true);
     } catch (err: any) {
       if (err.response && err.response.data) {
         setError(err.response.data);
@@ -54,6 +53,79 @@ export default function RegisterPage() {
       }
     }
   };
+
+  // Show success message if registration was successful
+  if (registrationSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          {/* Header */}
+          <div className="text-center">
+            <Link href="/" className="inline-flex items-center space-x-2 mb-8">
+              <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center">
+                <BarChart3 className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-2xl font-bold text-foreground">Agility</span>
+            </Link>
+          </div>
+
+          {/* Success Card */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+            <div className="flex justify-center mb-6">
+              <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                <Mail className="w-10 h-10 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+
+            <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2">
+              Check Your Email
+            </h1>
+
+            <p className="text-center text-gray-600 dark:text-gray-400 mb-6">
+              We've sent a verification link to <strong className="text-gray-900 dark:text-white">{registeredEmail}</strong>
+            </p>
+
+            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-blue-800 dark:text-blue-300">
+                  <p className="font-medium mb-2">Next Steps:</p>
+                  <ol className="list-decimal list-inside space-y-1">
+                    <li>Check your inbox for the verification email</li>
+                    <li>Click the verification link in the email</li>
+                    <li>Return to login once verified</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Link
+                href="/auth/login"
+                className="inline-flex items-center justify-center w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
+              >
+                Go to Login
+              </Link>
+              <Link
+                href="/auth/pending-verification"
+                className="inline-flex items-center justify-center w-full px-6 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-medium rounded-lg transition-colors duration-200"
+              >
+                Resend Verification Email
+              </Link>
+            </div>
+          </div>
+
+          {/* Help text */}
+          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+            Didn't receive the email? Check your spam folder or contact{' '}
+            <a href="mailto:support@agility.com" className="text-blue-600 dark:text-blue-400 hover:underline">
+              support@agility.com
+            </a>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

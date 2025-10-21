@@ -51,7 +51,7 @@ async function getPhaseAllocationsForPlanner(userId: string, includeCompleted: b
   // Filter out completed projects if requested
   if (!includeCompleted) {
     const today = new Date();
-    return phaseAllocations.filter(allocation => {
+    return phaseAllocations.filter((allocation: any) => {
       const projectEndDate = allocation.phase.project.endDate;
       // Keep if no end date OR end date is in the future
       return !projectEndDate || new Date(projectEndDate) >= today;

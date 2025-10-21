@@ -44,6 +44,7 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
   // Consultant allocation
   const [consultants, setConsultants] = useState<Consultant[]>([]);
   const [allocatedToPhases, setAllocatedToPhases] = useState<Record<string, number>>({});
+  const [sprintAvailability, setSprintAvailability] = useState<Record<string, { availableHours: number; totalHours: number }>>({});
   const [selectedConsultantIds, setSelectedConsultantIds] = useState<string[]>([]);
   const [consultantHours, setConsultantHours] = useState<Record<string, number>>({});
   const [consultantSearchQuery, setConsultantSearchQuery] = useState('');
@@ -59,6 +60,15 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
   useEffect(() => {
     fetchProjectConsultants();
   }, []);
+
+  // Fetch sprint-based availability when sprints are selected
+  useEffect(() => {
+    if (selectedSprintIds.length > 0) {
+      fetchSprintAvailability();
+    } else {
+      setSprintAvailability({});
+    }
+  }, [selectedSprintIds.join(',')]);
 
   // Click outside handler
   useEffect(() => {
@@ -151,6 +161,57 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
     } catch (error) {
       console.error('Failed to fetch project consultants:', error);
       setError('Failed to load project team data.');
+    }
+  };
+
+  const fetchSprintAvailability = async () => {
+    try {
+      // Get selected sprint dates
+      const selectedSprints = project.sprints
+        .filter(sprint => selectedSprintIds.includes(sprint.id))
+        .sort((a, b) => a.sprintNumber - b.sprintNumber);
+
+      if (selectedSprints.length === 0) return;
+
+      const startDate = selectedSprints[0].startDate;
+      const endDate = selectedSprints[selectedSprints.length - 1].endDate;
+
+      // Fetch availability for the selected sprint range
+      const { data: responseData } = await axios.get(`/api/consultants/availability`, {
+        params: {
+          startDate,
+          endDate,
+          projectId: project.id
+        }
+      });
+
+      // Process the availability data to get totals per consultant
+      const availabilityMap: Record<string, { availableHours: number; totalHours: number }> = {};
+
+      // The API returns { weeks: [], consultants: [] }
+      if (responseData.consultants && Array.isArray(responseData.consultants)) {
+        responseData.consultants.forEach((consultantData: any) => {
+          const consultantId = consultantData.consultant.id;
+          let totalAvailable = 0;
+          let totalCapacity = 0;
+
+          if (consultantData.weeklyBreakdown && Array.isArray(consultantData.weeklyBreakdown)) {
+            consultantData.weeklyBreakdown.forEach((week: any) => {
+              totalAvailable += week.availableHours || 0;
+              totalCapacity += 40; // 40 hours per week capacity
+            });
+          }
+
+          availabilityMap[consultantId] = {
+            availableHours: totalAvailable,
+            totalHours: totalCapacity
+          };
+        });
+      }
+
+      setSprintAvailability(availabilityMap);
+    } catch (error) {
+      console.error('Failed to fetch sprint availability:', error);
     }
   };
 
@@ -654,6 +715,15 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                 Assign specific hour allocations to consultants for this phase. All allocations require Growth Team approval.
               </p>
 
+              {selectedSprintIds.length === 0 && (
+                <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                  <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-300">
+                    <FaInfoCircle className="w-4 h-4" />
+                    <span className="text-sm font-medium">Please select sprints first before allocating consultants</span>
+                  </div>
+                </div>
+              )}
+
               {/* Selected Team Members with Professional Hour Allocation */}
               {selectedConsultantIds.length > 0 && (
                 <div className="mb-4">
@@ -810,9 +880,9 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                       setShowConsultantDropdown(true);
                     }}
                     onFocus={() => setShowConsultantDropdown(true)}
-                    className="block w-full px-3 py-2 pr-8 rounded-lg border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-foreground shadow-sm focus:border-orange-500 focus:ring-orange-500 focus:ring-opacity-50 transition-all duration-200"
-                    placeholder="Search and select consultants to allocate hours..."
-                    disabled={isLoading}
+                    className="block w-full px-3 py-2 pr-8 rounded-lg border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-foreground shadow-sm focus:border-orange-500 focus:ring-orange-500 focus:ring-opacity-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder={selectedSprintIds.length === 0 ? "Select sprints first..." : "Search and select consultants to allocate hours..."}
+                    disabled={isLoading || selectedSprintIds.length === 0}
                   />
                   <FaSearch className="absolute right-3 top-3 h-3 w-3 text-muted-foreground" />
                 </div>
@@ -827,6 +897,8 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                         const currentAllocatedToPhases = allocatedToPhases[consultant.id] || 0;
                         const availableHours = projectAllocated - currentAllocatedToPhases;
 
+                        const sprintData = sprintAvailability[consultant.id] || { availableHours: 0, totalHours: 0 };
+
                         return (
                           <button
                             key={consultant.id}
@@ -839,23 +911,35 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                             className="w-full text-left px-3 py-3 hover:bg-orange-50 dark:hover:bg-orange-900/30 focus:bg-orange-50 dark:focus:bg-orange-900/30 focus:outline-none border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                             disabled={isLoading}
                           >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <div className="font-medium text-foreground text-sm">{consultant.name}</div>
+                                  <div className="font-medium text-foreground text-sm truncate">{consultant.name}</div>
                                   {consultant.role === 'PRODUCT_MANAGER' && (
-                                    <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200 text-xs px-2 py-0.5 rounded-full font-medium">
+                                    <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200 text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0">
                                       PM
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-xs text-gray-600 dark:text-gray-400">{consultant.email}</div>
+                                <div className="text-xs text-gray-600 dark:text-gray-400 truncate">{consultant.email}</div>
                               </div>
-                              <div className="text-right">
-                                <div className="text-xs text-muted-foreground">Available</div>
-                                <div className={`text-sm font-semibold ${availableHours > 0 ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
-                                  {availableHours}h
+                              <div className="flex gap-3 flex-shrink-0">
+                                {/* Project Availability */}
+                                <div className="text-right">
+                                  <div className="text-xs text-muted-foreground whitespace-nowrap">Project</div>
+                                  <div className={`text-sm font-semibold ${availableHours > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                    {availableHours}h
+                                  </div>
                                 </div>
+                                {/* Phase Availability - Only show if sprints are selected */}
+                                {selectedSprintIds.length > 0 && (
+                                  <div className="text-right border-l border-gray-200 dark:border-gray-700 pl-3">
+                                    <div className="text-xs text-muted-foreground whitespace-nowrap">Phase Availability</div>
+                                    <div className={`text-sm font-semibold ${sprintData.availableHours > 0 ? 'text-purple-600 dark:text-purple-400' : 'text-orange-600 dark:text-orange-400'}`}>
+                                      {Math.round(sprintData.availableHours)}h
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </button>

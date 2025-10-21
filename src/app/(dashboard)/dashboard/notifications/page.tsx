@@ -3,24 +3,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import NotificationsPageClient from '@/components/notifications/NotificationsPageClient';
 import { prisma } from "@/lib/prisma";
-
-type NotificationType =
-  | 'PROJECT_ASSIGNMENT'
-  | 'HOUR_CHANGE_REQUEST'
-  | 'HOUR_CHANGE_APPROVED'
-  | 'HOUR_CHANGE_REJECTED'
-  | 'PHASE_DEADLINE_WARNING'
-  | 'USER_APPROVAL_NEEDED'
-  | 'OVERDUE_APPROVAL_ALERT'
-  | 'PHASE_ALLOCATION_PENDING'
-  | 'PHASE_ALLOCATION_APPROVED'
-  | 'PHASE_ALLOCATION_REJECTED'
-  | 'PHASE_ALLOCATION_MODIFIED'
-  | 'PHASE_ALLOCATION_EXPIRED'
-  | 'WEEKLY_ALLOCATION_PENDING'
-  | 'WEEKLY_ALLOCATION_APPROVED'
-  | 'WEEKLY_ALLOCATION_MODIFIED'
-  | 'WEEKLY_ALLOCATION_REJECTED';
+import { NotificationType } from '@prisma/client';
 
 interface Notification {
   id: string;

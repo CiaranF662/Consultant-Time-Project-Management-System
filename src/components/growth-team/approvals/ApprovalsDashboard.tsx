@@ -26,6 +26,11 @@ interface PhaseAllocation {
     project: {
       id: string;
       title: string;
+      productManager: {
+        id: string;
+        name: string | null;
+        email: string | null;
+      } | null;
     };
     sprints: Array<{
       id: string;

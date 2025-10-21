@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import { UserRole, UserStatus } from '@prisma/client';
 import { sendEmail, renderEmailTemplate } from '@/lib/email';
 import { createMultipleNotifications, NotificationTemplates } from '@/lib/notifications';
 import GrowthTeamSignupEmail from '@/emails/GrowthTeamSignupEmail';
+import EmailVerificationEmail from '@/emails/EmailVerificationEmail';
 
 import { prisma } from "@/lib/prisma";
 
@@ -34,8 +36,53 @@ export async function POST(request: Request) {
         role: role, // Assign the role from the form
         // Set status based on the selected role
         status: role === UserRole.GROWTH_TEAM ? UserStatus.PENDING : UserStatus.APPROVED,
+        // Email is not verified yet
+        emailVerified: null,
       },
     });
+
+    // Send email verification
+    try {
+      // Generate secure random token
+      const token = crypto.randomBytes(32).toString('hex');
+
+      // Set expiration to 24 hours from now
+      const expires = new Date();
+      expires.setHours(expires.getHours() + 24);
+
+      // Create verification token
+      await prisma.verificationToken.create({
+        data: {
+          identifier: user.email!,
+          token,
+          type: 'EMAIL_VERIFICATION',
+          expires
+        }
+      });
+
+      // Generate verification link
+      const verificationLink = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${token}`;
+
+      // Send email verification email
+      const verificationEmailTemplate = EmailVerificationEmail({
+        userName: user.name || 'User',
+        verificationLink
+      });
+
+      const { html: verificationHtml, text: verificationText } = await renderEmailTemplate(verificationEmailTemplate);
+
+      await sendEmail({
+        to: user.email!,
+        subject: 'Verify Your Agility Email Address',
+        html: verificationHtml,
+        text: verificationText
+      });
+
+      console.log('Verification email sent successfully to:', user.email);
+    } catch (verificationError) {
+      console.error('Failed to send verification email:', verificationError);
+      // Don't fail the registration if verification email fails
+    }
 
     // If this is a Growth Team member signup, notify existing approved Growth Team members
     if (role === UserRole.GROWTH_TEAM) {

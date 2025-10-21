@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { requireGrowthTeam, isAuthError } from '@/lib/api-auth';
 import { UserRole, NotificationType } from '@prisma/client';
+import { sendEmail, renderEmailTemplate } from '@/lib/email';
+import WeeklyPlanApprovalEmail from '@/emails/WeeklyPlanApprovalEmail';
 
 import { prisma } from "@/lib/prisma";
 
@@ -51,6 +53,7 @@ export async function POST(request: Request) {
     const results = await prisma.$transaction(async (tx) => {
       const updateResults = [];
       const notifications = [];
+      const emailDataByPhase: Map<string, any> = new Map();
 
       for (const allocation of allocations) {
         const dbAllocation = existingAllocations.find(a => a.id === allocation.id);
@@ -126,6 +129,37 @@ export async function POST(request: Request) {
             year: dbAllocation.year
           }
         });
+
+        // Group allocations by phase for email sending
+        const phaseKey = `${dbAllocation.phaseAllocationId}-${dbAllocation.consultantId}`;
+        if (!emailDataByPhase.has(phaseKey)) {
+          emailDataByPhase.set(phaseKey, {
+            consultant: dbAllocation.consultant,
+            phaseName: dbAllocation.phaseAllocation.phase.name,
+            projectTitle: dbAllocation.phaseAllocation.phase.project.title,
+            phaseAllocationId: dbAllocation.phaseAllocationId,
+            weeklyAllocations: [],
+            overallStatus: planningStatus,
+            rejectionReason: rejectionReason,
+          });
+        }
+
+        const phaseData = emailDataByPhase.get(phaseKey);
+        phaseData.weeklyAllocations.push({
+          weekStartDate: dbAllocation.weekStartDate.toISOString(),
+          weekEndDate: dbAllocation.weekEndDate.toISOString(),
+          proposedHours: approvedHours || 0,
+          approvalStatus: planningStatus,
+        });
+
+        // Update overall status (prioritize REJECTED > MODIFIED > APPROVED)
+        if (planningStatus === 'REJECTED' ||
+            (planningStatus === 'MODIFIED' && phaseData.overallStatus !== 'REJECTED')) {
+          phaseData.overallStatus = planningStatus;
+        }
+        if (rejectionReason) {
+          phaseData.rejectionReason = rejectionReason;
+        }
       }
 
       // Create all notifications
@@ -135,13 +169,49 @@ export async function POST(request: Request) {
         });
       }
 
-      return updateResults;
+      return { updateResults, emailDataByPhase };
     });
+
+    // Send emails grouped by phase (outside transaction)
+    const emailPromises = [];
+    for (const [phaseKey, phaseData] of results.emailDataByPhase) {
+      if (!phaseData.consultant.email) continue;
+
+      try {
+        const emailTemplate = WeeklyPlanApprovalEmail({
+          consultantName: phaseData.consultant.name || 'Consultant',
+          phaseName: phaseData.phaseName,
+          projectTitle: phaseData.projectTitle,
+          approvalStatus: phaseData.overallStatus === 'REJECTED' ? 'REJECTED' : 'APPROVED',
+          weeklyAllocations: phaseData.weeklyAllocations,
+          dashboardUrl: `${process.env.NEXTAUTH_URL}/dashboard/weekly-planner?phaseAllocationId=${phaseData.phaseAllocationId}`,
+          rejectionReason: phaseData.rejectionReason,
+        });
+
+        const { html, text } = await renderEmailTemplate(emailTemplate);
+
+        const emailPromise = sendEmail({
+          to: phaseData.consultant.email,
+          subject: `Weekly Plan ${phaseData.overallStatus === 'REJECTED' ? 'Rejected' : 'Approved'}: ${phaseData.phaseName}`,
+          html,
+          text,
+        }).catch(error => {
+          console.error(`Failed to send email to ${phaseData.consultant.email}:`, error);
+        });
+
+        emailPromises.push(emailPromise);
+      } catch (error) {
+        console.error('Error preparing email for phase:', phaseKey, error);
+      }
+    }
+
+    // Send all emails in parallel
+    await Promise.allSettled(emailPromises);
 
     return NextResponse.json({
       success: true,
-      updated: results.length,
-      message: `Successfully processed ${results.length} allocations`
+      updated: results.updateResults.length,
+      message: `Successfully processed ${results.updateResults.length} allocations`
     });
 
   } catch (error) {

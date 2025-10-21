@@ -36,18 +36,23 @@ export const authOptions: NextAuthOptions = {
             }
           }
         });
-        
+
         if (!user || !user.password) {
           throw new Error('No user found with that email or password');
         }
-        
+
         const passwordsMatch = await bcrypt.compare(
           credentials.password,
           user.password
         );
-        
+
         if (!passwordsMatch) {
           throw new Error('Incorrect password');
+        }
+
+        // Check if email is verified
+        if (!user.emailVerified) {
+          throw new Error('Please verify your email address before logging in. Check your inbox for the verification link.');
         }
 
         if (user.role === UserRole.GROWTH_TEAM && user.status !== UserStatus.APPROVED) {
