@@ -38,7 +38,7 @@ export const PhaseEndDateAlertEmail = ({
   return (
     <Html>
       <Head />
-      <Preview>{totalAlerts} phase deadline alerts for your projects</Preview>
+      <Preview>{`${totalAlerts} phase deadline alerts for your projects`}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Heading style={heading}>

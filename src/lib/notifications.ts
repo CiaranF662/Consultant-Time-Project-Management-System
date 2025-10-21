@@ -20,7 +20,7 @@ export async function createNotification(params: CreateNotificationParams) {
         title: params.title,
         message: params.message,
         actionUrl: params.actionUrl || null,
-        metadata: params.metadata || null,
+        metadata: params.metadata || undefined,
       },
     });
 

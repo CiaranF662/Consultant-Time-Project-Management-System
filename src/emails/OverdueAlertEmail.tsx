@@ -25,7 +25,7 @@ export const OverdueAlertEmail = ({
   return (
     <Html>
       <Head />
-      <Preview>You have {totalOverdue} overdue approvals pending</Preview>
+      <Preview>{`You have ${totalOverdue} overdue approvals pending`}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Heading style={heading}>
