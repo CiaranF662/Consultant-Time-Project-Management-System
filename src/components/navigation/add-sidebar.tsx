@@ -49,7 +49,7 @@ export default function Sidebar({ defaultOpen = true, children }: SidebarProps) 
   const [isDynamicPM, setIsDynamicPM] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // detect dark mode (checks .dark class and prefers-color-scheme)
+  // #region Dark mode detection
   useEffect(() => {
     function detect() {
       if (typeof window === 'undefined') return false;
@@ -71,7 +71,9 @@ export default function Sidebar({ defaultOpen = true, children }: SidebarProps) 
     };
   }, []);
 
-  // Dynamically check if user is a Product Manager
+  // #endregion
+
+  //#region Fetch Check Role Status
   useEffect(() => {
     if (session?.user?.id && session.user.role !== UserRole.GROWTH_TEAM) {
       fetch('/api/current-user/pm-status')
@@ -108,7 +110,7 @@ export default function Sidebar({ defaultOpen = true, children }: SidebarProps) 
   const isProductManager = session.user.isProductManager || isDynamicPM;
   const isGrowthTeam = userRole === UserRole.GROWTH_TEAM;
 
-  // Define navigation items based on role
+  // #region Navigation Items 
   const getNavItems = (): NavItem[] => {
     const items: NavItem[] = [];
 
@@ -156,7 +158,7 @@ export default function Sidebar({ defaultOpen = true, children }: SidebarProps) 
     signOut({ callbackUrl: '/auth/login' });
   };
 
-  // small NavLink wrapper that applies inline hover and active styles (no external CSS)
+  // #region NavLink
   function NavLink({
     href,
     active,
@@ -201,7 +203,9 @@ export default function Sidebar({ defaultOpen = true, children }: SidebarProps) 
       </Link>
     );
   }
+  // #endregion
 
+  // #region Render
   return (
     <aside className={`sidebar ${isMobileMenuOpen ? 'open' : 'closed'}`} aria-hidden={!isMobileMenuOpen} aria-label="Main sidebar">
       {/* Mobile menu button */}
