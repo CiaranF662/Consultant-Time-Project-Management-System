@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import {
   FaHome,
   FaProjectDiagram,
@@ -22,12 +22,12 @@ import {
   FaCheckCircle,
   FaChartLine
 } from 'react-icons/fa';
-import NotificationBadge from './notifications/NotificationBadge';
+import NotificationBadge from '@/components/notifications/NotificationBadge';
 import { UserRole } from '@prisma/client';
-import { signOut } from 'next-auth/react';
 
 interface SidebarProps {
   children: React.ReactNode;
+  defaultOpen?: boolean;
 }
 
 interface NavItem {
@@ -39,7 +39,10 @@ interface NavItem {
   key?: string; // Unique key for React mapping
 }
 
-export default function Sidebar({ children }: SidebarProps) {
+// Logo blue - replace with exact hex if you have one
+const LOGO_BLUE = '#0070f3';
+
+export default function Sidebar({ defaultOpen = true, children }: SidebarProps) {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -185,7 +188,6 @@ export default function Sidebar({ children }: SidebarProps) {
             key: 'pm-dashboard'
           };
         }
-
       }
     }
 
@@ -205,8 +207,61 @@ export default function Sidebar({ children }: SidebarProps) {
     signOut({ callbackUrl: '/auth/login' });
   };
 
+  // small NavLink wrapper that applies inline hover and active styles (no external CSS)
+  function NavLink({
+    href,
+    active,
+    children,
+    onClick,
+    className
+  }: {
+    href: string;
+    active?: boolean;
+    children: React.ReactNode;
+    onClick?: () => void;
+    className?: string;
+  }) {
+    const [hover, setHover] = useState(false);
+
+    const baseStyle: React.CSSProperties = {
+      transition: 'background 120ms ease, color 120ms ease, transform 80ms ease',
+      borderRadius: 8,
+      display: 'flex',
+      alignItems: 'center'
+    };
+
+    const activeStyle: React.CSSProperties = active
+      ? {
+        background: LOGO_BLUE,
+        color: '#fff',
+        boxShadow: '0 2px 8px rgba(0, 112, 243, 0.18)'
+      }
+      : {};
+
+    const hoverStyle: React.CSSProperties = hover && !active
+      ? {
+        background: LOGO_BLUE,
+        color: '#fff',
+        transform: 'translateY(-1px)'
+      }
+      : {};
+
+    return (
+      <Link
+        href={href}
+        onClick={onClick}
+        className={className}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        style={{ ...baseStyle, ...activeStyle, ...hoverStyle } as React.CSSProperties}
+      >
+        {children}
+      </Link>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <aside className={`sidebar ${isMobileMenuOpen ? 'open' : 'closed'}`} aria-hidden={!isMobileMenuOpen} aria-label="Main sidebar">
       {/* Mobile menu button */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card shadow-sm border-b border-border">
         <div className="flex items-center justify-between p-4">
@@ -229,9 +284,8 @@ export default function Sidebar({ children }: SidebarProps) {
       )}
 
       {/* Mobile menu drawer */}
-      <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg transform transition-transform ${
-        isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg transform transition-transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
         <div className="flex flex-col h-full">
           <div className="p-4 border-b border-border">
             <h1 className="text-xl font-bold text-foreground font-[family-name:var(--font-poppins)]">Agility</h1>
@@ -239,22 +293,18 @@ export default function Sidebar({ children }: SidebarProps) {
           <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
+              const active = isActive(item.href);
               return (
-                <Link
+                <NavLink
                   key={item.key || item.href}
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`
-                    flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
-                    ${isActive(item.href)
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                    }
-                  `}
+                  active={active}
+                  className="px-3 py-2 text-sm font-medium rounded-md"
                 >
                   <Icon className="h-5 w-5 mr-3" />
-                  {item.label}
-                </Link>
+                  <span style={{ marginLeft: 8 }}>{item.label}</span>
+                </NavLink>
               );
             })}
           </nav>
@@ -282,12 +332,11 @@ export default function Sidebar({ children }: SidebarProps) {
               <h1 className="text-xl font-bold text-sidebar-foreground font-[family-name:var(--font-poppins)]">Agility</h1>
             )}
             <div className="flex items-center gap-2">
-              <NotificationBadge />
+              {!isCollapsed && <NotificationBadge />}
               <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className={`p-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors ${
-                  isCollapsed ? 'w-full flex justify-center' : ''
-                }`}
+                className={`p-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors ${isCollapsed ? 'w-full flex justify-center' : ''
+                  }`}
               >
                 {isCollapsed ? <FaChevronRight size={16} /> : <FaChevronLeft size={16} />}
               </button>
@@ -332,27 +381,22 @@ export default function Sidebar({ children }: SidebarProps) {
           <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
+              const active = isActive(item.href);
               return (
                 <div key={item.key || item.href} className="relative group">
-                  <Link
+                  <NavLink
                     href={item.href}
-                    className={`
-                      flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors relative
-                      ${isActive(item.href)
-                        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                        : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-                      }
-                      ${isCollapsed ? 'justify-center' : ''}
-                    `}
+                    active={active}
+                    className={`px-3 py-2 text-sm font-medium rounded-md relative ${isCollapsed ? 'justify-center flex' : 'flex items-center'}`}
                   >
                     <Icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-3'}`} />
-                    {!isCollapsed && item.label}
+                    {!isCollapsed && <span>{item.label}</span>}
 
                     {/* Active indicator for collapsed mode */}
-                    {isCollapsed && isActive(item.href) && (
-                      <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-primary rounded-l-full"></div>
+                    {isCollapsed && active && (
+                      <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', width: 4, height: 36, background: LOGO_BLUE, borderRadius: '0 4px 4px 0' }} />
                     )}
-                  </Link>
+                  </NavLink>
 
                   {/* Tooltip for collapsed mode */}
                   {isCollapsed && (
@@ -401,6 +445,6 @@ export default function Sidebar({ children }: SidebarProps) {
           {children}
         </main>
       </div>
-    </div>
+    </aside>
   );
 }

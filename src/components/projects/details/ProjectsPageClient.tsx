@@ -7,18 +7,19 @@ import CreateProjectModal from '../growth-team/CreateProjectModal';
 import ProjectSearchFilter, { ProjectFilters } from '../ProjectSearchFilter';
 import { categorizeProjects, filterAndSortProjects } from '@/lib/project-filters';
 import type { Project, Phase, Sprint, ConsultantsOnProjects, PhaseAllocation } from '@prisma/client';
+import React from 'react';
 
 type ProjectWithDetails = Project & {
   sprints: Sprint[];
   phases: (Phase & {
     allocations: PhaseAllocation[];
   })[];
-  consultants: (ConsultantsOnProjects & { 
-    user: { 
-      id: string; 
+  consultants: (ConsultantsOnProjects & {
+    user: {
+      id: string;
       name: string | null;
       email: string | null;
-    } 
+    }
   })[];
 };
 
@@ -73,57 +74,57 @@ export default function ProjectsPageClient({
       {/* Summary Statistics */}
       {!hideStats && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 rounded-xl shadow-sm border border-green-200 dark:border-green-800 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-green-500 dark:bg-green-600 rounded-lg">
-              <FaChartBar className="w-6 h-6 text-white" />
+          <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 rounded-xl shadow-sm border border-green-200 dark:border-green-800 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-green-500 dark:bg-green-600 rounded-lg">
+                <FaChartBar className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-green-900 dark:text-green-100">{current.length}</p>
+                <p className="text-sm text-green-600 dark:text-green-400">Current Projects</p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{current.length}</p>
-              <p className="text-sm text-green-600 dark:text-green-400">Current Projects</p>
+            <div className="w-full bg-green-200 dark:bg-green-800/50 rounded-full h-1.5">
+              <div className="bg-green-500 dark:bg-green-400 h-1.5 rounded-full" style={{ width: `${filteredProjects.length > 0 ? (current.length / filteredProjects.length) * 100 : 0}%` }}></div>
             </div>
+            <p className="text-xs text-green-700 dark:text-green-300 mt-2">
+              {filteredProjects.length > 0 ? Math.round((current.length / filteredProjects.length) * 100) : 0}% of filtered projects
+            </p>
           </div>
-          <div className="w-full bg-green-200 dark:bg-green-800/50 rounded-full h-1.5">
-            <div className="bg-green-500 dark:bg-green-400 h-1.5 rounded-full" style={{ width: `${filteredProjects.length > 0 ? (current.length / filteredProjects.length) * 100 : 0}%` }}></div>
-          </div>
-          <p className="text-xs text-green-700 dark:text-green-300 mt-2">
-            {filteredProjects.length > 0 ? Math.round((current.length / filteredProjects.length) * 100) : 0}% of filtered projects
-          </p>
-        </div>
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 rounded-xl shadow-sm border border-blue-200 dark:border-blue-800 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-500 dark:bg-blue-600 rounded-lg">
-              <FaChartBar className="w-6 h-6 text-white" />
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 rounded-xl shadow-sm border border-blue-200 dark:border-blue-800 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-blue-500 dark:bg-blue-600 rounded-lg">
+                <FaChartBar className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{upcoming.length}</p>
+                <p className="text-sm text-blue-600 dark:text-blue-400">Upcoming Projects</p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{upcoming.length}</p>
-              <p className="text-sm text-blue-600 dark:text-blue-400">Upcoming Projects</p>
+            <div className="w-full bg-blue-200 dark:bg-blue-800/50 rounded-full h-1.5">
+              <div className="bg-blue-500 dark:bg-blue-400 h-1.5 rounded-full" style={{ width: `${filteredProjects.length > 0 ? (upcoming.length / filteredProjects.length) * 100 : 0}%` }}></div>
             </div>
+            <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+              {filteredProjects.length > 0 ? Math.round((upcoming.length / filteredProjects.length) * 100) : 0}% of filtered projects
+            </p>
           </div>
-          <div className="w-full bg-blue-200 dark:bg-blue-800/50 rounded-full h-1.5">
-            <div className="bg-blue-500 dark:bg-blue-400 h-1.5 rounded-full" style={{ width: `${filteredProjects.length > 0 ? (upcoming.length / filteredProjects.length) * 100 : 0}%` }}></div>
-          </div>
-          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
-            {filteredProjects.length > 0 ? Math.round((upcoming.length / filteredProjects.length) * 100) : 0}% of filtered projects
-          </p>
-        </div>
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-gray-500 dark:bg-gray-600 rounded-lg">
-              <FaChartBar className="w-6 h-6 text-white" />
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-gray-500 dark:bg-gray-600 rounded-lg">
+                <FaChartBar className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{past.length}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Past Projects</p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{past.length}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Past Projects</p>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+              <div className="bg-gray-500 dark:bg-gray-400 h-1.5 rounded-full" style={{ width: `${filteredProjects.length > 0 ? (past.length / filteredProjects.length) * 100 : 0}%` }}></div>
             </div>
+            <p className="text-xs text-gray-700 dark:text-gray-300 mt-2">
+              {filteredProjects.length > 0 ? Math.round((past.length / filteredProjects.length) * 100) : 0}% of filtered projects
+            </p>
           </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-            <div className="bg-gray-500 dark:bg-gray-400 h-1.5 rounded-full" style={{ width: `${filteredProjects.length > 0 ? (past.length / filteredProjects.length) * 100 : 0}%` }}></div>
-          </div>
-          <p className="text-xs text-gray-700 dark:text-gray-300 mt-2">
-            {filteredProjects.length > 0 ? Math.round((past.length / filteredProjects.length) * 100) : 0}% of filtered projects
-          </p>
-        </div>
         </div>
       )}
 
@@ -198,11 +199,11 @@ export default function ProjectsPageClient({
             {filters.search || filters.status !== 'all'
               ? 'Try adjusting your search or filter criteria.'
               : isGrowthTeam
-              ? 'Get started by creating your first project.'
-              : 'You have not been assigned to any projects yet.'}
+                ? 'Get started by creating your first project.'
+                : 'You have not been assigned to any projects yet.'}
           </p>
           {isGrowthTeam && (
-            <button 
+            <button
               onClick={() => setShowCreateModal(true)}
               className="inline-flex items-center gap-2 py-2 px-4 text-sm font-semibold rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors"
             >
@@ -215,8 +216,8 @@ export default function ProjectsPageClient({
 
       {/* Create Project Modal */}
       {isGrowthTeam && (
-        <CreateProjectModal 
-          isOpen={showCreateModal} 
+        <CreateProjectModal
+          isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => {
             // Modal handles navigation to project page automatically
@@ -225,5 +226,38 @@ export default function ProjectsPageClient({
         />
       )}
     </div>
+  );
+}
+
+type Props = {
+  onSubmit: (values?: any) => void;
+  initial?: { name?: string; description?: string };
+};
+
+export function ProjectForm({ onSubmit, initial = {} }: Props) {
+  function handleKeyDown(e: React.KeyboardEvent<HTMLFormElement>) {
+    const cmdOrCtrl = e.metaKey || e.ctrlKey;
+    if (cmdOrCtrl && e.key === 'Enter') {
+      e.preventDefault();
+      onSubmit?.();
+    }
+  }
+
+  return (
+    <form
+      onKeyDown={handleKeyDown}
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit?.();
+      }}
+    >
+      <label htmlFor="project-name">Project name</label>
+      <input id="project-name" name="name" defaultValue={initial.name || ''} />
+
+      <label htmlFor="project-desc">Description</label>
+      <textarea id="project-desc" name="description" defaultValue={initial.description || ''} />
+
+      <button type="submit">Save</button>
+    </form>
   );
 }

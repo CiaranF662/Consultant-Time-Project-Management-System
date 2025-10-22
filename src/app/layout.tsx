@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { Inter, Poppins } from 'next/font/google';
-import './globals.css';
 import AuthProvider from '@/components/auth/AuthProvider';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import SessionTimeout from '@/components/SessionTimeout';
+import GlobalShortcutsProvider from '@/components/GlobalShortcutsProvider';
+import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 const poppins = Poppins({
@@ -27,8 +28,10 @@ export default function RootLayout({
       <body className={`${inter.className} ${poppins.variable}`}>
         <ThemeProvider>
           <AuthProvider>
-            {children}
-            <SessionTimeout />
+            <GlobalShortcutsProvider>
+              {children}
+              <SessionTimeout />
+            </GlobalShortcutsProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

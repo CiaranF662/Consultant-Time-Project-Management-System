@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import Sidebar from './add-sidebar';
+import Sidebar from '@/components/navigation/add-sidebar';
 import Loading from '@/app/loading';
 import { cn } from '@/lib/utils';
 
@@ -29,16 +29,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   if (status === 'loading') {
     const sizeClasses = {
-    sm: "w-8 h-8",
-    md: "w-12 h-12", 
-    lg: "w-16 h-16"
-  };
+      sm: "w-8 h-8",
+      md: "w-12 h-12",
+      lg: "w-16 h-16"
+    };
 
-  const dotSizes = {
-    sm: "w-2 h-2",
-    md: "w-3 h-3",
-    lg: "w-4 h-4"
-  };
+    const dotSizes = {
+      sm: "w-2 h-2",
+      md: "w-3 h-3",
+      lg: "w-4 h-4"
+    };
 
     return (
       <Loading className={cn("min-h-screen flex items-center justify-center", sizeClasses["lg"])} />
