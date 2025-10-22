@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const projectId = searchParams.get('projectId'); // Optional: filter to project consultants only
+    const excludeProjectId = searchParams.get('excludeProjectId'); // Optional: exclude allocations from this project
 
     if (!startDate || !endDate) {
       return NextResponse.json(
@@ -95,15 +96,29 @@ export async function GET(request: NextRequest) {
       year: week.year
     }));
 
+    // Build allocation query - exclude specific project if requested
+    let allocationWhere: any = {
+      consultantId: { in: consultants.map(c => c.id) },
+      OR: weekConditions,
+      planningStatus: {
+        in: ['APPROVED', 'PENDING', 'MODIFIED']
+      }
+    };
+
+    // If excludeProjectId is provided, exclude allocations from that project
+    if (excludeProjectId) {
+      allocationWhere.phaseAllocation = {
+        phase: {
+          projectId: {
+            not: excludeProjectId
+          }
+        }
+      };
+    }
+
     // Fetch ALL allocations for ALL consultants in a single query
     const allAllocations = await prisma.weeklyAllocation.findMany({
-      where: {
-        consultantId: { in: consultants.map(c => c.id) },
-        OR: weekConditions,
-        planningStatus: {
-          in: ['APPROVED', 'PENDING', 'MODIFIED']
-        }
-      },
+      where: allocationWhere,
       include: {
         phaseAllocation: {
           include: {

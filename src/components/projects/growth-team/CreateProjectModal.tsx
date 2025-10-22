@@ -10,7 +10,7 @@ import { createProjectSchema, formatValidationErrors } from '@/lib/validation-sc
 import { validateHours, validateProjectBudget, validateTeamAllocation, validateProjectCreation, ValidationResult } from '@/lib/validation';
 import ConsultantScheduleView from '@/components/projects/allocations/ConsultantScheduleView';
 
-// Helper function to get today's date in YYYY-MM-DD format
+//#region Helper function to get today's date in YYYY-MM-DD format
 const getTodayString = () => {
   return new Date().toISOString().split('T')[0];
 };

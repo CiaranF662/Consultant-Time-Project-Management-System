@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import { FaTimes, FaTrash, FaBriefcase, FaUsers, FaUser, FaPlus, FaCheck, FaCalendar, FaClock, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
+import { FaTimes, FaTrash, FaBriefcase, FaUsers, FaUser, FaPlus, FaCheck, FaCalendar, FaClock, FaCheckCircle, FaExclamationTriangle, FaSearch } from 'react-icons/fa';
+import ConsultantScheduleView from '@/components/projects/allocations/ConsultantScheduleView';
 
 interface User {
   id: string;
@@ -37,6 +38,8 @@ interface EditProjectModalProps {
 export default function EditProjectModal({ project, onClose }: EditProjectModalProps) {
   const router = useRouter();
   const modalRef = useRef<HTMLDivElement>(null);
+  const pmDropdownRef = useRef<HTMLDivElement>(null);
+  const consultantDropdownRef = useRef<HTMLDivElement>(null);
   
   // Form states
   const [title, setTitle] = useState(project.title);
@@ -95,6 +98,14 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
   const [consultantAvailability, setConsultantAvailability] = useState<Record<string, any>>({});
   const [loadingAvailability, setLoadingAvailability] = useState(false);
 
+  // Consultant commitments state
+  const [consultantCommitments, setConsultantCommitments] = useState<Record<string, {
+    totalCommittedHours: number;
+    canRemove: boolean;
+    phases: Record<string, { plannedHours: number; approvedHours: number; }>;
+  }>>({});
+  const [loadingCommitments, setLoadingCommitments] = useState(false);
+
   // Fetch all consultants when modal opens
   useEffect(() => {
     const fetchConsultants = async () => {
@@ -107,6 +118,59 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
     };
     fetchConsultants();
   }, []);
+
+  // Fetch consultant commitments when modal opens
+  useEffect(() => {
+    const fetchCommitments = async () => {
+      setLoadingCommitments(true);
+      try {
+        const response = await axios.get(`/api/projects/${project.id}`);
+        const commitmentsMap: Record<string, any> = {};
+        
+        // Process phases and their allocations to calculate commitments
+        if (response.data.phases) {
+          response.data.phases.forEach((phase: any) => {
+            if (phase.phaseAllocations) {
+              phase.phaseAllocations.forEach((allocation: any) => {
+                const consultantId = allocation.consultantId;
+                const plannedHours = allocation.plannedHours || 0;
+                const approvedHours = allocation.approvalStatus === 'APPROVED' ? allocation.hours : 0;
+                const committedHours = Math.max(plannedHours, approvedHours);
+                
+                if (!commitmentsMap[consultantId]) {
+                  commitmentsMap[consultantId] = {
+                    totalCommittedHours: 0,
+                    canRemove: true,
+                    phases: {}
+                  };
+                }
+                
+                commitmentsMap[consultantId].totalCommittedHours += committedHours;
+                commitmentsMap[consultantId].phases[phase.id] = {
+                  plannedHours,
+                  approvedHours
+                };
+              });
+            }
+          });
+        }
+        
+        // Update canRemove based on total committed hours
+        Object.keys(commitmentsMap).forEach(consultantId => {
+          commitmentsMap[consultantId].canRemove = commitmentsMap[consultantId].totalCommittedHours === 0;
+        });
+        
+        setConsultantCommitments(commitmentsMap);
+      } catch (err) {
+        console.error('Failed to fetch consultant commitments:', err);
+        setConsultantCommitments({});
+      } finally {
+        setLoadingCommitments(false);
+      }
+    };
+    
+    fetchCommitments();
+  }, [project.id]);
 
   // Fetch consultant availability when duration changes
   useEffect(() => {
@@ -124,7 +188,8 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
         const response = await axios.get('/api/consultants/availability', {
           params: {
             startDate: start.toISOString(),
-            endDate: end.toISOString()
+            endDate: end.toISOString(),
+            excludeProjectId: project.id // Exclude current project from availability calculation
           }
         });
 
@@ -160,11 +225,20 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
             });
           }
 
+          // Calculate total available hours over the project period
+          // Total capacity = 40h/week * number of weeks
+          // Total available = Total capacity - totalAllocatedHours
+          const numberOfWeeks = item.weeklyBreakdown?.length || 0;
+          const totalCapacity = numberOfWeeks * 40;
+          const totalAllocated = parseFloat(item.totalAllocatedHours) || 0;
+          const totalAvailable = numberOfWeeks > 0 ? Math.max(0, totalCapacity - totalAllocated) : 0;
+
           acc[item.consultant.id] = {
             ...item,
             availabilityStatus,
             availabilityColor,
-            projectAllocations
+            projectAllocations,
+            totalAvailable
           };
           return acc;
         }, {});
@@ -185,14 +259,23 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+      // Handle modal backdrop click
+      if (modalRef.current === event.target) {
+        onClose();
+        return;
+      }
+
+      // Handle dropdown clicks
+      if (pmDropdownRef.current && !pmDropdownRef.current.contains(event.target as Node)) {
         setShowPmDropdown(false);
+      }
+      if (consultantDropdownRef.current && !consultantDropdownRef.current.contains(event.target as Node)) {
         setShowConsultantDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [onClose]);
 
   // Filter functions
   const getAvailableProductManagers = () => {
@@ -338,7 +421,33 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
     }
   };
 
+  // Validation functions
+  const getConsultantConstraints = (consultantId: string) => {
+    const commitment = consultantCommitments[consultantId];
+    return {
+      canRemove: !commitment || commitment.totalCommittedHours === 0,
+      minimumHours: commitment?.totalCommittedHours || 0
+    };
+  };
+
+  const validateHourReduction = (consultantId: string, newHours: number) => {
+    const constraints = getConsultantConstraints(consultantId);
+    if (newHours < constraints.minimumHours) {
+      return {
+        valid: false,
+        message: `Cannot reduce below ${constraints.minimumHours}h (committed across all phases)`
+      };
+    }
+    return { valid: true, message: '' };
+  };
+
   const removeConsultant = (consultantId: string) => {
+    const constraints = getConsultantConstraints(consultantId);
+    if (!constraints.canRemove) {
+      setError(`Cannot remove consultant: ${constraints.minimumHours}h committed across project phases`);
+      return;
+    }
+    
     setSelectedConsultantIds(prev => prev.filter(id => id !== consultantId));
     // Remove their allocation when removing consultant
     setConsultantAllocations(prev => {
@@ -358,6 +467,13 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
 
 
   const updateConsultantAllocation = (consultantId: string, hours: number) => {
+    const validation = validateHourReduction(consultantId, hours);
+    if (!validation.valid) {
+      setError(validation.message);
+      return;
+    }
+    
+    setError(null);
     setConsultantAllocations(prev => ({
       ...prev,
       [consultantId]: hours
@@ -624,7 +740,7 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                     <FaUser className="w-3 h-3 text-purple-600" />
                     Product Manager *
                   </label>
-                  <div className="relative">
+                  <div className="relative" ref={pmDropdownRef}>
                     <input
                       type="text"
                       value={pmSearchQuery}
@@ -733,38 +849,38 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                     Team Members
                   </label>
                   
-                  {/* Selected Consultants */}
+                  {/* Selected Consultants Display */}
                   {selectedConsultantIds.length > 0 && (
-                    <div className="mb-3 flex flex-wrap gap-2">
-                      {getSelectedConsultants().map((consultant) => {
-                        const availability = consultantAvailability[consultant.id];
+                    <div className="mb-3">
+                      <div className="flex flex-wrap gap-2">
+                        {selectedConsultantIds.map((consultantId) => {
+                          const consultant = allConsultants.find(c => c.id === consultantId);
+                          const availability = consultantAvailability[consultantId];
 
-                        return (
-                          <div
-                            key={consultant.id}
-                            className="flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
-                          >
-                            <span>{consultant.name || consultant.email}</span>
-                            {availability && (
-                              <span className={`px-1 py-0.5 rounded text-xs ${
-                                availability.availabilityStatus === 'available' ? 'bg-green-200 text-green-800' :
-                                availability.availabilityStatus === 'partially-busy' ? 'bg-yellow-200 text-yellow-800' :
-                                availability.availabilityStatus === 'busy' ? 'bg-orange-200 text-orange-800' :
-                                'bg-red-200 text-red-800'
-                              }`}>
-                                {availability.averageHoursPerWeek}h/wk
-                              </span>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => removeConsultant(consultant.id)}
-                              className="hover:text-purple-600"
-                            >
-                              <FaTimes className="w-3 h-3" />
-                            </button>
-                          </div>
-                        );
-                      })}
+                          return (
+                            <div key={consultantId} className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                              <span>{consultant?.name}</span>
+                              {availability && (
+                                <span className={`px-1 py-0.5 rounded text-xs ${
+                                  availability.availabilityStatus === 'available' ? 'bg-green-200 text-green-800' :
+                                  availability.availabilityStatus === 'partially-busy' ? 'bg-yellow-200 text-yellow-800' :
+                                  availability.availabilityStatus === 'busy' ? 'bg-orange-200 text-orange-800' :
+                                  'bg-red-200 text-red-800'
+                                }`}>
+                                  {availability.averageHoursPerWeek}h/wk
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => removeConsultant(consultantId)}
+                                className="hover:text-blue-600"
+                              >
+                                <FaTimes className="w-2 h-2" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                   
@@ -793,9 +909,8 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                     </div>
                   )}
 
-                  {/* Add Consultant Search */}
-                  <div className="relative">
-                    <div className="flex">
+                  <div className="relative" ref={consultantDropdownRef}>
+                    <div className="relative">
                       <input
                         type="text"
                         value={consultantSearchQuery}
@@ -804,98 +919,77 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                           setShowConsultantDropdown(true);
                         }}
                         onFocus={() => setShowConsultantDropdown(true)}
-                        placeholder="Search to add team members..."
-                        className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-l-lg focus:border-purple-500 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200"
+                        className="block w-full px-3 py-2 pr-8 rounded-lg border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 dark:placeholder-gray-400 text-foreground shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200"
+                        placeholder="Search and select consultants..."
                       />
-                      <button
-                        type="button"
-                        className="px-4 py-2 bg-purple-600 text-white rounded-r-lg hover:bg-purple-700 transition-colors duration-200"
-                        onClick={() => setShowConsultantDropdown(!showConsultantDropdown)}
-                      >
-                        <FaPlus className="w-4 h-4" />
-                      </button>
+                      <FaSearch className="absolute right-3 top-3 h-3 w-3 text-muted-foreground" />
                     </div>
-                    
-                    {/* Consultant Dropdown */}
+
                     {showConsultantDropdown && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        {getAvailableConsultants().map((consultant) => {
-                          const availability = consultantAvailability[consultant.id];
+                      <div className="absolute z-20 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {getAvailableConsultants().length === 0 ? (
+                          <div className="px-3 py-2 text-muted-foreground text-sm">No available consultants found</div>
+                        ) : (
+                          getAvailableConsultants().map((consultant) => {
+                            const availability = consultantAvailability[consultant.id];
 
-                          return (
-                            <button
-                              key={consultant.id}
-                              type="button"
-                              onClick={() => {
-                                setSelectedConsultantIds(prev => [...prev, consultant.id]);
-                                setConsultantSearchQuery('');
-                                setShowConsultantDropdown(false);
-                              }}
-                              className="w-full px-3 py-2 text-left hover:bg-gray-50"
-                            >
-                              <div className="flex items-center justify-between">
+                            return (
+                              <button
+                                key={consultant.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedConsultantIds(prev => [...prev, consultant.id]);
+                                  setConsultantAllocations(prev => ({ ...prev, [consultant.id]: 0 }));
+                                  setConsultantSearchQuery('');
+                                  setShowConsultantDropdown(false);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-50 dark:focus:bg-blue-900/30 focus:outline-none border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                              >
                                 <div>
-                                  <div className="font-medium text-foreground text-sm">{consultant.name || consultant.email}</div>
-                                  {consultant.email && consultant.name && (
-                                    <div className="text-xs text-gray-600">{consultant.email}</div>
-                                  )}
-                                </div>
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <div className="font-medium text-foreground text-sm">{consultant.name}</div>
+                                      <div className="text-xs text-gray-600 dark:text-gray-400">{consultant.email}</div>
+                                    </div>
 
-                                {/* Availability Indicator */}
-                                <div className="ml-2">
-                                  {loadingAvailability ? (
-                                    <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-600">
-                                      <FaClock className="w-2 h-2 animate-spin" />
-                                      <span className="text-xs">Loading...</span>
-                                    </div>
-                                  ) : availability ? (
-                                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                                      availability.availabilityColor
-                                    }`}>
-                                      {availability.availabilityStatus === 'available' && (
-                                        <FaCheckCircle className="w-2 h-2" />
+                                    {/* Availability Indicator */}
+                                    <div className="ml-2 flex flex-col items-end gap-1">
+                                      {loadingAvailability ? (
+                                        <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                                          <FaClock className="w-2 h-2 animate-spin" />
+                                          <span className="text-xs">Loading...</span>
+                                        </div>
+                                      ) : availability ? (
+                                        <>
+                                          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                            availability.availabilityColor
+                                          }`}>
+                                            {availability.availabilityStatus === 'available' && (
+                                              <FaCheckCircle className="w-2 h-2" />
+                                            )}
+                                            {availability.availabilityStatus === 'partially-busy' && (
+                                              <FaClock className="w-2 h-2" />
+                                            )}
+                                            {(availability.availabilityStatus === 'busy' || availability.availabilityStatus === 'overloaded') && (
+                                              <FaExclamationTriangle className="w-2 h-2" />
+                                            )}
+                                            <span>{availability.averageHoursPerWeek}h/wk avg</span>
+                                          </div>
+                                          <div className="text-xs text-gray-600 dark:text-gray-400 font-semibold">
+                                            {Math.round(availability.totalAvailable || 0)}h available
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <span className="text-xs text-muted-foreground">
+                                          {durationWeeks ? 'No data' : 'Set duration'}
+                                        </span>
                                       )}
-                                      {availability.availabilityStatus === 'partially-busy' && (
-                                        <FaClock className="w-2 h-2" />
-                                      )}
-                                      {(availability.availabilityStatus === 'busy' || availability.availabilityStatus === 'overloaded') && (
-                                        <FaExclamationTriangle className="w-2 h-2" />
-                                      )}
-                                      <span>{availability.averageHoursPerWeek}h/wk</span>
                                     </div>
-                                  ) : durationWeeks ? (
-                                    <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
-                                      <FaCheckCircle className="w-2 h-2" />
-                                      <span>0h/wk</span>
-                                    </div>
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground">Set duration</span>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Detailed availability info */}
-                              {availability && availability.projectAllocations && Object.keys(availability.projectAllocations).length > 0 && (
-                                <div className="mt-2 pt-2 border-t border-gray-100">
-                                  <p className="text-xs text-gray-600 mb-1">Current projects:</p>
-                                  <div className="space-y-1">
-                                    {Object.entries(availability.projectAllocations).slice(0, 2).map(([projectTitle, hours]: [string, any]) => (
-                                      <div key={projectTitle} className="text-xs text-muted-foreground flex justify-between">
-                                        <span className="truncate max-w-[120px]">{projectTitle}</span>
-                                        <span>{hours}h</span>
-                                      </div>
-                                    ))}
-                                    {Object.keys(availability.projectAllocations).length > 2 && (
-                                      <div className="text-xs text-muted-foreground">+{Object.keys(availability.projectAllocations).length - 2} more projects</div>
-                                    )}
                                   </div>
                                 </div>
-                              )}
-                            </button>
-                          );
-                        })}
-                        {getAvailableConsultants().length === 0 && (
-                          <div className="px-3 py-2 text-muted-foreground text-sm">No available consultants</div>
+                              </button>
+                            );
+                          })
                         )}
                       </div>
                     )}
@@ -916,75 +1010,170 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                 <div className="space-y-3">
                   {/* Product Manager Allocation */}
                   {selectedProductManagerId && (
-                    <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200 shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium mr-4">
+                    <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-800/20 rounded-lg border border-purple-200 dark:border-purple-700 shadow-sm">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-center flex-1 min-w-0">
+                          <div className="w-10 h-10 bg-purple-600 dark:bg-purple-700 rounded-full flex items-center justify-center text-white text-sm font-medium mr-4 flex-shrink-0">
                             <FaUser className="w-4 h-4" />
                           </div>
-                          <div>
-                            <p className="font-semibold text-foreground flex items-center gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-foreground flex items-center gap-2 flex-wrap">
                               {getSelectedProductManager()?.name || getSelectedProductManager()?.email}
-                              <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-medium">
+                              <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200 text-xs px-2 py-1 rounded-full font-medium">
                                 Product Manager
                               </span>
                             </p>
-                            <p className="text-sm text-muted-foreground">{getSelectedProductManager()?.email}</p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <p className="text-sm text-muted-foreground">{getSelectedProductManager()?.email}</p>
+                              {consultantAvailability[selectedProductManagerId] && (
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                  consultantAvailability[selectedProductManagerId].availabilityColor
+                                }`}>
+                                  {consultantAvailability[selectedProductManagerId].averageHoursPerWeek}h/wk avg
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2">
+                        <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                          <div className="flex items-center gap-3">
                             <input
                               type="number"
-                              value={consultantAllocations[selectedProductManagerId] || ''}
-                              onChange={(e) => updateConsultantAllocation(selectedProductManagerId, parseFloat(e.target.value) || 0)}
-                              className="w-20 px-3 py-2 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 text-center"
                               min="0"
-                              step="0.5"
+                              value={consultantAllocations[selectedProductManagerId] || ''}
+                              onChange={(e) => updateConsultantAllocation(selectedProductManagerId, parseInt(e.target.value) || 0)}
+                              className={`w-20 px-2 py-1 rounded-lg border-2 ${
+                                consultantAvailability[selectedProductManagerId] &&
+                                (consultantAllocations[selectedProductManagerId] || 0) > Math.round(consultantAvailability[selectedProductManagerId].totalAvailable || 0)
+                                  ? 'border-red-500 dark:border-red-500'
+                                  : 'border-gray-200 dark:border-gray-600'
+                              } dark:bg-gray-900 text-foreground text-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50`}
                               placeholder="0"
                             />
-                            <span className="text-sm text-purple-700 font-medium">hours</span>
+                            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">hours</span>
+                            {(() => {
+                              const constraints = getConsultantConstraints(selectedProductManagerId);
+                              return constraints.canRemove ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedProductManagerId('');
+                                    setPmSearchQuery('');
+                                    const newAllocations = { ...consultantAllocations };
+                                    delete newAllocations[selectedProductManagerId];
+                                    setConsultantAllocations(newAllocations);
+                                  }}
+                                  className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center justify-center"
+                                  title="Remove Product Manager"
+                                >
+                                  <FaTimes className="w-3 h-3" />
+                                </button>
+                              ) : (
+                                <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 flex items-center justify-center" title={`Cannot remove: ${constraints.minimumHours}h committed`}>
+                                  <FaTimes className="w-3 h-3" />
+                                </div>
+                              );
+                            })()}
                           </div>
+                          {consultantAvailability[selectedProductManagerId] &&
+                           (consultantAllocations[selectedProductManagerId] || 0) > Math.round(consultantAvailability[selectedProductManagerId].totalAvailable || 0) && (
+                            <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
+                              <FaExclamationTriangle className="w-3 h-3" />
+                              <span>
+                                Exceeds availability by {(consultantAllocations[selectedProductManagerId] || 0) - Math.round(consultantAvailability[selectedProductManagerId].totalAvailable || 0)}h
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Team Members Allocation */}
-                  {getSelectedConsultants().map((consultant) => (
-                    <div key={consultant.id} className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200 shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium mr-4">
-                            <FaUser className="w-4 h-4" />
+                  {/* Team Consultants Allocation */}
+                  {selectedConsultantIds.map(consultantId => {
+                    const consultant = allConsultants.find(c => c.id === consultantId);
+                    const availability = consultantAvailability[consultantId];
+                    if (!consultant) return null;
+
+                    return (
+                      <div key={consultantId} className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-orange-200 dark:border-orange-700 shadow-sm">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-center flex-1 min-w-0">
+                            <div className="w-10 h-10 bg-blue-500 dark:bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium mr-4 flex-shrink-0">
+                              {consultant.name?.charAt(0) || consultant.email?.charAt(0) || 'U'}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-foreground flex items-center gap-2">
+                                {consultant.name}
+                                {(() => {
+                                  const constraints = getConsultantConstraints(consultantId);
+                                  return constraints.minimumHours > 0 ? (
+                                    <span className="bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200 text-xs px-2 py-0.5 rounded-full font-medium" title={`${constraints.minimumHours}h committed across phases`}>
+                                      {constraints.minimumHours}h committed
+                                    </span>
+                                  ) : null;
+                                })()}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                <p className="text-sm text-muted-foreground">{consultant.email}</p>
+                                {availability && (
+                                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                    availability.availabilityColor
+                                  }`}>
+                                    {availability.averageHoursPerWeek}h/wk avg
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-semibold text-foreground flex items-center gap-2">
-                              {consultant.name || consultant.email}
-                              <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">
-                                Team Member
-                              </span>
-                            </p>
-                            <p className="text-sm text-muted-foreground">{consultant.email}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              value={consultantAllocations[consultant.id] || ''}
-                              onChange={(e) => updateConsultantAllocation(consultant.id, parseFloat(e.target.value) || 0)}
-                              className="w-20 px-3 py-2 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 text-center"
-                              min="0"
-                              step="0.5"
-                              placeholder="0"
-                            />
-                            <span className="text-sm text-blue-700 font-medium">hours</span>
+                          <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="number"
+                                min="0"
+                                value={consultantAllocations[consultantId] || ''}
+                                onChange={(e) => updateConsultantAllocation(consultantId, parseInt(e.target.value) || 0)}
+                                className={`w-20 px-2 py-1 rounded-lg border-2 ${
+                                  availability &&
+                                  (consultantAllocations[consultantId] || 0) > Math.round(availability.totalAvailable || 0)
+                                    ? 'border-red-500 dark:border-red-500'
+                                    : 'border-gray-200 dark:border-gray-600'
+                                } dark:bg-gray-900 text-foreground text-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50`}
+                                placeholder="0"
+                              />
+                              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">hours</span>
+                              {(() => {
+                                const constraints = getConsultantConstraints(consultantId);
+                                return constraints.canRemove ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeConsultant(consultantId)}
+                                    className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center justify-center"
+                                    title="Remove Consultant"
+                                  >
+                                    <FaTimes className="w-3 h-3" />
+                                  </button>
+                                ) : (
+                                  <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 flex items-center justify-center" title={`Cannot remove: ${constraints.minimumHours}h committed`}>
+                                    <FaTimes className="w-3 h-3" />
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                            {availability &&
+                             (consultantAllocations[consultantId] || 0) > Math.round(availability.totalAvailable || 0) && (
+                              <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
+                                <FaExclamationTriangle className="w-3 h-3" />
+                                <span>
+                                  Exceeds availability by {(consultantAllocations[consultantId] || 0) - Math.round(availability.totalAvailable || 0)}h
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -996,6 +1185,17 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
               </div>
             )}
           </form>
+
+          {/* Consultant Weekly Schedule */}
+          {startDate && endDate && (selectedProductManagerId || selectedConsultantIds.length > 0) && (
+            <div className="mt-6 px-6">
+              <ConsultantScheduleView
+                startDate={startDate}
+                endDate={endDate}
+                selectedConsultantIds={[selectedProductManagerId, ...selectedConsultantIds].filter(id => id)}
+              />
+            </div>
+          )}
         </div>
 
         {/* Footer */}
