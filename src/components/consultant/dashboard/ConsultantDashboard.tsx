@@ -172,8 +172,8 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1)/7);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
   };
 
   const enhancedStats = calculateEnhancedStats();
@@ -204,7 +204,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
         }))
       }]
     };
-    
+
     return getPhaseStatus(phaseData);
   };
 
@@ -321,8 +321,8 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
             {activeView === 'overview'
               ? 'Manage your time allocation across projects and phases'
               : activeView === 'calendar'
-              ? 'View your allocations in calendar format'
-              : 'My weekly planning and schedule overview'
+                ? 'View your allocations in calendar format'
+                : 'My weekly planning and schedule overview'
             }
           </p>
         </div>
@@ -397,9 +397,8 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
               <FaExclamationTriangle className="w-6 h-6 text-white" />
             </div>
             <div className="text-right">
-              <p className={`text-2xl font-bold ${
-                data.stats.remainingToDistribute > 0 ? 'text-orange-900 dark:text-orange-100' : 'text-green-900 dark:text-green-100'
-              }`}>
+              <p className={`text-2xl font-bold ${data.stats.remainingToDistribute > 0 ? 'text-orange-900 dark:text-orange-100' : 'text-green-900 dark:text-green-100'
+                }`}>
                 {formatHours(data.stats.remainingToDistribute)}
               </p>
               <p className="text-sm text-orange-600 dark:text-orange-400">Remaining</p>
@@ -412,14 +411,13 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
             </div>
             <div className="w-full bg-orange-200 dark:bg-orange-800/50 rounded-full h-1.5">
               <div
-                className={`h-1.5 rounded-full transition-all ${
-                  data.stats.remainingToDistribute === 0 ? 'bg-green-500 dark:bg-green-400' : 'bg-orange-500 dark:bg-orange-400'
-                }`}
+                className={`h-1.5 rounded-full transition-all ${data.stats.remainingToDistribute === 0 ? 'bg-green-500 dark:bg-green-400' : 'bg-orange-500 dark:bg-orange-400'
+                  }`}
                 style={{ width: `${data.stats.remainingToDistribute === 0 ? 100 : 75}%` }}
               ></div>
             </div>
             <p className="text-xs text-orange-700 dark:text-orange-300">
-              {data.stats.remainingToDistribute === 0 ? '✅ All hours allocated' : 'Needs distribution'}
+              {data.stats.remainingToDistribute === 0 ? 'All hours allocated' : 'Needs distribution'}
             </p>
           </div>
         </div>
@@ -496,11 +494,10 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
               <button
                 key={key}
                 onClick={() => setActiveView(key as any)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                  activeView === key
+                className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${activeView === key
                     ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                     : 'border-transparent text-muted-foreground hover:text-card-foreground hover:border-gray-300 dark:hover:border-gray-600'
-                }`}
+                  }`}
               >
                 <Icon />
                 {label}
@@ -571,11 +568,10 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                     }
 
                     // Render different wrappers based on approval status
-                    const cardClassName = `rounded-xl shadow-sm border-l-4 transition-all block ${
-                      allocation.approvalStatus === 'APPROVED' ? 'border-l-green-500 bg-gradient-to-r from-green-50 to-white dark:from-green-900/20 dark:to-gray-800 cursor-pointer hover:shadow-lg hover:scale-[1.02]' :
-                      allocation.approvalStatus === 'REJECTED' ? 'border-l-red-500 bg-gradient-to-r from-red-50 to-white dark:from-red-900/20 dark:to-gray-800' :
-                      'border-l-yellow-500 bg-gradient-to-r from-yellow-50 to-white dark:from-yellow-900/20 dark:to-gray-800'
-                    } p-5`;
+                    const cardClassName = `rounded-xl shadow-sm border-l-4 transition-all block ${allocation.approvalStatus === 'APPROVED' ? 'border-l-green-500 bg-gradient-to-r from-green-50 to-white dark:from-green-900/20 dark:to-gray-800 cursor-pointer hover:shadow-lg hover:scale-[1.02]' :
+                        allocation.approvalStatus === 'REJECTED' ? 'border-l-red-500 bg-gradient-to-r from-red-50 to-white dark:from-red-900/20 dark:to-gray-800' :
+                          'border-l-yellow-500 bg-gradient-to-r from-yellow-50 to-white dark:from-yellow-900/20 dark:to-gray-800'
+                      } p-5`;
 
                     return isApproved ? (
                       <Link
@@ -587,12 +583,11 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                             <div className="flex items-center gap-2 flex-wrap">
                               <h3 className="font-semibold text-foreground">{allocation.phase.name}</h3>
                               {/* Starts in indicator */}
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                daysUntilStart > 7 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' :
-                                daysUntilStart > 0 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
-                                daysUntilStart === 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
-                                'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                              }`}>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${daysUntilStart > 7 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' :
+                                  daysUntilStart > 0 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                                    daysUntilStart === 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                      'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                }`}>
                                 {startsInText}
                               </span>
                             </div>
@@ -624,7 +619,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                             <span className="text-gray-600 dark:text-gray-400">Sprints:</span>
                             <span className="ml-2 font-medium text-foreground">
                               {allocation.phase.sprints.length > 0
-                                ? `${allocation.phase.sprints[0].sprintNumber}-${allocation.phase.sprints[allocation.phase.sprints.length-1].sprintNumber}`
+                                ? `${allocation.phase.sprints[0].sprintNumber}-${allocation.phase.sprints[allocation.phase.sprints.length - 1].sprintNumber}`
                                 : 'None'
                               }
                             </span>
@@ -644,11 +639,10 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                               </div>
                               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                                 <div
-                                  className={`h-2 rounded-full ${
-                                    planningStatus.status === 'complete' ? 'bg-green-500 dark:bg-green-400' :
-                                    planningStatus.status === 'over' ? 'bg-red-500 dark:bg-red-400' :
-                                    planningStatus.status === 'pending_weekly' ? 'bg-blue-500 dark:bg-blue-400' : 'bg-yellow-500 dark:bg-yellow-400'
-                                  }`}
+                                  className={`h-2 rounded-full ${planningStatus.status === 'complete' ? 'bg-green-500 dark:bg-green-400' :
+                                      planningStatus.status === 'over' ? 'bg-red-500 dark:bg-red-400' :
+                                        planningStatus.status === 'pending_weekly' ? 'bg-blue-500 dark:bg-blue-400' : 'bg-yellow-500 dark:bg-yellow-400'
+                                    }`}
                                   style={{
                                     width: `${Math.min((allocation.weeklyAllocations.reduce((sum, week) => sum + (week.approvedHours || 0), 0) / allocation.totalHours) * 100, 100)}%`
                                   }}
@@ -694,11 +688,10 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                             <span>
                               {formatDate(new Date(allocation.phase.startDate))} - {formatDate(new Date(allocation.phase.endDate))}
                             </span>
-                            <span className={`font-medium ${
-                              allocation.approvalStatus === 'APPROVED' && enhancedPhaseStatus.details.overall.riskLevel === 'high' ? 'text-red-600 dark:text-red-400' :
-                              allocation.approvalStatus === 'APPROVED' && enhancedPhaseStatus.details.overall.riskLevel === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
-                              allocation.approvalStatus === 'APPROVED' ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'
-                            }`}>
+                            <span className={`font-medium ${allocation.approvalStatus === 'APPROVED' && enhancedPhaseStatus.details.overall.riskLevel === 'high' ? 'text-red-600 dark:text-red-400' :
+                                allocation.approvalStatus === 'APPROVED' && enhancedPhaseStatus.details.overall.riskLevel === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
+                                  allocation.approvalStatus === 'APPROVED' ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'
+                              }`}>
                               {allocation.approvalStatus === 'APPROVED'
                                 ? `Risk: ${enhancedPhaseStatus.details.overall.riskLevel}`
                                 : `Status: ${allocation.approvalStatus.toLowerCase()}`
@@ -736,12 +729,11 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                             <div className="flex items-center gap-2 flex-wrap">
                               <h3 className="font-semibold text-foreground">{allocation.phase.name}</h3>
                               {/* Starts in indicator */}
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                daysUntilStart > 7 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' :
-                                daysUntilStart > 0 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
-                                daysUntilStart === 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
-                                'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                              }`}>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${daysUntilStart > 7 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' :
+                                  daysUntilStart > 0 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                                    daysUntilStart === 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                      'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                }`}>
                                 {startsInText}
                               </span>
                             </div>
@@ -768,7 +760,7 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                             <span className="text-gray-600 dark:text-gray-400">Sprints:</span>
                             <span className="ml-2 font-medium text-foreground">
                               {allocation.phase.sprints.length > 0
-                                ? `${allocation.phase.sprints[0].sprintNumber}-${allocation.phase.sprints[allocation.phase.sprints.length-1].sprintNumber}`
+                                ? `${allocation.phase.sprints[0].sprintNumber}-${allocation.phase.sprints[allocation.phase.sprints.length - 1].sprintNumber}`
                                 : 'None'
                               }
                             </span>
@@ -832,11 +824,10 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                       <div key={`${week.year}-${week.weekNumber}`} className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-700 rounded-xl shadow-sm border border-gray-100 dark:border-gray-600 p-4 hover:shadow-md transition-all">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-3">
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold text-white ${
-                              index === 0 ? 'bg-blue-500 dark:bg-blue-600' :
-                              index === 1 ? 'bg-green-500 dark:bg-green-600' :
-                              index === 2 ? 'bg-purple-500 dark:bg-purple-600' : 'bg-gray-500 dark:bg-gray-600'
-                            }`}>
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold text-white ${index === 0 ? 'bg-blue-500 dark:bg-blue-600' :
+                                index === 1 ? 'bg-green-500 dark:bg-green-600' :
+                                  index === 2 ? 'bg-purple-500 dark:bg-purple-600' : 'bg-gray-500 dark:bg-gray-600'
+                              }`}>
                               <FaCalendar className="w-5 h-5" />
                             </div>
                             <div>

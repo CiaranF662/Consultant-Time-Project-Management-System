@@ -134,6 +134,12 @@ export default function ProfilePage() {
     }
   };
 
+  // helper colors/styles for dark mode
+  const DARK_UNSELECTED = 'rgba(255,255,255,0.65)'; // light gray
+  const DARK_SELECTED = '#ffffff';
+  const BLUE_BORDER = '#3b82f6'; // tailwind blue-500
+  const ACCOUNT_BG_DARK = 'rgba(173,216,230,0.6)'; // light blue 60% transparency
+
   return (
     <div>
       {status === 'loading' ? (
@@ -162,19 +168,25 @@ export default function ProfilePage() {
                   { key: 'profile', label: 'Profile Information', icon: FaUser },
                   { key: 'preferences', label: 'Preferences', icon: FaCog },
                   { key: 'security', label: 'Security', icon: FaLock },
-                ].map(({ key, label, icon: Icon }) => (
-                  <button
-                    key={key}
-                    onClick={() => setActiveTab(key as any)}
-                    className={`flex items-center gap-2 py-4 px-6 text-sm font-medium border-b-2 transition-colors ${activeTab === key
-                        ? 'border-blue-500 text-blue-600'
-                        : `border-transparent ${theme === 'dark' ? 'text-gray-300 hover:text-gray-100' : 'text-muted-foreground hover:text-card-foreground'}`
-                      }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {label}
-                  </button>
-                ))}
+                ].map(({ key, label, icon: Icon }) => {
+                  const active = activeTab === key;
+
+                  // compute inline styles to enforce colors reliably
+                  const color = theme === 'dark' ? (active ? DARK_SELECTED : DARK_UNSELECTED) : undefined;
+                  const borderBottomColor = active ? BLUE_BORDER : 'transparent';
+
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setActiveTab(key as any)}
+                      className="flex items-center gap-2 py-4 px-6 text-sm font-medium border-b-2 transition-colors"
+                      style={{ color, borderBottomColor }}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {label}
+                    </button>
+                  );
+                })}
               </nav>
             </div>
 
@@ -264,7 +276,9 @@ export default function ProfilePage() {
                         </div>
                       </div>
 
-                      <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-blue-50 border-blue-200'} border`}>
+                      <div className={`p-4 rounded-lg ${theme === 'dark' ? 'border-gray-600' : 'border-blue-200'} border`}
+                        style={theme === 'dark' ? { background: ACCOUNT_BG_DARK } : undefined}
+                      >
                         <h4 className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-blue-800'} mb-2`}>
                           Account Information
                         </h4>
@@ -315,8 +329,8 @@ export default function ProfilePage() {
                           <button
                             onClick={() => setTheme('light')}
                             className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${theme === 'light'
-                                ? 'bg-primary text-primary-foreground border-primary'
-                                : 'bg-muted hover:bg-accent border-border'
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-muted hover:bg-accent border-border'
                               }`}
                           >
                             <FaSun className="w-5 h-5" />
@@ -325,8 +339,8 @@ export default function ProfilePage() {
                           <button
                             onClick={() => setTheme('dark')}
                             className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${theme === 'dark'
-                                ? 'bg-primary text-primary-foreground border-primary'
-                                : 'bg-muted hover:bg-accent border-border'
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-muted hover:bg-accent border-border'
                               }`}
                           >
                             <FaMoon className="w-5 h-5" />
@@ -335,8 +349,8 @@ export default function ProfilePage() {
                           <button
                             onClick={() => setTheme('system')}
                             className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${theme === 'system'
-                                ? 'bg-primary text-primary-foreground border-primary'
-                                : 'bg-muted hover:bg-accent border-border'
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-muted hover:bg-accent border-border'
                               }`}
                           >
                             <Monitor className="w-5 h-5" />
@@ -496,7 +510,9 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Account Info */}
-                    <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'}`}>
+                    <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'border-gray-600' : 'border-gray-200'}`}
+                      style={theme === 'dark' ? { background: ACCOUNT_BG_DARK } : undefined}
+                    >
                       <h4 className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-foreground'} mb-3`}>
                         Account Information
                       </h4>
