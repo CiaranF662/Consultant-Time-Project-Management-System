@@ -48,8 +48,46 @@ export async function DELETE(
       return new NextResponse(JSON.stringify({ error: 'Cannot delete your own account' }), { status: 400 });
     }
 
-    await prisma.user.delete({
-      where: { id: userId },
+    // Delete user and all related records in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Delete related records first to avoid foreign key constraints
+      await tx.weeklyAllocation.deleteMany({ where: { consultantId: userId } });
+      await tx.phaseAllocation.deleteMany({ where: { consultantId: userId } });
+      await tx.hourChangeRequest.deleteMany({ where: { consultantId: userId } });
+      await tx.consultantsOnProjects.deleteMany({ where: { userId: userId } });
+      await tx.notification.deleteMany({ where: { userId: userId } });
+      await tx.session.deleteMany({ where: { userId: userId } });
+      await tx.account.deleteMany({ where: { userId: userId } });
+      
+      // Set productManagerId to null for projects managed by this user
+      await tx.project.updateMany({
+        where: { productManagerId: userId },
+        data: { productManagerId: null }
+      });
+      
+      // Set approver fields to null where this user was the approver
+      await tx.phaseAllocation.updateMany({
+        where: { approvedBy: userId },
+        data: { approvedBy: null }
+      });
+      
+      await tx.weeklyAllocation.updateMany({
+        where: { approvedBy: userId },
+        data: { approvedBy: null }
+      });
+      
+      await tx.weeklyAllocation.updateMany({
+        where: { plannedBy: userId },
+        data: { plannedBy: null }
+      });
+      
+      await tx.hourChangeRequest.updateMany({
+        where: { approverId: userId },
+        data: { approverId: null }
+      });
+      
+      // Finally delete the user
+      await tx.user.delete({ where: { id: userId } });
     });
 
     return NextResponse.json({ message: 'User deleted successfully' });

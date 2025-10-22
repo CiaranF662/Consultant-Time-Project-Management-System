@@ -61,7 +61,8 @@ export async function POST(request: Request) {
     });
 
     // Generate verification link
-    const verificationLink = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${token}`;
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+    const verificationLink = `${baseUrl}/auth/verify-email?token=${token}`;
 
     // Send email verification email
     const emailTemplate = EmailVerificationEmail({
