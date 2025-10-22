@@ -39,13 +39,17 @@ interface ConsultantScheduleViewProps {
   sprintIds?: string[];
   projectId?: string;
   selectedConsultantIds?: string[];
+  startDate?: string;
+  endDate?: string;
 }
 
 export default function ConsultantScheduleView({
   phaseId,
   sprintIds,
   projectId,
-  selectedConsultantIds = []
+  selectedConsultantIds = [],
+  startDate,
+  endDate
 }: ConsultantScheduleViewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [availability, setAvailability] = useState<ConsultantAvailability[]>([]);
@@ -54,10 +58,10 @@ export default function ConsultantScheduleView({
   const [expandedConsultant, setExpandedConsultant] = useState<string | null>(null);
 
   useEffect(() => {
-    if (phaseId || (sprintIds && sprintIds.length > 0)) {
+    if (phaseId || (sprintIds && sprintIds.length > 0) || (startDate && endDate)) {
       fetchAvailability();
     }
-  }, [phaseId, sprintIds?.join(',')]);
+  }, [phaseId, sprintIds?.join(','), startDate, endDate]);
 
   const fetchAvailability = async () => {
     try {
@@ -68,6 +72,15 @@ export default function ConsultantScheduleView({
       if (phaseId) {
         // Use phase-based endpoint for existing phases
         response = await axios.get(`/api/phases/${phaseId}/consultant-availability`);
+      } else if (startDate && endDate) {
+        // Use date-based endpoint with direct dates (for project creation)
+        response = await axios.get(`/api/consultants/availability`, {
+          params: {
+            startDate,
+            endDate,
+            projectId
+          }
+        });
       } else if (sprintIds && sprintIds.length > 0 && projectId) {
         // Use date-based endpoint for phase creation - need to get sprint dates first
         const sprintsResponse = await axios.get(`/api/projects/${projectId}`);
@@ -192,6 +205,7 @@ export default function ConsultantScheduleView({
           >
             {/* Consultant Header */}
             <button
+              type="button"
               onClick={() => setExpandedConsultant(
                 expandedConsultant === consultant.consultant.id ? null : consultant.consultant.id
               )}

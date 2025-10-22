@@ -8,6 +8,7 @@ import { FaInfoCircle, FaSearch, FaTimes, FaUser, FaUsers, FaCalendarAlt, FaBrie
 import { z } from 'zod';
 import { createProjectSchema, formatValidationErrors } from '@/lib/validation-schemas';
 import { validateHours, validateProjectBudget, validateTeamAllocation, validateProjectCreation, ValidationResult } from '@/lib/validation';
+import ConsultantScheduleView from '@/components/projects/allocations/ConsultantScheduleView';
 
 // Helper function to get today's date in YYYY-MM-DD format
 const getTodayString = () => {
@@ -95,14 +96,24 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
   useEffect(() => {
     if (!isOpen) return;
 
-    const fetchAvailability = async () => {
-      if (!startDate || !durationInWeeks || parseInt(durationInWeeks) <= 0) {
-        setConsultantAvailability({});
-        return;
-      }
+    // Debounce the API call to prevent race conditions when typing
+    const timeoutId = setTimeout(() => {
+      fetchAvailability();
+    }, 500); // Wait 500ms after user stops typing
 
-      setLoadingAvailability(true);
-      try {
+    return () => clearTimeout(timeoutId);
+  }, [isOpen, startDate, durationInWeeks]);
+
+  const fetchAvailability = async () => {
+    if (!startDate || !durationInWeeks || parseInt(durationInWeeks) <= 0) {
+      setConsultantAvailability({});
+      return;
+    }
+
+    console.log(`Fetching availability: startDate=${startDate}, duration=${durationInWeeks} weeks`);
+
+    setLoadingAvailability(true);
+    try {
         const start = new Date(startDate);
         const end = new Date(start);
         end.setDate(start.getDate() + (parseInt(durationInWeeks) * 7) - 1);
@@ -146,11 +157,20 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
             });
           }
 
+          // Calculate total available hours over the project period
+          // Total capacity = 40h/week * number of weeks
+          // Total available = Total capacity - totalAllocatedHours
+          const numberOfWeeks = item.weeklyBreakdown?.length || 0;
+          const totalCapacity = numberOfWeeks * 40;
+          const totalAllocated = parseFloat(item.totalAllocatedHours) || 0;
+          const totalAvailable = numberOfWeeks > 0 ? Math.max(0, totalCapacity - totalAllocated) : 0;
+
           acc[item.consultant.id] = {
             ...item,
             availabilityStatus,
             availabilityColor,
-            projectAllocations
+            projectAllocations,
+            totalAvailable
           };
           return acc;
         }, {});
@@ -163,10 +183,6 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
         setLoadingAvailability(false);
       }
     };
-
-    // Add immediate fetch on mount if dates are already set
-    fetchAvailability();
-  }, [isOpen, startDate, durationInWeeks]);
 
   // Click outside handler for dropdowns and modal
   useEffect(() => {
@@ -454,6 +470,19 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
 
   const suggestedBudget = getSuggestedBudget();
 
+  // Calculate end date based on start date and duration
+  const calculateEndDate = () => {
+    if (!startDate || !durationInWeeks || parseInt(durationInWeeks) <= 0) return null;
+
+    const start = new Date(startDate);
+    const end = new Date(start);
+    end.setDate(start.getDate() + (parseInt(durationInWeeks) * 7) - 1);
+
+    return end.toISOString().split('T')[0];
+  };
+
+  const endDate = calculateEndDate();
+
   // Calculate budget validation
   const getBudgetValidation = (): ValidationResult | null => {
     if (!budgetedHours || !Object.keys(consultantAllocations).length) return null;
@@ -489,6 +518,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="w-8 h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg flex items-center justify-center transition-all duration-200"
           >
@@ -679,6 +709,15 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                         {fieldErrors.durationInWeeks}
                       </p>
                     )}
+                    {/* Display calculated end date */}
+                    {endDate && (
+                      <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
+                        <div className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300">
+                          <FaCalendarAlt className="w-3 h-3" />
+                          <span className="font-medium">End Date: {new Date(endDate).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -833,39 +872,46 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                                 onClick={() => handleProductManagerSelect(consultant.id)}
                                 className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-50 dark:focus:bg-blue-900/30 focus:outline-none border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                               >
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <div className="font-medium text-foreground text-sm">{consultant.name}</div>
-                                    <div className="text-xs text-gray-600 dark:text-gray-400">{consultant.email}</div>
-                                  </div>
+                                <div>
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <div className="font-medium text-foreground text-sm">{consultant.name}</div>
+                                      <div className="text-xs text-gray-600 dark:text-gray-400">{consultant.email}</div>
+                                    </div>
 
-                                  {/* Availability Indicator */}
-                                  <div className="ml-2">
-                                    {loadingAvailability ? (
-                                      <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-600">
-                                        <FaClock className="w-2 h-2 animate-spin" />
-                                        <span className="text-xs">Loading...</span>
-                                      </div>
-                                    ) : availability ? (
-                                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                                        availability.availabilityColor
-                                      }`}>
-                                        {availability.availabilityStatus === 'available' && (
-                                          <FaCheckCircle className="w-2 h-2" />
-                                        )}
-                                        {availability.availabilityStatus === 'partially-busy' && (
-                                          <FaClock className="w-2 h-2" />
-                                        )}
-                                        {(availability.availabilityStatus === 'busy' || availability.availabilityStatus === 'overloaded') && (
-                                          <FaExclamationTriangle className="w-2 h-2" />
-                                        )}
-                                        <span>{availability.averageHoursPerWeek}h/wk</span>
-                                      </div>
-                                    ) : (
-                                      <span className="text-xs text-muted-foreground">
-                                        {startDate && durationInWeeks ? 'No data' : 'Set dates'}
-                                      </span>
-                                    )}
+                                    {/* Availability Indicator */}
+                                    <div className="ml-2 flex flex-col items-end gap-1">
+                                      {loadingAvailability ? (
+                                        <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                                          <FaClock className="w-2 h-2 animate-spin" />
+                                          <span className="text-xs">Loading...</span>
+                                        </div>
+                                      ) : availability ? (
+                                        <>
+                                          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                            availability.availabilityColor
+                                          }`}>
+                                            {availability.availabilityStatus === 'available' && (
+                                              <FaCheckCircle className="w-2 h-2" />
+                                            )}
+                                            {availability.availabilityStatus === 'partially-busy' && (
+                                              <FaClock className="w-2 h-2" />
+                                            )}
+                                            {(availability.availabilityStatus === 'busy' || availability.availabilityStatus === 'overloaded') && (
+                                              <FaExclamationTriangle className="w-2 h-2" />
+                                            )}
+                                            <span>{availability.averageHoursPerWeek}h/wk avg</span>
+                                          </div>
+                                          <div className="text-xs text-gray-600 dark:text-gray-400 font-semibold">
+                                            {Math.round(availability.totalAvailable || 0)}h available
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <span className="text-xs text-muted-foreground">
+                                          {startDate && durationInWeeks ? 'No data' : 'Set dates'}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               </button>
@@ -953,59 +999,48 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                                 }}
                                 className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:bg-blue-50 dark:focus:bg-blue-900/30 focus:outline-none border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                               >
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <div className="font-medium text-foreground text-sm">{consultant.name}</div>
-                                    <div className="text-xs text-gray-600 dark:text-gray-400">{consultant.email}</div>
-                                  </div>
+                                <div>
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <div className="font-medium text-foreground text-sm">{consultant.name}</div>
+                                      <div className="text-xs text-gray-600 dark:text-gray-400">{consultant.email}</div>
+                                    </div>
 
-                                  {/* Availability Indicator */}
-                                  <div className="ml-2">
-                                    {loadingAvailability ? (
-                                      <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-600">
-                                        <FaClock className="w-2 h-2 animate-spin" />
-                                        <span className="text-xs">Loading...</span>
-                                      </div>
-                                    ) : availability ? (
-                                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                                        availability.availabilityColor
-                                      }`}>
-                                        {availability.availabilityStatus === 'available' && (
-                                          <FaCheckCircle className="w-2 h-2" />
-                                        )}
-                                        {availability.availabilityStatus === 'partially-busy' && (
-                                          <FaClock className="w-2 h-2" />
-                                        )}
-                                        {(availability.availabilityStatus === 'busy' || availability.availabilityStatus === 'overloaded') && (
-                                          <FaExclamationTriangle className="w-2 h-2" />
-                                        )}
-                                        <span>{availability.averageHoursPerWeek}h/wk</span>
-                                      </div>
-                                    ) : (
-                                      <span className="text-xs text-muted-foreground">
-                                        {startDate && durationInWeeks ? 'No data' : 'Set dates'}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Detailed availability info */}
-                                {availability && availability.projectAllocations && Object.keys(availability.projectAllocations).length > 0 && (
-                                  <div className="mt-2 pt-2 border-t border-gray-100">
-                                    <p className="text-xs text-gray-600 mb-1">Current projects:</p>
-                                    <div className="space-y-1">
-                                      {Object.entries(availability.projectAllocations).slice(0, 2).map(([projectTitle, hours]: [string, any]) => (
-                                        <div key={projectTitle} className="text-xs text-muted-foreground flex justify-between">
-                                          <span className="truncate max-w-[120px]">{projectTitle}</span>
-                                          <span>{hours}h</span>
+                                    {/* Availability Indicator */}
+                                    <div className="ml-2 flex flex-col items-end gap-1">
+                                      {loadingAvailability ? (
+                                        <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                                          <FaClock className="w-2 h-2 animate-spin" />
+                                          <span className="text-xs">Loading...</span>
                                         </div>
-                                      ))}
-                                      {Object.keys(availability.projectAllocations).length > 2 && (
-                                        <div className="text-xs text-muted-foreground">+{Object.keys(availability.projectAllocations).length - 2} more projects</div>
+                                      ) : availability ? (
+                                        <>
+                                          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                            availability.availabilityColor
+                                          }`}>
+                                            {availability.availabilityStatus === 'available' && (
+                                              <FaCheckCircle className="w-2 h-2" />
+                                            )}
+                                            {availability.availabilityStatus === 'partially-busy' && (
+                                              <FaClock className="w-2 h-2" />
+                                            )}
+                                            {(availability.availabilityStatus === 'busy' || availability.availabilityStatus === 'overloaded') && (
+                                              <FaExclamationTriangle className="w-2 h-2" />
+                                            )}
+                                            <span>{availability.averageHoursPerWeek}h/wk avg</span>
+                                          </div>
+                                          <div className="text-xs text-gray-600 dark:text-gray-400 font-semibold">
+                                            {Math.round(availability.totalAvailable || 0)}h available
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <span className="text-xs text-muted-foreground">
+                                          {startDate && durationInWeeks ? 'No data' : 'Set dates'}
+                                        </span>
                                       )}
                                     </div>
                                   </div>
-                                )}
+                                </div>
                               </button>
                             );
                           })
@@ -1029,19 +1064,19 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                       {/* Product Manager Allocation */}
                       {selectedProductManagerId && (
                         <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-800/20 rounded-lg border border-purple-200 dark:border-purple-700 shadow-sm">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <div className="w-10 h-10 bg-purple-600 dark:bg-purple-700 rounded-full flex items-center justify-center text-white text-sm font-medium mr-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-center flex-1 min-w-0">
+                              <div className="w-10 h-10 bg-purple-600 dark:bg-purple-700 rounded-full flex items-center justify-center text-white text-sm font-medium mr-4 flex-shrink-0">
                                 <FaUser className="w-4 h-4" />
                               </div>
-                              <div className="flex-1">
-                                <p className="font-semibold text-foreground flex items-center gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-foreground flex items-center gap-2 flex-wrap">
                                   {consultants.find(c => c.id === selectedProductManagerId)?.name}
                                   <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200 text-xs px-2 py-1 rounded-full font-medium">
                                     Product Manager
                                   </span>
                                 </p>
-                                <div className="flex items-center gap-2 mt-1">
+                                <div className="flex items-center gap-2 mt-1 flex-wrap">
                                   <p className="text-sm text-muted-foreground">{consultants.find(c => c.id === selectedProductManagerId)?.email}</p>
                                   {consultantAvailability[selectedProductManagerId] && (
                                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -1053,24 +1088,40 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="number"
-                                min="0"
-                                value={consultantAllocations[selectedProductManagerId] || ''}
-                                onChange={(e) => handleAllocationChange(selectedProductManagerId, parseInt(e.target.value) || 0)}
-                                className="w-20 px-2 py-1 rounded-lg border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 text-foreground text-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50"
-                                placeholder="0"
-                              />
-                              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">hours</span>
-                              <button
-                                type="button"
-                                onClick={removeProductManager}
-                                className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center justify-center"
-                                title="Remove Product Manager"
-                              >
-                                <FaTimes className="w-3 h-3" />
-                              </button>
+                            <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={consultantAllocations[selectedProductManagerId] || ''}
+                                  onChange={(e) => handleAllocationChange(selectedProductManagerId, parseInt(e.target.value) || 0)}
+                                  className={`w-20 px-2 py-1 rounded-lg border-2 ${
+                                    consultantAvailability[selectedProductManagerId] &&
+                                    (consultantAllocations[selectedProductManagerId] || 0) > Math.round(consultantAvailability[selectedProductManagerId].totalAvailable || 0)
+                                      ? 'border-red-500 dark:border-red-500'
+                                      : 'border-gray-200 dark:border-gray-600'
+                                  } dark:bg-gray-900 text-foreground text-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50`}
+                                  placeholder="0"
+                                />
+                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">hours</span>
+                                <button
+                                  type="button"
+                                  onClick={removeProductManager}
+                                  className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center justify-center"
+                                  title="Remove Product Manager"
+                                >
+                                  <FaTimes className="w-3 h-3" />
+                                </button>
+                              </div>
+                              {consultantAvailability[selectedProductManagerId] &&
+                               (consultantAllocations[selectedProductManagerId] || 0) > Math.round(consultantAvailability[selectedProductManagerId].totalAvailable || 0) && (
+                                <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
+                                  <FaExclamationTriangle className="w-3 h-3" />
+                                  <span>
+                                    Exceeds availability by {(consultantAllocations[selectedProductManagerId] || 0) - Math.round(consultantAvailability[selectedProductManagerId].totalAvailable || 0)}h
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1083,43 +1134,61 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                         if (!consultant) return null;
 
                         return (
-                          <div key={consultantId} className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-orange-200 dark:border-orange-700 shadow-sm">
-                            <div className="flex items-center">
-                              <div className="w-10 h-10 bg-blue-500 dark:bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium mr-4">
-                                {consultant.name?.charAt(0) || consultant.email?.charAt(0) || 'U'}
-                              </div>
-                              <div className="flex-1">
-                                <p className="font-semibold text-foreground">{consultant.name}</p>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <p className="text-sm text-muted-foreground">{consultant.email}</p>
-                                  {availability && (
-                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                      availability.availabilityColor
-                                    }`}>
-                                      {availability.averageHoursPerWeek}h/wk avg
-                                    </span>
-                                  )}
+                          <div key={consultantId} className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-orange-200 dark:border-orange-700 shadow-sm">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex items-center flex-1 min-w-0">
+                                <div className="w-10 h-10 bg-blue-500 dark:bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium mr-4 flex-shrink-0">
+                                  {consultant.name?.charAt(0) || consultant.email?.charAt(0) || 'U'}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-foreground">{consultant.name}</p>
+                                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                    <p className="text-sm text-muted-foreground">{consultant.email}</p>
+                                    {availability && (
+                                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                        availability.availabilityColor
+                                      }`}>
+                                        {availability.averageHoursPerWeek}h/wk avg
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="number"
-                                min="0"
-                                value={consultantAllocations[consultantId] || ''}
-                                onChange={(e) => handleAllocationChange(consultantId, parseInt(e.target.value) || 0)}
-                                className="w-20 px-2 py-1 rounded-lg border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 text-foreground text-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50"
-                                placeholder="0"
-                              />
-                              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">hours</span>
-                              <button
-                                type="button"
-                                onClick={() => removeConsultant(consultantId)}
-                                className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center justify-center"
-                                title="Remove Consultant"
-                              >
-                                <FaTimes className="w-3 h-3" />
-                              </button>
+                              <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                                <div className="flex items-center gap-3">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={consultantAllocations[consultantId] || ''}
+                                    onChange={(e) => handleAllocationChange(consultantId, parseInt(e.target.value) || 0)}
+                                    className={`w-20 px-2 py-1 rounded-lg border-2 ${
+                                      availability &&
+                                      (consultantAllocations[consultantId] || 0) > Math.round(availability.totalAvailable || 0)
+                                        ? 'border-red-500 dark:border-red-500'
+                                        : 'border-gray-200 dark:border-gray-600'
+                                    } dark:bg-gray-900 text-foreground text-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50`}
+                                    placeholder="0"
+                                  />
+                                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">hours</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeConsultant(consultantId)}
+                                    className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center justify-center"
+                                    title="Remove Consultant"
+                                  >
+                                    <FaTimes className="w-3 h-3" />
+                                  </button>
+                                </div>
+                                {availability &&
+                                 (consultantAllocations[consultantId] || 0) > Math.round(availability.totalAvailable || 0) && (
+                                  <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
+                                    <FaExclamationTriangle className="w-3 h-3" />
+                                    <span>
+                                      Exceeds availability by {(consultantAllocations[consultantId] || 0) - Math.round(availability.totalAvailable || 0)}h
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         );
@@ -1169,6 +1238,17 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                 )}
               </div>
             </div>
+
+            {/* Consultant Weekly Schedule */}
+            {startDate && endDate && (selectedProductManagerId || selectedConsultantIds.length > 0) && (
+              <div className="mt-6">
+                <ConsultantScheduleView
+                  startDate={startDate}
+                  endDate={endDate}
+                  selectedConsultantIds={[selectedProductManagerId, ...selectedConsultantIds].filter(id => id)}
+                />
+              </div>
+            )}
           </form>
         </div>
 
