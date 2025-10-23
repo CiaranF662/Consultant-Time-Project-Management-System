@@ -118,15 +118,16 @@ export async function GET(request: Request) {
     // Build timeline data structure ensuring each consultant has exactly the same weeks
     const timeline = consultants.map(consultant => {
       const consultantAllocations = allocations.filter(a => a.consultantId === consultant.id);
-
+      
       const weeklyData = weeks.map((week) => {
-        // Calculate ISO week number and year for the current timeline week
-        const timelineWeekNumber = parseInt(week.weekNumber);
-        const timelineYear = parseInt(week.year);
-
-        // Match allocations by ISO week number and year to avoid timezone issues
         const weekAllocations = consultantAllocations.filter(a => {
-          return a.weekNumber === timelineWeekNumber && a.year === timelineYear;
+          const allocWeekStart = new Date(a.weekStartDate);
+          // More precise week matching to avoid date comparison issues
+          const weekStartTime = week.weekStart.getTime();
+          const weekEndTime = week.weekEnd.getTime();
+          const allocTime = allocWeekStart.getTime();
+          
+          return allocTime >= weekStartTime && allocTime <= weekEndTime;
         });
 
         const totalHours = weekAllocations.reduce((sum, a) => sum + (a.approvedHours || 0), 0);

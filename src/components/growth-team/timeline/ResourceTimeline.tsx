@@ -345,7 +345,7 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
       {/* Week Details Modal */}
       {selectedWeek && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setSelectedWeek(null)}>
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 text-white p-6">
               <div className="flex justify-between items-start">
@@ -355,7 +355,7 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
                 </div>
                 <button
                   onClick={() => setSelectedWeek(null)}
-                  className="text-blue-100 hover:text-white transition-colors flex-shrink-0 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+                  className="text-blue-100 hover:text-white transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -375,7 +375,7 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
             </div>
 
             {/* Modal Content */}
-            <div className="p-6 overflow-y-auto flex-1 min-h-0">
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
               <div className="space-y-4">
                 {selectedWeek.weekData.allocations.map((alloc: any, index: number) => (
                   <div key={alloc.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800">
@@ -389,7 +389,7 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
                           <h3 className="font-semibold text-foreground">{alloc.project}</h3>
                           {alloc.isProductManager && (
                             <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 rounded-full">
-                              Manages this project
+                              You manage this project
                             </span>
                           )}
                         </div>

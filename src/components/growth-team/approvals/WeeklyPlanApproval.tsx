@@ -661,7 +661,7 @@ export default function WeeklyPlanApproval({
 
                           {/* Week Workload Context - Compact */}
                           {(() => {
-                            const weekKey = `${allocation.weekNumber}-${allocation.year}`;
+                            const weekKey = new Date(allocation.weekStartDate).toISOString().split('T')[0];
                             const workloadContext = getWeekWorkloadContext(allocation.consultantId, weekKey);
 
                             return (
