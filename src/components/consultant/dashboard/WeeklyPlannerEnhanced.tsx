@@ -329,12 +329,33 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
         );
       }
 
-      // Update local weekly statuses to PENDING for modified weeks
+      // Update local weekly statuses to PENDING for modified weeks with hours, clear for 0-hour weeks
       setLocalWeeklyStatuses(prev => {
         const newStatuses = new Map(prev);
         phaseKeys.forEach(key => {
-          newStatuses.set(key, 'PENDING');
+          const hours = allocations.get(key) || 0;
+          if (hours > 0) {
+            newStatuses.set(key, 'PENDING');
+          } else {
+            // Clear status for weeks with 0 hours (they get deleted)
+            newStatuses.delete(key);
+          }
         });
+        
+        // Also clear status for any rejected weeks that now have 0 hours (even if not in unsaved changes)
+        const phaseAlloc = phaseAllocations.find(pa => pa.id === phaseAllocationId);
+        if (phaseAlloc) {
+          phaseAlloc.weeklyAllocations.forEach(wa => {
+            if (wa.planningStatus === 'REJECTED') {
+              const key = `${phaseAllocationId}-${wa.weekNumber}-${wa.year}`;
+              const currentHours = allocations.get(key) || 0;
+              if (currentHours === 0) {
+                newStatuses.delete(key);
+              }
+            }
+          });
+        }
+        
         return newStatuses;
       });
 

@@ -92,12 +92,25 @@ async function handleBatchWeeks(
       }
     });
 
-    // Don't create new allocations with 0 hours if no existing allocation
-    if (numericPlannedHours === 0 && !existing) {
+    // Handle 0 hours: delete existing allocation or skip if none exists
+    if (numericPlannedHours === 0) {
+      if (existing) {
+        // Delete existing allocation with 0 hours
+        await prisma.weeklyAllocation.delete({
+          where: { id: existing.id }
+        });
+        console.log(`Deleted weekly allocation ${existing.id} with 0 hours`);
+      }
+      // Skip creating new allocation for 0 hours
       continue;
     }
 
-    // Use upsert to handle both create and update cases
+    // Determine if this is a modification that requires approval
+    const needsApproval = !existing || 
+      (existing.proposedHours !== numericPlannedHours) || 
+      (existing.planningStatus === 'REJECTED');
+
+    // Use upsert to handle both create and update cases for non-zero hours
     const allocation = await prisma.weeklyAllocation.upsert({
       where: {
         phaseAllocationId_weekNumber_year: {
@@ -108,12 +121,13 @@ async function handleBatchWeeks(
       },
       update: {
         proposedHours: numericPlannedHours,
-        planningStatus: 'PENDING',
+        planningStatus: needsApproval ? 'PENDING' : existing.planningStatus,
         plannedBy: session.user.id,
-        approvedHours: null,
-        approvedBy: null,
-        approvedAt: null,
-        rejectionReason: null
+        // Only clear approval data if this is a modification
+        approvedHours: needsApproval ? null : existing.approvedHours,
+        approvedBy: needsApproval ? null : existing.approvedBy,
+        approvedAt: needsApproval ? null : existing.approvedAt,
+        rejectionReason: needsApproval ? null : existing.rejectionReason
       },
       create: {
         phaseAllocationId,
@@ -347,12 +361,21 @@ export async function POST(request: Request) {
       }
     }
 
-    // Don't create new allocations with 0 hours if no existing allocation
-    if (finalPlannedHours === 0 && !existing) {
+    // Handle 0 hours: delete existing allocation or skip if none exists
+    if (finalPlannedHours === 0) {
+      if (existing) {
+        // Delete existing allocation with 0 hours
+        await prisma.weeklyAllocation.delete({
+          where: { id: existing.id }
+        });
+        console.log(`Deleted weekly allocation ${existing.id} with 0 hours`);
+        return NextResponse.json({ message: 'Allocation deleted for 0 hours' });
+      }
+      // Skip creating new allocation for 0 hours
       return NextResponse.json({ message: 'No allocation created for 0 hours' });
     }
 
-    // Use upsert to handle both create and update cases, preventing race conditions
+    // Use upsert to handle both create and update cases for non-zero hours
     const allocation = await prisma.weeklyAllocation.upsert({
       where: {
         phaseAllocationId_weekNumber_year: {

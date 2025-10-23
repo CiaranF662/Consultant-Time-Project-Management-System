@@ -190,12 +190,17 @@ async function getHourApprovalsData() {
   });
 
   // Get all weekly allocations for the same weeks to show consultant workload context
-  const weekStartDates = [...new Set(pendingWeeklyAllocations.map(a => a.weekStartDate))];
+  // Extract unique week numbers and years from pending allocations
+  const weeks = [...new Set(pendingWeeklyAllocations.map(a => `${a.weekNumber}-${a.year}`))];
+  const weekFilters = weeks.map(w => {
+    const [weekNumber, year] = w.split('-').map(Number);
+    return { weekNumber, year };
+  });
   const consultantIds = [...new Set(pendingWeeklyAllocations.map(a => a.consultantId))];
 
   const allWeeklyAllocations = await prisma.weeklyAllocation.findMany({
     where: {
-      weekStartDate: { in: weekStartDates },
+      OR: weekFilters,
       consultantId: { in: consultantIds },
       planningStatus: { in: ['APPROVED', 'MODIFIED'] } // Only show approved work
     },
@@ -215,8 +220,9 @@ async function getHourApprovalsData() {
   });
 
   // Group approved allocations by consultant and week for context
+  // Use weekNumber-year as the key to group allocations in the same ISO week
   const workloadContext = allWeeklyAllocations.reduce((acc, allocation) => {
-    const weekKey = new Date(allocation.weekStartDate).toISOString().split('T')[0];
+    const weekKey = `${allocation.weekNumber}-${allocation.year}`;
     const consultantId = allocation.consultantId;
 
     if (!acc[consultantId]) {
@@ -244,8 +250,9 @@ async function getHourApprovalsData() {
   }, {} as any);
 
   // Group weekly allocations by week and consultant for easier approval UI, including workload context
+  // Use weekNumber-year as the key to match with workloadContext
   const groupedWeeklyAllocations = pendingWeeklyAllocations.reduce((acc, allocation) => {
-    const weekKey = new Date(allocation.weekStartDate).toISOString().split('T')[0];
+    const weekKey = `${allocation.weekNumber}-${allocation.year}`;
     const consultantId = allocation.consultantId;
 
     if (!acc[weekKey]) {
