@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -45,6 +46,26 @@ export default function Sidebar({ children }: SidebarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDynamicPM, setIsDynamicPM] = useState(false);
+
+  // Tooltip portal state (keeps tooltip out of scroll/overflow containers)
+  const [tooltipState, setTooltipState] = useState<{ visible: boolean; label: string; x: number; y: number }>({
+    visible: false,
+    label: '',
+    x: 0,
+    y: 0
+  });
+
+  const showTooltip = (el: HTMLElement | null, label: string) => {
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setTooltipState({
+      visible: true,
+      label,
+      x: rect.right + 8,
+      y: rect.top + rect.height / 2
+    });
+  };
+  const hideTooltip = () => setTooltipState({ visible: false, label: '', x: 0, y: 0 });
 
   // Dynamically check if user is a Product Manager
   useEffect(() => {
@@ -216,6 +237,11 @@ export default function Sidebar({ children }: SidebarProps) {
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent"
+              onMouseEnter={(e) => showTooltip(e.currentTarget as HTMLElement, isMobileMenuOpen ? 'Close menu' : 'Open menu')}
+              onMouseLeave={hideTooltip}
+              onFocus={(e) => showTooltip(e.currentTarget as HTMLElement, isMobileMenuOpen ? 'Close menu' : 'Open menu')}
+              onBlur={hideTooltip}
+              aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
             >
               {isMobileMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
             </button>
@@ -229,9 +255,8 @@ export default function Sidebar({ children }: SidebarProps) {
       )}
 
       {/* Mobile menu drawer */}
-      <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg transform transition-transform ${
-        isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg transform transition-transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
         <div className="flex flex-col h-full">
           <div className="p-4 border-b border-border">
             <h1 className="text-xl font-bold text-foreground font-[family-name:var(--font-poppins)]">Agility</h1>
@@ -282,12 +307,16 @@ export default function Sidebar({ children }: SidebarProps) {
               <h1 className="text-xl font-bold text-sidebar-foreground font-[family-name:var(--font-poppins)]">Agility</h1>
             )}
             <div className="flex items-center gap-2">
-              <NotificationBadge />
+              {!isCollapsed && <NotificationBadge />}
               <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className={`p-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors ${
-                  isCollapsed ? 'w-full flex justify-center' : ''
-                }`}
+                className={`p-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors ${isCollapsed ? 'w-full flex justify-center' : ''
+                  }`}
+                onMouseEnter={(e) => showTooltip(e.currentTarget as HTMLElement, isCollapsed ? 'Expand sidebar' : 'Collapse sidebar')}
+                onMouseLeave={hideTooltip}
+                onFocus={(e) => showTooltip(e.currentTarget as HTMLElement, isCollapsed ? 'Expand sidebar' : 'Collapse sidebar')}
+                onBlur={hideTooltip}
+                aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               >
                 {isCollapsed ? <FaChevronRight size={16} /> : <FaChevronLeft size={16} />}
               </button>
@@ -320,11 +349,21 @@ export default function Sidebar({ children }: SidebarProps) {
           {/* Collapsed user avatar */}
           {isCollapsed && (
             <div className="p-2 border-b border-sidebar-border flex justify-center">
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-primary-foreground font-medium text-xs">
-                  {session.user.name?.charAt(0) || session.user.email?.charAt(0)}
-                </span>
-              </div>
+              <Link
+                href="/profile"
+                aria-label="Open profile"
+                className="w-8 h-8 inline-flex items-center justify-center rounded-full focus:outline-none focus:ring-2"
+                onMouseEnter={(e) => showTooltip(e.currentTarget as HTMLElement, 'Profile')}
+                onMouseLeave={hideTooltip}
+                onFocus={(e) => showTooltip(e.currentTarget as HTMLElement, 'Profile')}
+                onBlur={hideTooltip}
+              >
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                  <span className="text-primary-foreground font-medium text-xs">
+                    {session.user.name?.charAt(0) || session.user.email?.charAt(0)}
+                  </span>
+                </div>
+              </Link>
             </div>
           )}
 
@@ -332,33 +371,44 @@ export default function Sidebar({ children }: SidebarProps) {
           <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
+              const key = item.key ?? item.href;
+              const active = isActive(item.href);
               return (
-                <div key={item.key || item.href} className="relative group">
-                  <Link
-                    href={item.href}
-                    className={`
-                      flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors relative
-                      ${isActive(item.href)
-                        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                        : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-                      }
-                      ${isCollapsed ? 'justify-center' : ''}
-                    `}
-                  >
-                    <Icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-3'}`} />
-                    {!isCollapsed && item.label}
-
-                    {/* Active indicator for collapsed mode */}
-                    {isCollapsed && isActive(item.href) && (
-                      <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-primary rounded-l-full"></div>
-                    )}
-                  </Link>
-
-                  {/* Tooltip for collapsed mode */}
-                  {isCollapsed && (
-                    <div className="absolute left-full ml-2 px-3 py-2 bg-popover text-popover-foreground text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 top-1/2 transform -translate-y-1/2 border border-border shadow-md">
-                      {item.label}
-                    </div>
+                <div key={key} className="relative group">
+                  {isCollapsed ? (
+                    <Link
+                      href={item.href}
+                      aria-label={item.label}
+                      title={item.label}
+                      className={`
+                        flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors relative
+                        ${active ? 'bg-sidebar-primary text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}
+                      `}
+                      onMouseEnter={(e) => showTooltip(e.currentTarget as HTMLElement, item.label)}
+                      onMouseLeave={hideTooltip}
+                      onFocus={(e) => showTooltip(e.currentTarget as HTMLElement, item.label)}
+                      onBlur={hideTooltip}
+                      onClick={() => {
+                        if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </Link>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      className={`
+                        flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors relative
+                        ${active ? 'bg-sidebar-primary text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}
+                      `}
+                      onMouseEnter={() => {
+                        /* keep tooltip behavior consistent for expanded items (optional) */
+                      }}
+                      onFocus={() => { }}
+                    >
+                      <Icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-3'}`} />
+                      {!isCollapsed && item.label}
+                    </Link>
                   )}
                 </div>
               );
@@ -401,6 +451,28 @@ export default function Sidebar({ children }: SidebarProps) {
           {children}
         </main>
       </div>
+
+      {/* Tooltip portal (renders into document.body to avoid clipping) */}
+      {typeof document !== 'undefined' &&
+        createPortal(
+          tooltipState.visible ? (
+            <div
+              role="tooltip"
+              aria-hidden={!tooltipState.visible}
+              style={{
+                position: 'fixed',
+                left: tooltipState.x,
+                top: tooltipState.y,
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none'
+              }}
+              className="z-[9999] pointer-events-none whitespace-nowrap rounded-md bg-popover text-popover-foreground text-sm px-2 py-1 shadow-md border border-border transition-opacity"
+            >
+              {tooltipState.label}
+            </div>
+          ) : null,
+          document.body
+        )}
     </div>
   );
 }
