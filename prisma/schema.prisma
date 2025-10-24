@@ -27,6 +27,7 @@ model User {
   managedProjects    Project[]               @relation("ProductManager")
   sessions           Session[]
   weeklyAllocations  WeeklyAllocation[]
+  approvedPhaseAllocations    PhaseAllocation[]  @relation("PhaseAllocationApprover")
   plannedWeeklyAllocations    WeeklyAllocation[] @relation("WeeklyAllocationPlanner")
   approvedWeeklyAllocations   WeeklyAllocation[] @relation("WeeklyAllocationApprover")
 }
@@ -95,6 +96,11 @@ model PhaseAllocation {
   totalHours            Float
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
+  consultantDescription String?
+  approvalStatus        ApprovalStatus          @default(PENDING)
+  approvedBy            String?
+  approvedAt            DateTime?
+  rejectionReason       String?
 
   // Reallocation tracking
   isReallocation        Boolean                 @default(false)
@@ -109,6 +115,7 @@ model PhaseAllocation {
   consultant            User                    @relation(fields: [consultantId], references: [id])
   phase                 Phase                   @relation(fields: [phaseId], references: [id], onDelete: Cascade)
   weeklyAllocations     WeeklyAllocation[]
+  approver              User?                   @relation("PhaseAllocationApprover", fields: [approvedBy], references: [id])
   unplannedExpiredHours UnplannedExpiredHours?
 
   // Relations for parent-child reallocation hierarchy

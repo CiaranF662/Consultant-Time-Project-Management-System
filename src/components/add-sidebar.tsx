@@ -60,6 +60,31 @@ export default function Sidebar({ children }: SidebarProps) {
     }
   }, [session?.user?.id, session?.user?.role]);
 
+  // Persist sidebar collapsed state in localStorage
+  useEffect(() => {
+    const savedState = localStorage.getItem('sidebar-collapsed');
+    if (savedState !== null) {
+      setIsCollapsed(savedState === 'true');
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('sidebar-collapsed', String(isCollapsed));
+  }, [isCollapsed]);
+
+  // Keyboard shortcut to toggle sidebar (Ctrl/Cmd + B)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+        e.preventDefault();
+        setIsCollapsed(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   if (!session?.user) {
     return <div>{children}</div>;
   }
@@ -210,7 +235,20 @@ export default function Sidebar({ children }: SidebarProps) {
       {/* Mobile menu button */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card shadow-sm border-b border-border">
         <div className="flex items-center justify-between p-4">
-          <h1 className="text-xl font-bold text-foreground font-[family-name:var(--font-poppins)]">Agility</h1>
+          <div className="flex items-center gap-3">
+            {/* Mobile Logo */}
+            <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex flex-col items-center justify-center shadow-lg relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 to-transparent"></div>
+              <span className="text-white font-bold text-base relative z-10" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', fontWeight: 700 }}>a</span>
+              <div className="flex items-center gap-0.5 relative z-10 -mt-0.5">
+                <div className="w-1 h-1 bg-white rounded-full"></div>
+                <div className="w-2 h-0.5 bg-white rounded-full"></div>
+              </div>
+            </div>
+            <h1 className="text-xl font-bold text-foreground tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', fontWeight: 300, letterSpacing: '-0.02em' }}>
+              agility
+            </h1>
+          </div>
           <div className="flex items-center gap-2">
             <NotificationBadge />
             <button
@@ -234,7 +272,20 @@ export default function Sidebar({ children }: SidebarProps) {
       }`}>
         <div className="flex flex-col h-full">
           <div className="p-4 border-b border-border">
-            <h1 className="text-xl font-bold text-foreground font-[family-name:var(--font-poppins)]">Agility</h1>
+            <div className="flex items-center gap-3">
+              {/* Mobile Drawer Logo */}
+              <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex flex-col items-center justify-center shadow-lg relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 to-transparent"></div>
+                <span className="text-white font-bold text-base relative z-10" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', fontWeight: 700 }}>a</span>
+                <div className="flex items-center gap-0.5 relative z-10 -mt-0.5">
+                  <div className="w-1 h-1 bg-white rounded-full"></div>
+                  <div className="w-2 h-0.5 bg-white rounded-full"></div>
+                </div>
+              </div>
+              <h1 className="text-xl font-bold text-foreground tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', fontWeight: 300, letterSpacing: '-0.02em' }}>
+                agility
+              </h1>
+            </div>
           </div>
           <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
@@ -277,86 +328,177 @@ export default function Sidebar({ children }: SidebarProps) {
       `}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
-            {!isCollapsed && (
-              <h1 className="text-xl font-bold text-sidebar-foreground font-[family-name:var(--font-poppins)]">Agility</h1>
+          <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border bg-sidebar/50 backdrop-blur-sm">
+            {isCollapsed ? (
+              <div className="flex flex-col items-center gap-2 w-full">
+                {/* Collapsed Logo Icon */}
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex flex-col items-center justify-center shadow-lg relative overflow-hidden">
+                  {/* Background subtle pattern */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 to-transparent"></div>
+                  {/* Letter 'a' */}
+                  <span className="text-white font-bold text-lg relative z-10" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', fontWeight: 700 }}>a</span>
+                  {/* Minimalist icon below */}
+                  <div className="flex items-center gap-0.5 relative z-10 -mt-0.5">
+                    <div className="w-1 h-1 bg-white rounded-full"></div>
+                    <div className="w-2 h-0.5 bg-white rounded-full"></div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                {/* Full Logo Icon */}
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex flex-col items-center justify-center shadow-lg relative overflow-hidden">
+                  {/* Background subtle pattern */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 to-transparent"></div>
+                  {/* Letter 'a' */}
+                  <span className="text-white font-bold text-lg relative z-10" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', fontWeight: 700 }}>a</span>
+                  {/* Minimalist icon below */}
+                  <div className="flex items-center gap-0.5 relative z-10 -mt-0.5">
+                    <div className="w-1 h-1 bg-white rounded-full"></div>
+                    <div className="w-2 h-0.5 bg-white rounded-full"></div>
+                  </div>
+                </div>
+                {/* Brand Name */}
+                <h1 className="text-2xl font-bold text-sidebar-foreground tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', fontWeight: 300, letterSpacing: '-0.02em' }}>
+                  agility
+                </h1>
+              </div>
             )}
-            <div className="flex items-center gap-2">
-              <NotificationBadge />
+            {!isCollapsed && (
+              <div className="flex items-center gap-2">
+                <NotificationBadge />
+                <button
+                  onClick={() => setIsCollapsed(!isCollapsed)}
+                  className="p-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-200"
+                  title={`Collapse sidebar (${typeof navigator !== 'undefined' && navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+B)`}
+                >
+                  <FaChevronLeft size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Collapse button for collapsed state */}
+          {isCollapsed && (
+            <div className="px-2 py-2 border-b border-sidebar-border flex justify-center">
               <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className={`p-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors ${
-                  isCollapsed ? 'w-full flex justify-center' : ''
-                }`}
+                className="p-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-200 w-full flex justify-center"
+                title={`Expand sidebar (${typeof navigator !== 'undefined' && navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+B)`}
               >
-                {isCollapsed ? <FaChevronRight size={16} /> : <FaChevronLeft size={16} />}
+                <FaChevronRight size={16} />
               </button>
             </div>
-          </div>
+          )}
+
+          {/* Notification Bell for Collapsed Sidebar */}
+          {isCollapsed && (
+            <div className="px-2 py-2 border-b border-sidebar-border flex justify-center">
+              <NotificationBadge />
+            </div>
+          )}
 
           {/* User info */}
           {!isCollapsed && (
             <div className="p-4 border-b border-sidebar-border">
-              <div className="flex items-center space-x-3">
-                <Link href="/profile" className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                    <span className="text-primary-foreground font-medium text-sm">
+              <Link href="/profile" className="flex items-center space-x-3 group transition-all duration-200 hover:bg-sidebar-accent rounded-lg p-2 -m-2">
+                <div className="relative">
+                  <div className="w-11 h-11 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center shadow-lg ring-2 ring-sidebar-border group-hover:ring-primary/50 transition-all">
+                    <span className="text-primary-foreground font-semibold text-base">
                       {session.user.name?.charAt(0) || session.user.email?.charAt(0)}
                     </span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-sidebar-foreground truncate">
-                      {session.user.name || 'User'}
-                    </p>
-                    <p className="text-xs text-sidebar-foreground/60 truncate">
+                  {/* Online status indicator */}
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-sidebar rounded-full"></div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-sidebar-foreground truncate group-hover:text-sidebar-accent-foreground transition-colors">
+                    {session.user.name || 'User'}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${
+                      isGrowthTeam
+                        ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                        : isProductManager
+                        ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                        : 'bg-teal-500/10 text-teal-400 border-teal-500/20'
+                    }`}>
                       {isGrowthTeam ? 'Growth Team' : isProductManager ? 'Product Manager' : 'Consultant'}
-                    </p>
+                    </span>
                   </div>
-                </Link>
-              </div>
+                </div>
+              </Link>
             </div>
           )}
 
           {/* Collapsed user avatar */}
           {isCollapsed && (
             <div className="p-2 border-b border-sidebar-border flex justify-center">
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-primary-foreground font-medium text-xs">
-                  {session.user.name?.charAt(0) || session.user.email?.charAt(0)}
-                </span>
-              </div>
+              <Link href="/profile" className="relative group">
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
+                  <span className="text-primary-foreground font-medium text-xs">
+                    {session.user.name?.charAt(0) || session.user.email?.charAt(0)}
+                  </span>
+                </div>
+                {/* User info tooltip */}
+                <div className="absolute left-full ml-2 px-3 py-2 bg-popover text-popover-foreground text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 top-1/2 transform -translate-y-1/2 border border-border shadow-md">
+                  <div className="font-medium">{session.user.name || 'User'}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {isGrowthTeam ? 'Growth Team' : isProductManager ? 'Product Manager' : 'Consultant'}
+                  </div>
+                </div>
+              </Link>
             </div>
           )}
 
           {/* Navigation */}
-          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-            {navItems.map((item) => {
+          <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-sidebar-accent scrollbar-track-transparent">
+            {navItems.map((item, index) => {
               const Icon = item.icon;
+              const active = isActive(item.href);
+
               return (
                 <div key={item.key || item.href} className="relative group">
                   <Link
                     href={item.href}
                     className={`
-                      flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors relative
-                      ${isActive(item.href)
-                        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                        : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                      flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 relative
+                      ${active
+                        ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-md'
+                        : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-sm'
                       }
                       ${isCollapsed ? 'justify-center' : ''}
                     `}
                   >
-                    <Icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-3'}`} />
-                    {!isCollapsed && item.label}
+                    {/* Icon with subtle background circle */}
+                    <div className={`${isCollapsed ? '' : 'mr-3'} relative`}>
+                      <div className={`
+                        ${active ? 'bg-primary/10' : 'bg-transparent group-hover:bg-primary/5'}
+                        rounded-md p-1.5 transition-all duration-200
+                      `}>
+                        <Icon className={`h-4 w-4 transition-transform duration-200 ${
+                          active ? 'text-primary' : ''
+                        } ${isCollapsed ? 'group-hover:scale-110' : ''}`} />
+                      </div>
+                    </div>
 
-                    {/* Active indicator for collapsed mode */}
-                    {isCollapsed && isActive(item.href) && (
-                      <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-primary rounded-l-full"></div>
+                    {!isCollapsed && (
+                      <span className="flex-1">{item.label}</span>
+                    )}
+
+                    {/* Active indicator - left border for expanded, right for collapsed */}
+                    {active && !isCollapsed && (
+                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full"></div>
+                    )}
+
+                    {isCollapsed && active && (
+                      <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-primary rounded-l-full"></div>
                     )}
                   </Link>
 
                   {/* Tooltip for collapsed mode */}
                   {isCollapsed && (
-                    <div className="absolute left-full ml-2 px-3 py-2 bg-popover text-popover-foreground text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 top-1/2 transform -translate-y-1/2 border border-border shadow-md">
+                    <div className="absolute left-full ml-2 px-3 py-2 bg-popover text-popover-foreground text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 top-1/2 transform -translate-y-1/2 border border-border shadow-lg pointer-events-none">
                       {item.label}
                     </div>
                   )}
@@ -366,26 +508,30 @@ export default function Sidebar({ children }: SidebarProps) {
           </nav>
 
           {/* Sign out button */}
-          <div className="p-2 border-t border-sidebar-border">
+          <div className="p-3 border-t border-sidebar-border">
             {isCollapsed ? (
               <div className="relative group">
                 <button
                   onClick={handleSignOut}
-                  className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+                  className="w-full flex items-center justify-center px-3 py-2.5 text-sm font-medium rounded-lg text-sidebar-foreground hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 group"
                 >
-                  <FaSignOutAlt className="h-5 w-5" />
+                  <div className="bg-transparent group-hover:bg-red-500/5 rounded-md p-1.5 transition-all duration-200">
+                    <FaSignOutAlt className="h-4 w-4" />
+                  </div>
                 </button>
-                <div className="absolute left-full ml-2 px-3 py-2 bg-popover text-popover-foreground text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 top-1/2 transform -translate-y-1/2 border border-border shadow-md">
+                <div className="absolute left-full ml-2 px-3 py-2 bg-popover text-popover-foreground text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 top-1/2 transform -translate-y-1/2 border border-border shadow-lg pointer-events-none">
                   Sign Out
                 </div>
               </div>
             ) : (
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+                className="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-sidebar-foreground hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 group"
               >
-                <FaSignOutAlt className="mr-3 h-5 w-5" />
-                Sign Out
+                <div className="mr-3 bg-transparent group-hover:bg-red-500/5 rounded-md p-1.5 transition-all duration-200">
+                  <FaSignOutAlt className="h-4 w-4" />
+                </div>
+                <span className="flex-1 text-left">Sign Out</span>
               </button>
             )}
           </div>

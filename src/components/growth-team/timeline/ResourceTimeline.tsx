@@ -344,10 +344,10 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
 
       {/* Week Details Modal */}
       {selectedWeek && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setSelectedWeek(null)}>
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedWeek(null)}>
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full flex flex-col max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 text-white p-6">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 text-white p-6 rounded-t-lg flex-shrink-0">
               <div className="flex justify-between items-start">
                 <div>
                   <h2 className="text-xl font-bold">{selectedWeek.consultantName}</h2>
@@ -374,8 +374,8 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
               </div>
             </div>
 
-            {/* Modal Content */}
-            <div className="p-6 overflow-y-auto max-h-[60vh]">
+            {/* Modal Content - Scrollable */}
+            <div className="p-6 overflow-y-auto flex-1">
               <div className="space-y-4">
                 {selectedWeek.weekData.allocations.map((alloc: any, index: number) => (
                   <div key={alloc.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800">
@@ -389,7 +389,7 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
                           <h3 className="font-semibold text-foreground">{alloc.project}</h3>
                           {alloc.isProductManager && (
                             <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 rounded-full">
-                              You manage this project
+                              Product Manager
                             </span>
                           )}
                         </div>
@@ -464,8 +464,8 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="bg-gray-50 dark:bg-gray-800 px-6 py-4 flex justify-end">
+            {/* Modal Footer - Fixed at bottom */}
+            <div className="bg-gray-50 dark:bg-gray-800 px-6 py-4 flex justify-end rounded-b-lg border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
               <button
                 onClick={() => setSelectedWeek(null)}
                 className="px-4 py-2 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
