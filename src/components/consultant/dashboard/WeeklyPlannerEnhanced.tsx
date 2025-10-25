@@ -16,7 +16,7 @@ import ProjectPlanningCard from './ProjectPlanningCard';
 interface PhaseAllocation {
   id: string;
   totalHours: number;
-  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
+  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELETION_PENDING' | 'EXPIRED' | 'FORFEITED';
   consultantDescription?: string | null; // Added for phase description
   phase: {
     id: string;
@@ -49,7 +49,7 @@ interface PhaseAllocation {
   childAllocations?: Array<{
     id: string;
     totalHours: number;
-    approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+    approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELETION_PENDING';
     createdAt: Date;
   }>;
 }
@@ -1118,6 +1118,8 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                             ? 'bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 border-b border-gray-400 dark:border-gray-500 cursor-not-allowed'
                             : phaseAlloc.approvalStatus === 'PENDING'
                             ? 'bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/30 dark:to-yellow-900/30 border-b border-orange-200 dark:border-orange-700 hover:from-orange-100 hover:to-yellow-100 dark:hover:from-orange-900/40 dark:hover:to-yellow-900/40 cursor-pointer'
+                            : phaseAlloc.approvalStatus === 'DELETION_PENDING'
+                            ? 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/30 dark:to-rose-900/30 border-b-2 border-red-400 dark:border-red-600 hover:from-red-100 hover:to-rose-100 dark:hover:from-red-900/40 dark:hover:to-rose-900/40 cursor-pointer'
                             : phaseAlloc.approvalStatus === 'APPROVED'
                             ? 'bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 border-b border-emerald-200 dark:border-emerald-700 hover:from-emerald-100 hover:to-green-100 dark:hover:from-emerald-900/40 dark:hover:to-green-900/40 cursor-pointer'
                             : 'bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800 dark:to-slate-800 border-b border-gray-200 dark:border-gray-700 hover:from-gray-100 hover:to-slate-100 dark:hover:from-gray-700 dark:hover:to-slate-700 cursor-pointer'
@@ -1134,6 +1136,20 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                                    transparent 8px,
                                    rgba(249, 115, 22, 0.3) 8px,
                                    rgba(249, 115, 22, 0.3) 16px
+                                 )`
+                               }}>
+                          </div>
+                        )}
+                        {/* Deletion pending diagonal stripes */}
+                        {phaseAlloc.approvalStatus === 'DELETION_PENDING' && (
+                          <div className="absolute inset-0 pointer-events-none opacity-25"
+                               style={{
+                                 backgroundImage: `repeating-linear-gradient(
+                                   45deg,
+                                   transparent,
+                                   transparent 8px,
+                                   rgba(239, 68, 68, 0.4) 8px,
+                                   rgba(239, 68, 68, 0.4) 16px
                                  )`
                                }}>
                           </div>
@@ -1274,6 +1290,12 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                                   <span className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-100 to-rose-100 dark:from-red-900/40 dark:to-rose-900/40 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-200 rounded-full text-xs font-semibold shadow-sm">
                                     <FaTimes className="w-3 h-3" />
                                     Allocation Rejected
+                                  </span>
+                                )}
+                                {phaseAlloc.approvalStatus === 'DELETION_PENDING' && (
+                                  <span className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-100 to-rose-100 dark:from-red-900/40 dark:to-rose-900/40 border-2 border-red-400 dark:border-red-600 text-red-800 dark:text-red-200 rounded-full text-xs font-semibold shadow-sm">
+                                    <FaTimes className="w-3 h-3" />
+                                    Pending Deletion
                                   </span>
                                 )}
                                 {phaseAlloc.approvalStatus === 'APPROVED' && (
@@ -1733,6 +1755,34 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                                     <div className="text-red-600 text-sm">
                                       <strong>{formatHours(phaseAlloc.totalHours)}</strong> was requested • Rejected
                                     </div>
+                                  </div>
+                                )}
+
+                                {phaseAlloc.approvalStatus === 'DELETION_PENDING' && (
+                                  <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-400 dark:border-red-600 rounded-lg p-6">
+                                    <div className="flex items-center justify-center mb-4">
+                                      <div className="w-12 h-12 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center">
+                                        <FaTimes className="w-6 h-6 text-red-600 dark:text-red-400" />
+                                      </div>
+                                    </div>
+                                    <h3 className="text-lg font-bold text-red-900 dark:text-red-100 mb-2">
+                                      Allocation Pending Deletion
+                                    </h3>
+                                    <p className="text-red-700 dark:text-red-300 text-sm mb-4">
+                                      Your Product Manager has requested to remove you from this phase. This allocation and all weekly planning are pending Growth Team approval for deletion.
+                                    </p>
+                                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg p-4 mb-4">
+                                      <p className="text-amber-900 dark:text-amber-100 text-sm font-medium mb-2">
+                                        What happens next?
+                                      </p>
+                                      <ul className="text-amber-800 dark:text-amber-200 text-sm space-y-1 list-disc list-inside">
+                                        <li>If approved: This allocation and all weekly plans will be permanently deleted</li>
+                                        <li>If rejected: Your allocation will return to approved status and you can continue planning</li>
+                                      </ul>
+                                    </div>
+                                    <p className="text-red-600 dark:text-red-400 text-sm italic">
+                                      Hour planning is disabled while deletion is pending.
+                                    </p>
                                   </div>
                                 )}
 

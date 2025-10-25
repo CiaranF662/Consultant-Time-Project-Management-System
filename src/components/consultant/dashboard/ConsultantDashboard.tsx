@@ -18,7 +18,7 @@ interface Sprint {
 interface PhaseAllocation {
   id: string;
   totalHours: number;
-  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
+  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELETION_PENDING' | 'EXPIRED' | 'FORFEITED';
   rejectionReason?: string | null;
   phase: {
     id: string;
@@ -588,9 +588,9 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                               <h3 className="font-semibold text-foreground">{allocation.phase.name}</h3>
                               {/* Starts in indicator */}
                               <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                daysUntilStart > 7 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' :
-                                daysUntilStart > 0 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                                daysUntilStart < 0 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' :
                                 daysUntilStart === 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                daysUntilStart > 0 && daysUntilStart <= 7 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
                                 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                               }`}>
                                 {startsInText}
@@ -737,9 +737,9 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
                               <h3 className="font-semibold text-foreground">{allocation.phase.name}</h3>
                               {/* Starts in indicator */}
                               <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                daysUntilStart > 7 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' :
-                                daysUntilStart > 0 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                                daysUntilStart < 0 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' :
                                 daysUntilStart === 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                daysUntilStart > 0 && daysUntilStart <= 7 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
                                 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                               }`}>
                                 {startsInText}

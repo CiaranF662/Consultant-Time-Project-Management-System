@@ -12,6 +12,7 @@ interface PhaseAllocation {
   id: string;
   totalHours: number;
   createdAt: Date;
+  approvalStatus?: string;
   consultant: {
     id: string;
     name: string | null;
@@ -38,6 +39,11 @@ interface PhaseAllocation {
       endDate: Date;
     }>;
   };
+  weeklyAllocations?: Array<{
+    id: string;
+    approvedHours: number | null;
+    proposedHours: number | null;
+  }>;
 }
 
 interface WeeklyAllocation {
@@ -199,7 +205,7 @@ export default function ApprovalsDashboard({
   }, [activeTab, showFullInterface]);
 
   // Handle phase allocation approval
-  const handlePhaseApproval = async (allocationId: string, action: 'approve' | 'reject' | 'modify', data?: any) => {
+  const handlePhaseApproval = async (allocationId: string, action: 'approve' | 'reject' | 'modify' | 'delete' | 'reject-deletion', data?: any) => {
     setProcessingIds(prev => new Set(prev).add(allocationId));
 
     try {
@@ -217,7 +223,14 @@ export default function ApprovalsDashboard({
         const allocation = phaseAllocations.find(a => a.id === allocationId);
         const consultantName = allocation?.consultant.name || allocation?.consultant.email || 'Consultant';
         const phaseName = allocation?.phase.name || 'Phase';
-        const actionMessage = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'modified';
+
+        let actionMessage = '';
+        if (action === 'approve') actionMessage = 'approved';
+        else if (action === 'reject') actionMessage = 'rejected';
+        else if (action === 'modify') actionMessage = 'modified';
+        else if (action === 'delete') actionMessage = 'deleted';
+        else if (action === 'reject-deletion') actionMessage = 'deletion rejected for';
+
         showNotification('success', `✓ ${phaseName} allocation for ${consultantName} has been ${actionMessage} successfully!`);
       } else {
         const error = await response.json();

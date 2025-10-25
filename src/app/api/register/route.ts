@@ -61,7 +61,9 @@ export async function POST(request: Request) {
       });
 
       // Generate verification link
-      const verificationLink = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${token}`;
+      const baseUrl = process.env.NEXTAUTH_URL ||
+                      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+      const verificationLink = `${baseUrl}/auth/verify-email?token=${token}`;
 
       // Send email verification email
       const verificationEmailTemplate = EmailVerificationEmail({
@@ -98,10 +100,12 @@ export async function POST(request: Request) {
 
         if (approvedGrowthTeamUsers.length > 0) {
           // Send email notifications
+          const baseUrlForNotif = process.env.NEXTAUTH_URL ||
+                                  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
           const emailTemplate = GrowthTeamSignupEmail({
             userName: name,
             userEmail: email,
-            dashboardUrl: `${process.env.NEXTAUTH_URL}/dashboard/admin/user-approvals`
+            dashboardUrl: `${baseUrlForNotif}/dashboard/admin/user-approvals`
           });
 
           const { html, text } = await renderEmailTemplate(emailTemplate);

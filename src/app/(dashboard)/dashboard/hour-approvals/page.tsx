@@ -7,10 +7,12 @@ import ApprovalsDashboard from '@/components/growth-team/approvals/ApprovalsDash
 import { prisma } from "@/lib/prisma";
 
 async function getHourApprovalsData() {
-  // Get all pending phase allocations that need approval
+  // Get all pending phase allocations that need approval (including deletion requests)
   const pendingAllocations = await prisma.phaseAllocation.findMany({
     where: {
-      approvalStatus: 'PENDING'
+      approvalStatus: {
+        in: ['PENDING', 'DELETION_PENDING']
+      }
     },
     include: {
       consultant: {
@@ -38,6 +40,11 @@ async function getHourApprovalsData() {
               sprintNumber: 'asc'
             }
           }
+        }
+      },
+      weeklyAllocations: {
+        where: {
+          planningStatus: 'APPROVED'
         }
       }
     },

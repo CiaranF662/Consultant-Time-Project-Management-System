@@ -304,6 +304,7 @@ enum ApprovalStatus {
   PENDING
   APPROVED
   REJECTED
+  DELETION_PENDING  // Approved allocation pending deletion approval from Growth Team
   EXPIRED    // Phase ended with unplanned hours (deprecated - use UnplannedExpiredHours table)
   FORFEITED  // Hours were forfeited by PM (deprecated - use UnplannedExpiredHours table)
 }

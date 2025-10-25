@@ -294,10 +294,19 @@ async function createDemoProjects(pmUser: any, realPmUser: any, consultants: any
         const hoursPerWeek = Math.floor(allocation.totalHours / totalWeeks);
         const remainderHours = allocation.totalHours % totalWeeks;
 
-        // Distribute hours across weeks
+        // Get phase start date from first sprint
+        const phaseStartDate = new Date(phase.sprints[0].startDate);
+        phaseStartDate.setHours(0, 0, 0, 0);
+
+        // Distribute hours across weeks based on phase start date
         for (let week = 0; week < totalWeeks; week++) {
-          const weekStartDate = getWeekStart(-2 + week); // Adjust based on actual project start
-          const weekEndDate = getWeekEnd(-2 + week);
+          const weekStartDate = new Date(phaseStartDate);
+          weekStartDate.setDate(phaseStartDate.getDate() + (week * 7));
+
+          const weekEndDate = new Date(weekStartDate);
+          weekEndDate.setDate(weekStartDate.getDate() + 6);
+          weekEndDate.setHours(23, 59, 59, 999);
+
           const adjustedHours = week < remainderHours ? hoursPerWeek + 1 : hoursPerWeek;
 
           if (adjustedHours > 0) {
