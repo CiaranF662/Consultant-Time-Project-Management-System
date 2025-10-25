@@ -13,7 +13,7 @@ interface Sprint {
 interface PhaseAllocation {
   id: string;
   totalHours: number;
-  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
+  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELETION_PENDING' | 'EXPIRED' | 'FORFEITED';
   rejectionReason?: string | null;
   phase: {
     id: string;

@@ -11,6 +11,7 @@ interface PhaseAllocation {
   id: string;
   totalHours: number;
   createdAt: Date;
+  approvalStatus?: string;
   consultantDescription?: string | null;
   consultant: {
     id: string;
@@ -38,6 +39,11 @@ interface PhaseAllocation {
       endDate: Date;
     }>;
   };
+  weeklyAllocations?: Array<{
+    id: string;
+    approvedHours: number | null;
+    proposedHours: number | null;
+  }>;
   reallocationSource?: {
     id: string;
     unplannedHours: number;
@@ -75,7 +81,7 @@ interface PhaseAllocation {
 
 interface PhaseAllocationApprovalProps {
   phaseAllocations: PhaseAllocation[];
-  onApproval: (allocationId: string, action: 'approve' | 'reject' | 'modify', data?: any) => Promise<void>;
+  onApproval: (allocationId: string, action: 'approve' | 'reject' | 'modify' | 'delete' | 'reject-deletion', data?: any) => Promise<void>;
   processingIds: Set<string>;
 }
 
@@ -101,6 +107,7 @@ export default function PhaseAllocationApproval({
   const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
   const [rejectionAllocationId, setRejectionAllocationId] = useState<string | null>(null);
   const [rejectionAllocationName, setRejectionAllocationName] = useState('');
+  const [isRejectionForDeletion, setIsRejectionForDeletion] = useState(false);
   const [isSubmittingRejection, setIsSubmittingRejection] = useState(false);
 
   // Expanded schedule view state
@@ -175,10 +182,12 @@ export default function PhaseAllocationApproval({
 
     setIsSubmittingRejection(true);
     try {
-      await onApproval(rejectionAllocationId, 'reject', { rejectionReason: reason });
+      const action = isRejectionForDeletion ? 'reject-deletion' : 'reject';
+      await onApproval(rejectionAllocationId, action, { rejectionReason: reason });
       setRejectionModalOpen(false);
       setRejectionAllocationId(null);
       setRejectionAllocationName('');
+      setIsRejectionForDeletion(false);
     } catch (error) {
       console.error('Failed to reject allocation:', error);
     } finally {
@@ -188,10 +197,14 @@ export default function PhaseAllocationApproval({
 
   // Open rejection modal
   const openRejectionModal = (allocation: PhaseAllocation) => {
+    const isDeletion = allocation.approvalStatus === 'DELETION_PENDING';
     const consultantName = allocation.consultant.name || allocation.consultant.email || 'this consultant';
-    const itemName = `${consultantName}'s allocation for ${allocation.phase.name}`;
+    const itemName = isDeletion
+      ? `deletion of ${consultantName} from ${allocation.phase.name}`
+      : `${consultantName}'s allocation for ${allocation.phase.name}`;
     setRejectionAllocationId(allocation.id);
     setRejectionAllocationName(itemName);
+    setIsRejectionForDeletion(isDeletion);
     setRejectionModalOpen(true);
   };
 
@@ -445,17 +458,31 @@ export default function PhaseAllocationApproval({
           const originalProjectName = allocation.reallocationSource?.phaseAllocation.phase.project.title;
           const reallocationReason = allocation.reallocationSource?.notes;
 
+          // Check if this is a deletion request
+          const isDeletion = allocation.approvalStatus === 'DELETION_PENDING';
+          const plannedHours = allocation.weeklyAllocations?.reduce((sum, weekly) => {
+            return sum + (weekly.approvedHours || weekly.proposedHours || 0);
+          }, 0) || 0;
+
           return (
-          <div key={allocation.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+          <div key={allocation.id} className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border-2 hover:shadow-md transition-shadow ${
+            isDeletion ? 'border-red-300 dark:border-red-700' : 'border-gray-200 dark:border-gray-700'
+          }`}>
             <div className="p-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <div className="flex items-center gap-3 mb-2">
+                      <div className="flex items-center gap-3 mb-2 flex-wrap">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${generateColorFromString(allocation.consultant.id)}`}>
                           {allocation.consultant.name || allocation.consultant.email}
                         </span>
+                        {isDeletion && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-full text-xs font-semibold border border-red-200 dark:border-red-700">
+                            <FaTimes className="w-3 h-3" />
+                            Deletion Request
+                          </span>
+                        )}
                         {isReallocation && (
                           <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-full text-xs font-medium border border-amber-200 dark:border-amber-700">
                             <FaExchangeAlt className="w-3 h-3" />
@@ -487,6 +514,32 @@ export default function PhaseAllocationApproval({
                                   <span className="font-medium">Reason:</span> {reallocationReason}
                                 </p>
                               )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {isDeletion && (
+                        <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <FaInfoCircle className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 text-xs">
+                              <p className="font-semibold text-red-900 dark:text-red-100 mb-2">
+                                Product Manager requests to remove this consultant from the phase
+                              </p>
+                              <p className="text-red-800 dark:text-red-300 mb-1">
+                                <span className="font-medium">Total allocated hours:</span> {formatHours(allocation.totalHours)}
+                              </p>
+                              {plannedHours > 0 && (
+                                <div className="flex items-center gap-2 mt-2 p-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded">
+                                  <FaClock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                                  <span className="text-amber-900 dark:text-amber-100 font-semibold">
+                                    {formatHours(plannedHours)} already planned in weekly allocations
+                                  </span>
+                                </div>
+                              )}
+                              <p className="text-red-700 dark:text-red-300 mt-2 text-xs italic">
+                                ⚠️ Approving will permanently delete this allocation and all weekly plans
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -569,16 +622,20 @@ export default function PhaseAllocationApproval({
                           className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-md hover:bg-red-100 dark:hover:bg-red-900/50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                           <FaTimes className="w-3 h-3" />
-                          Reject
+                          {isDeletion ? 'Reject Deletion' : 'Reject'}
                         </button>
 
                         <button
-                          onClick={() => onApproval(allocation.id, 'approve')}
+                          onClick={() => onApproval(allocation.id, isDeletion ? 'delete' : 'approve')}
                           disabled={processingIds.has(allocation.id)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-green-600 dark:bg-green-700 border border-transparent rounded-md hover:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
+                            isDeletion
+                              ? 'bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600 focus:ring-red-500'
+                              : 'bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 focus:ring-green-500'
+                          }`}
                         >
-                          <FaCheck className="w-3 h-3" />
-                          Approve
+                          {isDeletion ? <FaTimes className="w-3 h-3" /> : <FaCheck className="w-3 h-3" />}
+                          {isDeletion ? 'Approve Deletion' : 'Approve'}
                         </button>
                       </div>
                     </div>

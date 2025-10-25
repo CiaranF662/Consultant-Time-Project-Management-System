@@ -17,7 +17,7 @@ interface PhaseWithAllocations {
   allocations: Array<{
     id: string;
     totalHours: number;
-    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
+    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELETION_PENDING' | 'EXPIRED' | 'FORFEITED';
     weeklyAllocations: Array<{
       id: string;
       plannedHours: number;
