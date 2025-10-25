@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import axios from 'axios';
@@ -17,8 +18,14 @@ export default function NotificationBadge({ className = '' }: NotificationBadgeP
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<'left' | 'right'>('right');
+  const [isMounted, setIsMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Track mounted state for SSR safety
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Fetch unread count
   useEffect(() => {
@@ -90,6 +97,7 @@ export default function NotificationBadge({ className = '' }: NotificationBadgeP
       // Calculate position before opening dropdown
       const rect = buttonRef.current.getBoundingClientRect();
       const dropdownWidth = 320; // 80 * 4 (w-80 in rem)
+      // Check if there's enough space on the right side
       const shouldAlignLeft = rect.right + dropdownWidth > window.innerWidth;
       setDropdownPosition(shouldAlignLeft ? 'left' : 'right');
     }
@@ -115,7 +123,7 @@ export default function NotificationBadge({ className = '' }: NotificationBadgeP
   }
 
   return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
+    <div className={`relative ${className}`}>
       {/* Notification Bell Button */}
       <button
         ref={buttonRef}
@@ -134,18 +142,25 @@ export default function NotificationBadge({ className = '' }: NotificationBadgeP
         )}
       </button>
 
-      {/* Dropdown */}
-      {isOpen && (
-        <div 
-          className={`absolute top-full mt-2 z-50 ${
-            dropdownPosition === 'left' ? 'right-0' : 'left-0'
-          }`}
+      {/* Dropdown - rendered via portal to escape stacking context */}
+      {isMounted && isOpen && buttonRef.current && createPortal(
+        <div
+          ref={dropdownRef}
+          className="fixed z-[9999]"
+          style={{
+            top: `${buttonRef.current.getBoundingClientRect().bottom + 8}px`,
+            [dropdownPosition === 'left' ? 'right' : 'left']:
+              dropdownPosition === 'left'
+                ? `${window.innerWidth - buttonRef.current.getBoundingClientRect().right}px`
+                : `${buttonRef.current.getBoundingClientRect().left}px`
+          }}
         >
           <NotificationDropdown
             onClose={handleDropdownClose}
             onNotificationUpdate={handleNotificationUpdate}
           />
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
