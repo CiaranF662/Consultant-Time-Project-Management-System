@@ -28,7 +28,7 @@ interface PhaseAllocation {
   consultantName: string;
   hours: number; // Changed from allocatedHours to hours
   plannedHours: number;
-  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELETION_PENDING' | 'EXPIRED' | 'FORFEITED';
   rejectionReason?: string | null;
   unplannedExpiredHours?: {
     id: string;
@@ -50,7 +50,7 @@ interface PhaseWithAllocations extends Phase {
     id: string;
     consultantId: string;
     totalHours: number;
-    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELETION_PENDING';
     rejectionReason?: string | null;
     weeklyAllocations: Array<{
       id: string;
