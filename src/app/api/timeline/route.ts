@@ -45,10 +45,26 @@ export async function GET(request: Request) {
   const { session, user } = auth;
 
   const { searchParams } = new URL(request.url);
-  const weeksToShow = parseInt(searchParams.get('weeks') || '12');
-  const startDate = searchParams.get('startDate') 
+
+  // Parse start date and align to Monday (week start)
+  const rawStartDate = searchParams.get('startDate')
     ? new Date(searchParams.get('startDate')!)
-    : startOfWeek(new Date(), { weekStartsOn: 1 });
+    : new Date();
+  const startDate = startOfWeek(rawStartDate, { weekStartsOn: 1 });
+
+  // Calculate weeks to show based on endDate if provided, otherwise use weeks parameter
+  let weeksToShow: number;
+  if (searchParams.get('endDate')) {
+    const rawEndDate = new Date(searchParams.get('endDate')!);
+    const endDate = endOfWeek(rawEndDate, { weekStartsOn: 1 });
+
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Calculate weeks to fully cover the date range
+    weeksToShow = Math.max(1, Math.ceil(diffDays / 7));
+  } else {
+    weeksToShow = parseInt(searchParams.get('weeks') || '12');
+  }
 
   try {
     // Get all consultants with their PM status

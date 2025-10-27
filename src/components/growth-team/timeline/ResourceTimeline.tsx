@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { formatHours, getUtilizationColor } from '@/lib/dates';
 import { ComponentLoading } from '@/components/ui/LoadingSpinner';
-import { FaSearch, FaTimes } from 'react-icons/fa';
+import { FaSearch, FaTimes, FaFileExcel } from 'react-icons/fa';
+import * as XLSX from 'xlsx-js-style';
+import ExportTimelineModal from './ExportTimelineModal';
 
 interface ResourceTimelineProps {
   consultants: Array<{
@@ -66,6 +68,7 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
   const [lastFetchedWeeks, setLastFetchedWeeks] = useState<number>(initialTimelineData ? weeks : 0);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showSearch, setShowSearch] = useState<boolean>(false);
+  const [showExportModal, setShowExportModal] = useState<boolean>(false);
 
   // Initialize week headers from initial data
   useEffect(() => {
@@ -175,6 +178,303 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
     }
   };
 
+  // Export to Excel function
+  const handleExportToExcel = async (startDate: Date, endDate: Date) => {
+    try {
+      // Fetch data for the specified date range
+      const response = await axios.get('/api/timeline', {
+        params: {
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString()
+        }
+      });
+
+      const { timeline: exportTimelineData, weeks: exportWeekHeaders } = response.data;
+
+      // Create workbook
+      const workbook = XLSX.utils.book_new();
+
+      // Prepare summary sheet data (consultant x week grid)
+      const summaryData: any[][] = [];
+
+      // Header row
+      const headerRow = ['Consultant', ...exportWeekHeaders.map((w: any) => w.label)];
+      summaryData.push(headerRow);
+
+      // Data rows - one per consultant
+      exportTimelineData.forEach((consultant: any) => {
+        const row = [
+          consultant.consultantName,
+          ...consultant.weeklyData.map((week: any) => week.totalHours)
+        ];
+        summaryData.push(row);
+      });
+
+      // Add totals row with formula placeholders
+      const totalsRow = ['TOTAL'];
+      for (let i = 0; i < exportWeekHeaders.length; i++) {
+        totalsRow.push(''); // Will be replaced with formula
+      }
+      summaryData.push(totalsRow);
+
+      // Create summary sheet
+      const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+
+      // Apply styles and formatting
+      const range = XLSX.utils.decode_range(summarySheet['!ref'] || 'A1');
+
+      // Style header row (row 0) - Bold and gray background
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+        if (!summarySheet[cellAddress]) continue;
+
+        summarySheet[cellAddress].s = {
+          font: { bold: true, sz: 12 },
+          fill: { fgColor: { rgb: "D3D3D3" } },
+          alignment: { horizontal: "center", vertical: "center" },
+          border: {
+            top: { style: "thin", color: { rgb: "000000" } },
+            bottom: { style: "thin", color: { rgb: "000000" } },
+            left: { style: "thin", color: { rgb: "000000" } },
+            right: { style: "thin", color: { rgb: "000000" } }
+          }
+        };
+      }
+
+      // Style totals row (last row) - Bold
+      const totalRowIndex = range.e.r;
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: totalRowIndex, c: col });
+
+        if (col === 0) {
+          // "TOTAL" label
+          if (!summarySheet[cellAddress]) continue;
+          summarySheet[cellAddress].s = {
+            font: { bold: true, sz: 11 },
+            fill: { fgColor: { rgb: "E8E8E8" } },
+            alignment: { horizontal: "left", vertical: "center" },
+            border: {
+              top: { style: "thin", color: { rgb: "000000" } },
+              bottom: { style: "thin", color: { rgb: "000000" } },
+              left: { style: "thin", color: { rgb: "000000" } },
+              right: { style: "thin", color: { rgb: "000000" } }
+            }
+          };
+        } else {
+          // SUM formula for each week column
+          const startRow = 2; // Data starts at row 2 (0-indexed: header is 0, data starts at 1)
+          const endRow = totalRowIndex; // Last data row before totals
+          const colLetter = XLSX.utils.encode_col(col);
+
+          summarySheet[cellAddress] = {
+            f: `SUM(${colLetter}${startRow}:${colLetter}${endRow})`,
+            t: 'n',
+            s: {
+              font: { bold: true, sz: 11 },
+              fill: { fgColor: { rgb: "E8E8E8" } },
+              alignment: { horizontal: "center", vertical: "center" },
+              border: {
+                top: { style: "thin", color: { rgb: "000000" } },
+                bottom: { style: "thin", color: { rgb: "000000" } },
+                left: { style: "thin", color: { rgb: "000000" } },
+                right: { style: "thin", color: { rgb: "000000" } }
+              }
+            }
+          };
+        }
+      }
+
+      // Apply conditional formatting to data cells (color based on hours) and style consultant names
+      for (let row = 1; row < totalRowIndex; row++) { // Skip header and totals
+        for (let col = 0; col <= range.e.c; col++) {
+          const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+          let cell = summarySheet[cellAddress];
+
+          // Create cell if it doesn't exist (for zero values)
+          if (!cell) {
+            summarySheet[cellAddress] = { t: 'n', v: 0 };
+            cell = summarySheet[cellAddress];
+          }
+
+          if (col === 0) {
+            // Style consultant name column
+            cell.s = {
+              font: { bold: false, sz: 11 },
+              alignment: { horizontal: "left", vertical: "center" },
+              border: {
+                top: { style: "thin", color: { rgb: "D3D3D3" } },
+                bottom: { style: "thin", color: { rgb: "D3D3D3" } },
+                left: { style: "thin", color: { rgb: "D3D3D3" } },
+                right: { style: "thin", color: { rgb: "D3D3D3" } }
+              }
+            };
+          } else {
+            // Style hour cells with conditional formatting
+            const hours = typeof cell.v === 'number' ? cell.v : 0;
+            let bgColor = 'FFFFFF'; // White default
+
+            // Color scale based on capacity
+            if (hours > 40) {
+              bgColor = 'FFC7CE'; // Red - over capacity
+            } else if (hours >= 30) {
+              bgColor = 'FFEB9C'; // Yellow - near capacity
+            } else if (hours > 0) {
+              bgColor = 'C6EFCE'; // Green - under capacity
+            }
+
+            cell.s = {
+              fill: { fgColor: { rgb: bgColor } },
+              alignment: { horizontal: "center", vertical: "center" },
+              border: {
+                top: { style: "thin", color: { rgb: "D3D3D3" } },
+                bottom: { style: "thin", color: { rgb: "D3D3D3" } },
+                left: { style: "thin", color: { rgb: "D3D3D3" } },
+                right: { style: "thin", color: { rgb: "D3D3D3" } }
+              }
+            };
+          }
+        }
+      }
+
+      // Freeze panes: freeze first row and first column
+      summarySheet['!freeze'] = { xSplit: 1, ySplit: 1 };
+
+      // Set column widths
+      summarySheet['!cols'] = [
+        { wch: 20 }, // Consultant name column
+        ...exportWeekHeaders.map(() => ({ wch: 10 })) // Week columns
+      ];
+
+      // Add summary sheet to workbook
+      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+
+      // Prepare detailed sheet data (flat list of all allocations)
+      const detailData: any[][] = [];
+
+      // Header row for details
+      detailData.push(['Consultant', 'Week', 'Total Hours', 'Project', 'Phase', 'Hours', 'Sprint']);
+
+      // Data rows - one per allocation
+      exportTimelineData.forEach((consultant: any) => {
+        consultant.weeklyData.forEach((week: any, weekIndex: number) => {
+          if (week.allocations && week.allocations.length > 0) {
+            week.allocations.forEach((allocation: any) => {
+              detailData.push([
+                consultant.consultantName,
+                exportWeekHeaders[weekIndex]?.label || `Week ${weekIndex + 1}`,
+                week.totalHours,
+                allocation.project,
+                allocation.phase,
+                allocation.hours,
+                allocation.sprint
+                  ? `Sprint ${allocation.sprint.sprintNumber} (Week ${allocation.sprint.weekOfSprint})`
+                  : 'N/A'
+              ]);
+            });
+          } else if (week.totalHours > 0) {
+            // Week has hours but no allocations - shouldn't happen but handle it
+            detailData.push([
+              consultant.consultantName,
+              exportWeekHeaders[weekIndex]?.label || `Week ${weekIndex + 1}`,
+              week.totalHours,
+              'N/A',
+              'N/A',
+              week.totalHours,
+              'N/A'
+            ]);
+          }
+        });
+      });
+
+      // Check if there's any data to export
+      const hasData = exportTimelineData.some((c: any) =>
+        c.weeklyData.some((w: any) => w.totalHours > 0)
+      );
+
+      if (!hasData) {
+        alert('No allocation data found for the selected date range. Please ensure:\n\n1. There are approved weekly allocations in this date range\n2. The consultants have been assigned to projects with allocations\n\nTry selecting "Current View" to export the visible timeline data.');
+        return;
+      }
+
+      // Create details sheet
+      const detailSheet = XLSX.utils.aoa_to_sheet(detailData);
+
+      // Style header row in details sheet
+      const detailRange = XLSX.utils.decode_range(detailSheet['!ref'] || 'A1');
+      for (let col = detailRange.s.c; col <= detailRange.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+        if (!detailSheet[cellAddress]) continue;
+
+        detailSheet[cellAddress].s = {
+          font: { bold: true, sz: 11 },
+          fill: { fgColor: { rgb: "D3D3D3" } },
+          alignment: { horizontal: "center", vertical: "center" },
+          border: {
+            top: { style: "thin", color: { rgb: "000000" } },
+            bottom: { style: "thin", color: { rgb: "000000" } },
+            left: { style: "thin", color: { rgb: "000000" } },
+            right: { style: "thin", color: { rgb: "000000" } }
+          }
+        };
+      }
+
+      // Add borders to all cells in details sheet
+      for (let row = detailRange.s.r; row <= detailRange.e.r; row++) {
+        for (let col = detailRange.s.c; col <= detailRange.e.c; col++) {
+          const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+          const cell = detailSheet[cellAddress];
+
+          if (!cell) continue;
+
+          if (!cell.s) cell.s = {};
+          cell.s.border = {
+            top: { style: "thin", color: { rgb: "D3D3D3" } },
+            bottom: { style: "thin", color: { rgb: "D3D3D3" } },
+            left: { style: "thin", color: { rgb: "D3D3D3" } },
+            right: { style: "thin", color: { rgb: "D3D3D3" } }
+          };
+
+          // Center align numeric columns
+          if (col === 2 || col === 5) { // Total Hours and Hours columns
+            if (!cell.s.alignment) cell.s.alignment = {};
+            cell.s.alignment.horizontal = "center";
+          }
+        }
+      }
+
+      // Freeze header row in details sheet
+      detailSheet['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+      // Set column widths for details
+      detailSheet['!cols'] = [
+        { wch: 20 }, // Consultant
+        { wch: 12 }, // Week
+        { wch: 12 }, // Total Hours
+        { wch: 25 }, // Project
+        { wch: 25 }, // Phase
+        { wch: 10 }, // Hours
+        { wch: 18 }  // Sprint
+      ];
+
+      // Add details sheet to workbook
+      XLSX.utils.book_append_sheet(workbook, detailSheet, 'Details');
+
+      // Generate filename with improved format
+      const startStr = startDate.toISOString().split('T')[0];
+      const endStr = endDate.toISOString().split('T')[0];
+      const createdStr = new Date().toISOString().split('T')[0];
+      const filename = `Consultant Allocation from ${startStr} to ${endStr} created ${createdStr}.xlsx`;
+
+      // Write and download with cellStyles option enabled
+      XLSX.writeFile(workbook, filename, { cellStyles: true });
+
+      console.log('Excel file exported successfully');
+    } catch (error) {
+      console.error('Failed to export to Excel:', error);
+      alert('Failed to export data. Please try again.');
+    }
+  };
+
   // Filter consultants based on search query
   const filteredConsultants = consultants.filter(consultant => {
     if (!searchQuery.trim()) return true;
@@ -187,41 +487,62 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
   }
 
   return (
-    <div className="overflow-x-auto max-h-[600px] overflow-y-auto bg-white dark:bg-gray-900">
-      <div className={`${weeks >= 32 ? 'min-w-[3600px]' : weeks >= 24 ? 'min-w-[2400px]' : weeks >= 12 ? 'min-w-[1300px]' : 'min-w-[1000px]'} ${weeks >= 32 ? 'pr-4' : ''}`}>
-        {/* Header */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 sticky top-0 z-20 shadow-[0_2px_4px_-1px_rgba(0,0,0,0.1)]">
-          <div className="w-56 md:w-64 p-4 font-semibold text-card-foreground border-r border-gray-200 dark:border-gray-700 flex-shrink-0 sticky left-0 bg-gray-50 dark:bg-gray-800 z-30 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.1)] flex items-center justify-between">
-            <span>Consultant</span>
-            <div className="flex items-center gap-2">
-              {showSearch && (
+    <div className="bg-white dark:bg-gray-900">
+      {/* Action Bar - Above the timeline */}
+      <div className="sticky top-0 z-30 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+        <div className="flex items-center justify-between gap-4">
+          {/* Left side - Search */}
+          <div className="flex items-center gap-2 flex-1">
+            {showSearch ? (
+              <div className="flex items-center gap-2 flex-1 max-w-md">
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search..."
-                  className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 w-32"
+                  placeholder="Search consultants..."
+                  className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
                   autoFocus
                 />
-              )}
-              <button
-                onClick={() => {
-                  setShowSearch(!showSearch);
-                  if (showSearch) {
+                <button
+                  onClick={() => {
+                    setShowSearch(false);
                     setSearchQuery('');
-                  }
-                }}
-                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                title={showSearch ? "Close search" : "Search consultants"}
+                  }}
+                  className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowSearch(true)}
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                {showSearch ? (
-                  <FaTimes className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
-                ) : (
-                  <FaSearch className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
-                )}
+                <FaSearch className="w-3.5 h-3.5" />
+                Search
               </button>
-            </div>
+            )}
           </div>
+
+          {/* Right side - Export */}
+          <button
+            onClick={() => setShowExportModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors shadow-sm"
+          >
+            <FaFileExcel className="w-4 h-4" />
+            Export to Excel
+          </button>
+        </div>
+      </div>
+
+      {/* Timeline Table */}
+      <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+        <div className={`${weeks >= 32 ? 'min-w-[3600px]' : weeks >= 24 ? 'min-w-[2400px]' : weeks >= 12 ? 'min-w-[1300px]' : 'min-w-[1000px]'} ${weeks >= 32 ? 'pr-4' : ''}`}>
+          {/* Header */}
+          <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 sticky top-0 z-20 shadow-[0_2px_4px_-1px_rgba(0,0,0,0.1)]">
+            <div className="w-56 md:w-64 p-4 font-semibold text-card-foreground border-r border-gray-200 dark:border-gray-700 flex-shrink-0 sticky left-0 bg-gray-50 dark:bg-gray-800 z-30 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.1)]">
+              Consultant
+            </div>
           <div className="flex-1 flex">
             {weekHeaders.map((week, index) => (
               <div
@@ -340,6 +661,7 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
             </div>
           );
         })}
+        </div>
       </div>
 
       {/* Week Details Modal */}
@@ -475,6 +797,17 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
             </div>
           </div>
         </div>
+      )}
+
+      {/* Export Timeline Modal */}
+      {showExportModal && weekHeaders.length > 0 && timelineData.length > 0 && (
+        <ExportTimelineModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          onExport={handleExportToExcel}
+          currentViewStartDate={timelineData[0]?.weeklyData[0]?.weekStart || new Date()}
+          currentViewEndDate={timelineData[0]?.weeklyData[weekHeaders.length - 1]?.weekEnd || new Date()}
+        />
       )}
     </div>
   );
