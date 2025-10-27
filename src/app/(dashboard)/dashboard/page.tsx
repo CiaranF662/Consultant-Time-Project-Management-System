@@ -158,7 +158,7 @@ export default async function DashboardPage() {
 
   if (isGrowthTeam) {
     const data = await getGrowthTeamData();
-    return <GrowthTeamDashboard data={data} userRole={session.user.role} />;
+    return <GrowthTeamDashboard data={data} userRole={session.user.role} currentUserId={session.user.id} />;
   } else {
     const data = await getConsultantData(session.user.id);
 

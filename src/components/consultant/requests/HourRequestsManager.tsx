@@ -52,6 +52,10 @@ interface PhaseAllocation {
       }>;
     };
   };
+  weeklyAllocations?: Array<{
+    proposedHours: number | null;
+    approvedHours: number | null;
+  }>;
 }
 
 interface HourRequestsManagerProps {

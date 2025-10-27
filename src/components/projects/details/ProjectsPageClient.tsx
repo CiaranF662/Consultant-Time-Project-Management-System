@@ -25,6 +25,7 @@ type ProjectWithDetails = Project & {
 interface ProjectsPageClientProps {
   projects: ProjectWithDetails[];
   isGrowthTeam: boolean;
+  currentUserId: string;
   hideHeader?: boolean;
   hideStats?: boolean;
   hideCreateButton?: boolean;
@@ -33,6 +34,7 @@ interface ProjectsPageClientProps {
 export default function ProjectsPageClient({
   projects,
   isGrowthTeam,
+  currentUserId,
   hideHeader = false,
   hideStats = false,
   hideCreateButton = false
@@ -148,7 +150,7 @@ export default function ProjectsPageClient({
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {current.map((project) => (
-                  <ProjectCard key={project.id} project={project} />
+                  <ProjectCard key={project.id} project={project} currentUserId={currentUserId} />
                 ))}
               </div>
             </div>
@@ -165,7 +167,7 @@ export default function ProjectsPageClient({
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {upcoming.map((project) => (
-                  <ProjectCard key={project.id} project={project} />
+                  <ProjectCard key={project.id} project={project} currentUserId={currentUserId} />
                 ))}
               </div>
             </div>
@@ -182,7 +184,7 @@ export default function ProjectsPageClient({
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {past.map((project) => (
-                  <ProjectCard key={project.id} project={project} />
+                  <ProjectCard key={project.id} project={project} currentUserId={currentUserId} />
                 ))}
               </div>
             </div>

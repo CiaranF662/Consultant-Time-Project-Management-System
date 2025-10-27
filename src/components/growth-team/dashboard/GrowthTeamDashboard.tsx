@@ -37,9 +37,10 @@ interface GrowthTeamDashboardProps {
     projects: ProjectWithDetails[];
   };
   userRole: string;
+  currentUserId: string;
 }
 
-export default function GrowthTeamDashboard({ data, userRole }: GrowthTeamDashboardProps) {
+export default function GrowthTeamDashboard({ data, userRole, currentUserId }: GrowthTeamDashboardProps) {
   const [timelineWeeks, setTimelineWeeks] = useState(12);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [activeView, setActiveView] = useState<'timeline' | 'gantt' | 'projects' | 'capacity'>('timeline');
@@ -441,6 +442,7 @@ export default function GrowthTeamDashboard({ data, userRole }: GrowthTeamDashbo
         <ProjectsPageClient
           projects={data.projects}
           isGrowthTeam={true}
+          currentUserId={currentUserId}
           hideHeader={true}
           hideStats={true}
           hideCreateButton={true}
