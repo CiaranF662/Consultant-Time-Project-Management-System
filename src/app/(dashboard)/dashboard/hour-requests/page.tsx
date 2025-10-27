@@ -38,6 +38,12 @@ async function getUserHourRequests(userId: string) {
             }
           }
         }
+      },
+      weeklyAllocations: {
+        select: {
+          proposedHours: true,
+          approvedHours: true
+        }
       }
     }
   });

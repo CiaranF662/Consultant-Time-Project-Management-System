@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Project, Phase, Sprint, ConsultantsOnProjects, PhaseAllocation } from '@prisma/client';
-import { FaUsers, FaCalendarAlt, FaClock, FaChartBar } from 'react-icons/fa';
+import { FaUsers, FaCalendarAlt, FaClock, FaChartBar, FaStar } from 'react-icons/fa';
 import { generateColorFromString } from '@/lib/colors';
 
 type ProjectWithDetails = Project & {
@@ -19,6 +19,7 @@ type ProjectWithDetails = Project & {
 
 interface ProjectCardProps {
   project: ProjectWithDetails;
+  currentUserId: string;
 }
 
 // Helper to format dates
@@ -35,7 +36,9 @@ function getProjectDurationInWeeks(start: Date, end: Date | null): string {
     return `${durationInWeeks} weeks`;
 }
 
-export default function ProjectCard({ project }: ProjectCardProps) {
+export default function ProjectCard({ project, currentUserId }: ProjectCardProps) {
+  // Check if current user is the Product Manager
+  const isProductManager = project.productManagerId === currentUserId;
   // Calculate total allocated hours (only approved allocations)
   const totalAllocated = project.phases.reduce((sum, phase) => {
     return sum + phase.allocations.reduce((phaseSum, allocation) => {
@@ -63,7 +66,15 @@ export default function ProjectCard({ project }: ProjectCardProps) {
   return (
     <Link href={`/dashboard/projects/${project.id}`}>
       <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 flex flex-col h-full cursor-pointer">
-        <h3 className="text-xl font-bold text-foreground truncate mb-2">{project.title}</h3>
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <h3 className="text-xl font-bold text-foreground truncate flex-1">{project.title}</h3>
+          {isProductManager && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-semibold rounded-full border border-purple-200 dark:border-purple-700 whitespace-nowrap" title="You are the Product Manager">
+              <FaStar className="w-3 h-3" />
+              PM
+            </span>
+          )}
+        </div>
 
         {/* Budget Progress Bar */}
         <div className="mb-4">

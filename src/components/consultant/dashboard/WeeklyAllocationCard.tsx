@@ -33,6 +33,7 @@ interface WeeklyAllocationCardProps {
   currentHours: number;
   hasUnsavedChanges: boolean;
   error?: string;
+  warning?: string;
   weeklyAllocation?: WeeklyAllocation;
   localStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'MODIFIED';
   otherPhases: OtherPhase[];
@@ -46,6 +47,7 @@ export default function WeeklyAllocationCard({
   currentHours,
   hasUnsavedChanges,
   error,
+  warning,
   weeklyAllocation,
   localStatus,
   otherPhases,
@@ -143,6 +145,7 @@ export default function WeeklyAllocationCard({
           className={`block w-full px-4 py-3 text-sm border rounded-xl focus:outline-none focus:ring-2 transition-all duration-200 font-medium ${
             isWeekLocked ? 'bg-gray-200 dark:bg-gray-700 border-gray-400 dark:border-gray-600 text-gray-600 dark:text-gray-400 cursor-not-allowed' :
             error ? 'border-red-300 dark:border-red-700 focus:ring-red-500 bg-red-50 dark:bg-red-900/20 text-foreground' :
+            warning ? 'border-amber-300 dark:border-amber-700 focus:ring-amber-500 bg-amber-50 dark:bg-amber-900/20 text-foreground' :
             hasUnsavedChanges ? 'border-yellow-300 dark:border-yellow-700 focus:ring-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 text-foreground' :
             isRejected ? 'border-red-300 dark:border-red-700 focus:ring-red-500 bg-white dark:bg-gray-900 text-foreground' :
             isApproved ? 'border-emerald-300 dark:border-emerald-700 focus:ring-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-foreground' :
@@ -204,7 +207,11 @@ export default function WeeklyAllocationCard({
         <p className="mt-1 text-xs text-red-600 dark:text-red-400">{error}</p>
       )}
 
-      {hasUnsavedChanges && !error && (
+      {!error && warning && (
+        <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{warning}</p>
+      )}
+
+      {hasUnsavedChanges && !error && !warning && (
         <p className="mt-1 text-xs text-yellow-600 dark:text-yellow-400">Unsaved</p>
       )}
     </div>
