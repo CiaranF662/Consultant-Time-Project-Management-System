@@ -138,12 +138,17 @@ export async function GET(request: Request) {
       const weeklyData = weeks.map((week) => {
         const weekAllocations = consultantAllocations.filter(a => {
           const allocWeekStart = new Date(a.weekStartDate);
-          // More precise week matching to avoid date comparison issues
-          const weekStartTime = week.weekStart.getTime();
-          const weekEndTime = week.weekEnd.getTime();
-          const allocTime = allocWeekStart.getTime();
-          
-          return allocTime >= weekStartTime && allocTime <= weekEndTime;
+
+          // Normalize all dates to UTC midnight for consistent comparison across timezones
+          const normalizeToUTC = (date: Date) => {
+            return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+          };
+
+          const weekStartUTC = normalizeToUTC(week.weekStart);
+          const weekEndUTC = normalizeToUTC(week.weekEnd);
+          const allocStartUTC = normalizeToUTC(allocWeekStart);
+
+          return allocStartUTC >= weekStartUTC && allocStartUTC <= weekEndUTC;
         });
 
         const totalHours = weekAllocations.reduce((sum, a) => sum + (a.approvedHours || 0), 0);

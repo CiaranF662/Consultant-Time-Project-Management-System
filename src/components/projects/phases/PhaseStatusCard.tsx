@@ -527,7 +527,7 @@ export default function PhaseStatusCard({
                     {(hasUnplannedExpired || (allocation.approvalStatus === 'EXPIRED' && allocation.plannedHours < allocation.hours)) && !hasUnplannedForfeited && !hasUnplannedReallocated && (
                       <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-300 rounded-full text-xs font-medium">
                         <FaExclamationTriangle className="w-2 h-2" />
-                        Expired - Click to Handle
+                        {isClickable ? 'Expired - Click to Handle' : 'Expired'}
                       </span>
                     )}
                     {hasUnplannedForfeited && !hasUnplannedExpired && (
