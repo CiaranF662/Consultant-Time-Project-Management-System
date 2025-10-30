@@ -55,12 +55,14 @@ export default function ProjectCard({ project, currentUserId }: ProjectCardProps
     ? Math.round((totalAllocated / project.budgetedHours) * 100)
     : 0;
 
-  // Get utilization color
+  // Get utilization color - reflects resource efficiency
+  // Low allocation = under-utilized (blue/orange), High allocation = efficient (green), Over = bad (red)
   const getUtilizationColor = (percent: number) => {
-    if (percent >= 100) return 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30';
-    if (percent >= 80) return 'text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30';
-    if (percent >= 60) return 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30';
-    return 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30';
+    if (percent > 100) return 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30';
+    if (percent >= 90) return 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30';
+    if (percent >= 70) return 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30';
+    if (percent >= 40) return 'text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30';
+    return 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30';
   };
 
   return (
@@ -86,11 +88,12 @@ export default function ProjectCard({ project, currentUserId }: ProjectCardProps
             </div>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                 <div
-                  className={`h-2.5 rounded-full ${
-                    utilization >= 100 ? 'bg-red-500' :
-                    utilization >= 80 ? 'bg-orange-500' :
-                    utilization >= 60 ? 'bg-yellow-500' :
-                    'bg-green-500'
+                  className={`h-2.5 rounded-full transition-all ${
+                    utilization > 100 ? 'bg-red-500' :
+                    utilization >= 90 ? 'bg-green-500' :
+                    utilization >= 70 ? 'bg-yellow-500' :
+                    utilization >= 40 ? 'bg-orange-500' :
+                    'bg-blue-500'
                   }`}
                   style={{ width: `${Math.min(utilization, 100)}%` }}
                 />
