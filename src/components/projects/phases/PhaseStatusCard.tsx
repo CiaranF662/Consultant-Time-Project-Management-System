@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { FaCheckCircle, FaExclamationTriangle, FaClock, FaChartPie, FaPlay, FaEdit, FaHourglassHalf, FaTimesCircle, FaExternalLinkAlt, FaChevronDown, FaChevronUp, FaLock, FaExchangeAlt } from 'react-icons/fa';
-import { getPhaseStatus, getStatusColorClasses, getProgressBarColor, formatHours } from '@/lib/phase-status';
+import { getPhaseStatus, getStatusColorClasses, formatHours } from '@/lib/phase-status';
 import { generateColorFromString } from '@/lib/colors';
 import { formatDate } from '@/lib/dates';
 import { isPhaseLocked } from '@/lib/phase-lock';
@@ -384,10 +384,15 @@ export default function PhaseStatusCard({
               </span>
             </div>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div 
-                className={`h-2 rounded-full transition-all ${getProgressBarColor(phaseStatus.status, phaseStatus.details.overall.isOnTrack)}`}
-                style={{ 
-                  width: `${Math.min(phaseStatus.details.work.workCompletionPercentage, 100)}%` 
+              <div
+                className={`h-2 rounded-full transition-all ${
+                  phaseStatus.details.work.workCompletionPercentage >= 100 ? 'bg-green-500' :
+                  phaseStatus.details.work.workCompletionPercentage >= 75 ? 'bg-blue-500' :
+                  phaseStatus.details.work.workCompletionPercentage >= 50 ? 'bg-yellow-500' :
+                  phaseStatus.details.work.workCompletionPercentage > 0 ? 'bg-orange-500' : 'bg-gray-400'
+                }`}
+                style={{
+                  width: `${Math.min(phaseStatus.details.work.workCompletionPercentage, 100)}%`
                 }}
               />
             </div>

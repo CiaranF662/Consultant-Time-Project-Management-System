@@ -2,7 +2,6 @@ import {
   Body,
   Container,
   Head,
-  Heading,
   Html,
   Link,
   Preview,
@@ -10,6 +9,8 @@ import {
   Text,
 } from '@react-email/components';
 import * as React from 'react';
+import { EmailHeader } from './components/EmailHeader';
+import { EmailFooter } from './components/EmailFooter';
 
 interface PhaseAllocationEmailProps {
   type: 'allocated' | 'planned';
@@ -50,8 +51,8 @@ export const PhaseAllocationEmail = ({
       <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={heading}>{getHeading()}</Heading>
-          
+          <EmailHeader title={getHeading()} />
+
           <Section style={section}>
             <Text style={text}>
               Hi {consultantName},
@@ -113,11 +114,7 @@ export const PhaseAllocationEmail = ({
             )}
           </Section>
 
-          <Section style={footer}>
-            <Text style={footerText}>
-              Agility - Consultant Resource & Progress Insight System
-            </Text>
-          </Section>
+          <EmailFooter />
         </Container>
       </Body>
     </Html>
@@ -139,15 +136,6 @@ const container = {
   marginBottom: '64px',
 };
 
-const heading = {
-  fontSize: '24px',
-  letterSpacing: '-0.5px',
-  lineHeight: '1.3',
-  fontWeight: '400',
-  color: '#484848',
-  padding: '17px 4px 0',
-};
-
 const section = {
   padding: '24px',
   border: 'solid 1px #dedede',
@@ -164,14 +152,4 @@ const text = {
 const link = {
   color: '#2563eb',
   textDecoration: 'underline',
-};
-
-const footer = {
-  textAlign: 'center' as const,
-  marginTop: '32px',
-};
-
-const footerText = {
-  fontSize: '12px',
-  color: '#6b7280',
 };

@@ -61,11 +61,16 @@ export default function RegisterPage() {
         <div className="max-w-md w-full space-y-8">
           {/* Header */}
           <div className="text-center">
-            <Link href="/" className="inline-flex items-center space-x-2 mb-8">
-              <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center">
-                <BarChart3 className="w-6 h-6 text-white" />
+            <Link href="/" className="inline-flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex flex-col items-center justify-center shadow-lg relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 to-transparent"></div>
+                <span className="text-white font-bold text-base relative z-10" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', fontWeight: 700 }}>a</span>
+                <div className="flex items-center gap-0.5 relative z-10 -mt-0.5">
+                  <div className="w-1 h-1 bg-white rounded-full"></div>
+                  <div className="w-2 h-0.5 bg-white rounded-full"></div>
+                </div>
               </div>
-              <span className="text-2xl font-bold text-foreground">Agility</span>
+              <span className="text-2xl font-bold text-foreground tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', fontWeight: 300, letterSpacing: '-0.02em' }}>agility</span>
             </Link>
           </div>
 
@@ -132,11 +137,16 @@ export default function RegisterPage() {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <Link href="/" className="inline-flex items-center space-x-2 mb-8">
-            <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center">
-              <BarChart3 className="w-6 h-6 text-white" />
+          <Link href="/" className="inline-flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex flex-col items-center justify-center shadow-lg relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 to-transparent"></div>
+              <span className="text-white font-bold text-base relative z-10" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', fontWeight: 700 }}>a</span>
+              <div className="flex items-center gap-0.5 relative z-10 -mt-0.5">
+                <div className="w-1 h-1 bg-white rounded-full"></div>
+                <div className="w-2 h-0.5 bg-white rounded-full"></div>
+              </div>
             </div>
-            <span className="text-2xl font-bold text-foreground">Agility</span>
+            <span className="text-2xl font-bold text-foreground tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', fontWeight: 300, letterSpacing: '-0.02em' }}>agility</span>
           </Link>
           <h1 className="text-3xl font-bold text-foreground mb-2">Create your account</h1>
           <p className="text-gray-600 dark:text-gray-300">Join thousands of teams managing resources efficiently</p>

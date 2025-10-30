@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { formatHours, getUtilizationColor } from '@/lib/dates';
 import { ComponentLoading } from '@/components/ui/LoadingSpinner';
 import { FaSearch, FaTimes, FaFileExcel } from 'react-icons/fa';
 import * as XLSX from 'xlsx-js-style';
 import ExportTimelineModal from './ExportTimelineModal';
+import './timeline-animations.css';
 
 interface ResourceTimelineProps {
   consultants: Array<{
@@ -69,6 +70,8 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showSearch, setShowSearch] = useState<boolean>(false);
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
+  const [ripplePosition, setRipplePosition] = useState<{ x: number; y: number; key: string } | null>(null);
+  const [pressedCell, setPressedCell] = useState<string | null>(null);
 
   // Initialize week headers from initial data
   useEffect(() => {
@@ -159,12 +162,23 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
     }
   };
 
-  const handleWeekClick = (consultantId: string, weekIndex: number) => {
+  const handleWeekClick = (consultantId: string, weekIndex: number, event: React.MouseEvent<HTMLDivElement>) => {
     const consultant = consultants.find(c => c.id === consultantId);
     const consultantData = timelineData.find(td => td.consultantId === consultantId);
     const weekData = consultantData?.weeklyData[weekIndex];
     const weekKey = `${consultantId}-${weekIndex}`;
-    
+
+    // Create ripple effect
+    if (weekData && weekData.allocations.length > 0) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      setRipplePosition({ x, y, key: weekKey });
+
+      // Clear ripple after animation
+      setTimeout(() => setRipplePosition(null), 600);
+    }
+
     if (selectedWeek?.consultant === consultantId && selectedWeek?.week === weekKey) {
       setSelectedWeek(null);
     } else if (weekData && weekData.allocations.length > 0) {
@@ -622,16 +636,65 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
                   return (
                     <div key={weekIndex} className={`flex-1 ${weeks >= 32 ? 'min-w-[100px]' : weeks >= 24 ? 'min-w-[90px]' : 'min-w-[80px]'} relative group`}>
                       <div
-                        className={`p-2 text-center border-r border-gray-200 dark:border-gray-700 transition-all ${bgColor} ${
-                          hasAllocations ? 'cursor-pointer hover:opacity-80' : 'cursor-default'
-                        } ${isSelected ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''}`}
-                        onClick={() => hasAllocations && handleWeekClick(consultant.id, weekIndex)}
+                        className={`p-2 flex flex-col items-center justify-center border-r border-gray-200 dark:border-gray-700 transition-all duration-200 ${bgColor} ${
+                          hasAllocations
+                            ? 'cursor-pointer hover:z-10'
+                            : 'cursor-default'
+                        } ${isSelected ? 'ring-2 ring-blue-500 dark:ring-blue-400 z-10' : ''} relative overflow-hidden rounded-lg`}
+                        onClick={(e) => hasAllocations && handleWeekClick(consultant.id, weekIndex, e)}
+                        style={{
+                          transform: hasAllocations && isSelected
+                            ? 'scale3d(1.03, 1.03, 1)'
+                            : pressedCell === `${consultant.id}-${weekIndex}`
+                            ? 'scale3d(0.98, 0.98, 1)'
+                            : 'scale3d(1, 1, 1)',
+                          transition: 'transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                          backfaceVisibility: 'hidden',
+                          WebkitFontSmoothing: 'antialiased'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (hasAllocations) {
+                            e.currentTarget.style.transform = 'scale3d(1.03, 1.03, 1)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSelected) {
+                            e.currentTarget.style.transform = 'scale3d(1, 1, 1)';
+                          }
+                        }}
+                        onMouseDown={() => {
+                          if (hasAllocations) {
+                            setPressedCell(`${consultant.id}-${weekIndex}`);
+                          }
+                        }}
+                        onMouseUp={() => setPressedCell(null)}
                       >
-                        <div className={`text-sm font-medium ${hasAllocations ? 'hover:text-blue-600 dark:hover:text-blue-400' : ''} ${weekHeader.isPast ? 'text-muted-foreground' : ''}`}>
+                        {/* Ripple effect */}
+                        {ripplePosition && ripplePosition.key === `${consultant.id}-${weekIndex}` && (
+                          <span
+                            className="absolute rounded-full bg-white dark:bg-gray-400 opacity-70 pointer-events-none animate-ripple"
+                            style={{
+                              left: ripplePosition.x,
+                              top: ripplePosition.y,
+                              width: 0,
+                              height: 0,
+                              transform: 'translate(-50%, -50%)',
+                            }}
+                          />
+                        )}
+
+                        {/* Glow effect on hover */}
+                        {hasAllocations && (
+                          <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-500 dark:from-blue-500 dark:to-blue-600 opacity-0 group-hover:opacity-15 transition-opacity duration-200 pointer-events-none rounded-lg" />
+                        )}
+
+                        <div className={`text-base font-semibold relative z-10 ${hasAllocations ? 'group-hover:text-blue-700 dark:group-hover:text-blue-300' : ''} ${weekHeader.isPast ? 'text-muted-foreground' : ''} transition-colors duration-200`}>
                           {totalHours > 0 ? formatHours(totalHours) : '-'}
                         </div>
                         {hasAllocations && (
-                          <div className="text-[10px] text-gray-600 dark:text-gray-400 mt-0.5">Click for details</div>
+                          <div className="text-[10px] text-gray-600 dark:text-gray-400 mt-0.5 relative z-10 opacity-50 group-hover:opacity-100 transition-opacity duration-200 font-medium">
+                            Click to view
+                          </div>
                         )}
                       </div>
                       
