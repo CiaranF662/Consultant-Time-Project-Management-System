@@ -23,12 +23,16 @@ export async function POST(
     const body = await request.json();
     const { action, rejectionReason, modifiedHours } = body;
 
-    if (!['approve', 'reject', 'modify'].includes(action)) {
+    if (!['approve', 'reject', 'modify', 'delete', 'reject-deletion'].includes(action)) {
       return new NextResponse(JSON.stringify({ error: 'Invalid action' }), { status: 400 });
     }
 
     if (action === 'reject' && !rejectionReason) {
       return new NextResponse(JSON.stringify({ error: 'Rejection reason is required' }), { status: 400 });
+    }
+
+    if (action === 'reject-deletion' && !rejectionReason) {
+      return new NextResponse(JSON.stringify({ error: 'Rejection reason is required for deletion rejection' }), { status: 400 });
     }
 
     if (action === 'modify' && (!modifiedHours || modifiedHours <= 0)) {
@@ -61,8 +65,15 @@ export async function POST(
       return new NextResponse(JSON.stringify({ error: 'Allocation not found' }), { status: 404 });
     }
 
-    if (allocation.approvalStatus !== 'PENDING') {
-      return new NextResponse(JSON.stringify({ error: 'Allocation is not pending approval' }), { status: 400 });
+    // Allow PENDING for normal approvals and DELETION_PENDING for deletion requests
+    if (action === 'delete' || action === 'reject-deletion') {
+      if (allocation.approvalStatus !== 'DELETION_PENDING') {
+        return new NextResponse(JSON.stringify({ error: 'Allocation is not pending deletion' }), { status: 400 });
+      }
+    } else {
+      if (allocation.approvalStatus !== 'PENDING') {
+        return new NextResponse(JSON.stringify({ error: 'Allocation is not pending approval' }), { status: 400 });
+      }
     }
 
     // Check if this allocation is a reallocation (find UnplannedExpiredHours pointing to it)
@@ -237,6 +248,84 @@ export async function POST(
 
         return mergedParent;
       });
+    }
+    // DELETION HANDLING
+    else if (action === 'delete') {
+      console.log(`[DELETION APPROVED] Deleting allocation ${allocationId}`);
+
+      // Delete the allocation (cascade will delete weekly allocations)
+      await prisma.phaseAllocation.delete({
+        where: { id: allocationId }
+      });
+
+      // Notify Product Manager of deletion approval
+      const productManagerId = allocation.phase.project.consultants[0]?.userId;
+      if (productManagerId) {
+        const consultantName = allocation.consultant.name || allocation.consultant.email || 'Consultant';
+        await createNotificationsForUsers(
+          [productManagerId],
+          NotificationType.PHASE_ALLOCATION_APPROVED,
+          'Phase Allocation Deletion Approved',
+          `Your request to remove ${consultantName} from "${allocation.phase.name}" in ${allocation.phase.project.title} has been approved.`,
+          `/dashboard/projects/${allocation.phase.project.id}`,
+          {
+            projectId: allocation.phase.project.id,
+            phaseId: allocation.phase.id,
+            allocationId: allocation.id,
+            isDeletion: true
+          }
+        );
+      }
+
+      return NextResponse.json({ success: true, deleted: true });
+    }
+    else if (action === 'reject-deletion') {
+      console.log(`[DELETION REJECTED] Reverting allocation ${allocationId} to APPROVED`);
+
+      // Revert to APPROVED status
+      updatedAllocation = await prisma.phaseAllocation.update({
+        where: { id: allocationId },
+        data: {
+          approvalStatus: 'APPROVED',
+          rejectionReason
+        },
+        include: {
+          consultant: true,
+          phase: {
+            include: {
+              project: {
+                include: {
+                  consultants: {
+                    where: { role: ProjectRole.PRODUCT_MANAGER },
+                    include: { user: true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // Notify Product Manager of deletion rejection
+      const productManagerId = allocation.phase.project.consultants[0]?.userId;
+      if (productManagerId) {
+        const consultantName = allocation.consultant.name || allocation.consultant.email || 'Consultant';
+        await createNotificationsForUsers(
+          [productManagerId],
+          NotificationType.PHASE_ALLOCATION_REJECTED,
+          'Phase Allocation Deletion Rejected',
+          `Your request to remove ${consultantName} from "${allocation.phase.name}" in ${allocation.phase.project.title} was rejected. Reason: ${rejectionReason || 'No reason provided'}`,
+          `/dashboard/projects/${allocation.phase.project.id}`,
+          {
+            projectId: allocation.phase.project.id,
+            phaseId: allocation.phase.id,
+            allocationId: allocation.id,
+            isDeletion: true
+          }
+        );
+      }
+
+      return NextResponse.json(updatedAllocation);
     } else {
       // Normal approval/rejection flow
       updatedAllocation = await prisma.phaseAllocation.update({

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Project, Phase, Sprint, ConsultantsOnProjects, PhaseAllocation } from '@prisma/client';
-import { FaUsers, FaCalendarAlt, FaClock, FaChartBar } from 'react-icons/fa';
+import { FaUsers, FaCalendarAlt, FaClock, FaChartBar, FaStar } from 'react-icons/fa';
 import { generateColorFromString } from '@/lib/colors';
 
 type ProjectWithDetails = Project & {
@@ -19,6 +19,7 @@ type ProjectWithDetails = Project & {
 
 interface ProjectCardProps {
   project: ProjectWithDetails;
+  currentUserId: string;
 }
 
 // Helper to format dates
@@ -35,7 +36,9 @@ function getProjectDurationInWeeks(start: Date, end: Date | null): string {
     return `${durationInWeeks} weeks`;
 }
 
-export default function ProjectCard({ project }: ProjectCardProps) {
+export default function ProjectCard({ project, currentUserId }: ProjectCardProps) {
+  // Check if current user is the Product Manager
+  const isProductManager = project.productManagerId === currentUserId;
   // Calculate total allocated hours (only approved allocations)
   const totalAllocated = project.phases.reduce((sum, phase) => {
     return sum + phase.allocations.reduce((phaseSum, allocation) => {
@@ -52,18 +55,28 @@ export default function ProjectCard({ project }: ProjectCardProps) {
     ? Math.round((totalAllocated / project.budgetedHours) * 100)
     : 0;
 
-  // Get utilization color
+  // Get utilization color - reflects resource efficiency
+  // Low allocation = under-utilized (blue/orange), High allocation = efficient (green), Over = bad (red)
   const getUtilizationColor = (percent: number) => {
-    if (percent >= 100) return 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30';
-    if (percent >= 80) return 'text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30';
-    if (percent >= 60) return 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30';
-    return 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30';
+    if (percent > 100) return 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30';
+    if (percent >= 90) return 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30';
+    if (percent >= 70) return 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30';
+    if (percent >= 40) return 'text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30';
+    return 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30';
   };
 
   return (
     <Link href={`/dashboard/projects/${project.id}`}>
       <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 flex flex-col h-full cursor-pointer">
-        <h3 className="text-xl font-bold text-foreground truncate mb-2">{project.title}</h3>
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <h3 className="text-xl font-bold text-foreground truncate flex-1">{project.title}</h3>
+          {isProductManager && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-semibold rounded-full border border-purple-200 dark:border-purple-700 whitespace-nowrap" title="You are the Product Manager">
+              <FaStar className="w-3 h-3" />
+              PM
+            </span>
+          )}
+        </div>
 
         {/* Budget Progress Bar */}
         <div className="mb-4">
@@ -75,11 +88,12 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             </div>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                 <div
-                  className={`h-2.5 rounded-full ${
-                    utilization >= 100 ? 'bg-red-500' :
-                    utilization >= 80 ? 'bg-orange-500' :
-                    utilization >= 60 ? 'bg-yellow-500' :
-                    'bg-green-500'
+                  className={`h-2.5 rounded-full transition-all ${
+                    utilization > 100 ? 'bg-red-500' :
+                    utilization >= 90 ? 'bg-green-500' :
+                    utilization >= 70 ? 'bg-yellow-500' :
+                    utilization >= 40 ? 'bg-orange-500' :
+                    'bg-blue-500'
                   }`}
                   style={{ width: `${Math.min(utilization, 100)}%` }}
                 />

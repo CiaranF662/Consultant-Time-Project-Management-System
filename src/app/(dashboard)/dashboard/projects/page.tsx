@@ -76,6 +76,7 @@ export default async function ProjectsPage() {
     <ProjectsPageClient
       projects={projects}
       isGrowthTeam={isGrowthTeam}
+      currentUserId={session.user.id}
     />
   );
 }

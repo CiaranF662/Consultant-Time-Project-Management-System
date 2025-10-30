@@ -1,0 +1,2 @@
+-- Add DELETION_PENDING to ApprovalStatus enum
+ALTER TYPE "ApprovalStatus" ADD VALUE IF NOT EXISTS 'DELETION_PENDING';

@@ -7,16 +7,17 @@ import {
   formatHours,
   formatDate
 } from '@/lib/dates';
-import { FaSave, FaChevronDown, FaChevronRight, FaCheckCircle, FaTimes, FaCheck, FaClock, FaEye, FaEyeSlash, FaExternalLinkAlt } from 'react-icons/fa';
+import { FaSave, FaChevronDown, FaChevronRight, FaCheckCircle, FaTimes, FaCheck, FaClock, FaEye, FaEyeSlash, FaExternalLinkAlt, FaEdit } from 'react-icons/fa';
 import Link from 'next/link';
 import InstructionsPanel from './InstructionsPanel';
 import WeeklyAllocationCard from './WeeklyAllocationCard';
 import ProjectPlanningCard from './ProjectPlanningCard';
+import CreateHourRequestModal from '../requests/CreateHourRequestModal';
 
 interface PhaseAllocation {
   id: string;
   totalHours: number;
-  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
+  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELETION_PENDING' | 'EXPIRED' | 'FORFEITED';
   consultantDescription?: string | null; // Added for phase description
   phase: {
     id: string;
@@ -49,7 +50,7 @@ interface PhaseAllocation {
   childAllocations?: Array<{
     id: string;
     totalHours: number;
-    approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+    approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELETION_PENDING';
     createdAt: Date;
   }>;
 }
@@ -63,11 +64,12 @@ interface WeeklyPlannerEnhancedProps {
   onDataChanged?: () => void; // Callback to refresh parent data
 }
 
-export default function WeeklyPlannerEnhanced({ phaseAllocations, includeCompleted = false, initialPhaseAllocationId, initialWeek, onDataChanged }: WeeklyPlannerEnhancedProps) {
+export default function WeeklyPlannerEnhanced({ consultantId, phaseAllocations, includeCompleted = false, initialPhaseAllocationId, initialWeek, onDataChanged }: WeeklyPlannerEnhancedProps) {
   const [allocations, setAllocations] = useState<Map<string, number>>(new Map());
   const [unsavedChanges, setUnsavedChanges] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Map<string, string>>(new Map());
+  const [warnings, setWarnings] = useState<Map<string, string>>(new Map());
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
   const [collapsedPhases, setCollapsedPhases] = useState<Set<string>>(new Set());
@@ -88,6 +90,8 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
     plannedHours: number;
     remainingHours: number;
   } | null>(null);
+  const [showHourRequestModal, setShowHourRequestModal] = useState(false);
+  const [selectedPhaseForRequest, setSelectedPhaseForRequest] = useState<string | null>(null);
 
   useEffect(() => {
     // Initialize allocations from existing data (preserving all existing planning)
@@ -155,35 +159,43 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
   const handleHourChange = (phaseAllocationId: string, weekNumber: number, year: number, value: string) => {
     const key = `${phaseAllocationId}-${weekNumber}-${year}`;
     const hours = parseFloat(value) || 0;
-    
+
+    // Save the value regardless of whether it exceeds the total
+    setAllocations(prev => new Map(prev.set(key, hours)));
+    setUnsavedChanges(prev => new Set(prev).add(key));
+
     // Get the phase allocation to check total hours limit
     const phaseAlloc = phaseAllocations.find(p => p.id === phaseAllocationId);
     if (phaseAlloc) {
       // Calculate what the new total would be
       const newAllocations = new Map(allocations);
       newAllocations.set(key, hours);
-      
+
       let newTotalDistributed = 0;
       newAllocations.forEach((h, k) => {
         if (k.startsWith(`${phaseAllocationId}-`)) {
           newTotalDistributed += h;
         }
       });
-      
-      // Check if this would exceed the allocated total
+
+      // Check if this would exceed the allocated total - show warning but allow it
       if (newTotalDistributed > phaseAlloc.totalHours) {
         const excess = newTotalDistributed - phaseAlloc.totalHours;
-        setErrors(prev => new Map(prev.set(key, 
-          `This would exceed your allocated ${formatHours(phaseAlloc.totalHours)} by ${formatHours(excess)}. Create an Hour Change Request if you need more hours.`
+        setWarnings(prev => new Map(prev.set(key,
+          `This exceeds your allocated ${formatHours(phaseAlloc.totalHours)} by ${formatHours(excess)}. You must create an Hour Change Request before submitting this plan.`
         )));
-        // Don't save the invalid value
-        return;
+      } else {
+        // Clear warning if it exists
+        if (warnings.has(key)) {
+          setWarnings(prev => {
+            const newWarnings = new Map(prev);
+            newWarnings.delete(key);
+            return newWarnings;
+          });
+        }
       }
     }
-    
-    setAllocations(prev => new Map(prev.set(key, hours)));
-    setUnsavedChanges(prev => new Set(prev).add(key));
-    
+
     // Clear any existing error
     if (errors.has(key)) {
       setErrors(prev => {
@@ -263,11 +275,45 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
     return true;
   };
 
+  const validateOverAllocation = (phaseAllocationId: string): boolean => {
+    const phaseAlloc = phaseAllocations.find(p => p.id === phaseAllocationId);
+    if (!phaseAlloc) return true;
+
+    const weeks = getWeeksBetween(
+      new Date(phaseAlloc.phase.startDate),
+      new Date(phaseAlloc.phase.endDate)
+    );
+
+    let plannedHours = 0;
+    weeks.forEach((week) => {
+      const key = `${phaseAllocationId}-${week.weekNumber}-${week.year}`;
+      plannedHours += allocations.get(key) || 0;
+    });
+
+    const excess = plannedHours - phaseAlloc.totalHours;
+
+    if (excess > 0) {
+      setNotification({
+        show: true,
+        type: 'error',
+        message: `Cannot submit: You have distributed ${formatHours(plannedHours)}, which exceeds your allocated ${formatHours(phaseAlloc.totalHours)} by ${formatHours(excess)}. Please create an Hour Change Request to increase your allocation before submitting.`
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const savePhaseAllocations = async (phaseAllocationId: string, skipValidation = false) => {
     // For first-time planning, check if description is required and missing
     const phaseAllocation = phaseAllocations.find(p => p.id === phaseAllocationId);
     if (phaseAllocation && requiresDescription(phaseAllocation) && !checkDescriptionRequirement(phaseAllocation)) {
       return; // Modal will be shown, don't continue with save
+    }
+
+    // Check for over-allocation (this cannot be skipped - consultant must request more hours)
+    if (!validateOverAllocation(phaseAllocationId)) {
+      return; // Error notification will be shown, don't continue with save
     }
 
     // Validate planned hours unless skipping validation (when user chooses "Proceed Anyway")
@@ -1118,6 +1164,8 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                             ? 'bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 border-b border-gray-400 dark:border-gray-500 cursor-not-allowed'
                             : phaseAlloc.approvalStatus === 'PENDING'
                             ? 'bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/30 dark:to-yellow-900/30 border-b border-orange-200 dark:border-orange-700 hover:from-orange-100 hover:to-yellow-100 dark:hover:from-orange-900/40 dark:hover:to-yellow-900/40 cursor-pointer'
+                            : phaseAlloc.approvalStatus === 'DELETION_PENDING'
+                            ? 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/30 dark:to-rose-900/30 border-b-2 border-red-400 dark:border-red-600 hover:from-red-100 hover:to-rose-100 dark:hover:from-red-900/40 dark:hover:to-rose-900/40 cursor-pointer'
                             : phaseAlloc.approvalStatus === 'APPROVED'
                             ? 'bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 border-b border-emerald-200 dark:border-emerald-700 hover:from-emerald-100 hover:to-green-100 dark:hover:from-emerald-900/40 dark:hover:to-green-900/40 cursor-pointer'
                             : 'bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800 dark:to-slate-800 border-b border-gray-200 dark:border-gray-700 hover:from-gray-100 hover:to-slate-100 dark:hover:from-gray-700 dark:hover:to-slate-700 cursor-pointer'
@@ -1134,6 +1182,20 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                                    transparent 8px,
                                    rgba(249, 115, 22, 0.3) 8px,
                                    rgba(249, 115, 22, 0.3) 16px
+                                 )`
+                               }}>
+                          </div>
+                        )}
+                        {/* Deletion pending diagonal stripes */}
+                        {phaseAlloc.approvalStatus === 'DELETION_PENDING' && (
+                          <div className="absolute inset-0 pointer-events-none opacity-25"
+                               style={{
+                                 backgroundImage: `repeating-linear-gradient(
+                                   45deg,
+                                   transparent,
+                                   transparent 8px,
+                                   rgba(239, 68, 68, 0.4) 8px,
+                                   rgba(239, 68, 68, 0.4) 16px
                                  )`
                                }}>
                           </div>
@@ -1274,6 +1336,12 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                                   <span className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-100 to-rose-100 dark:from-red-900/40 dark:to-rose-900/40 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-200 rounded-full text-xs font-semibold shadow-sm">
                                     <FaTimes className="w-3 h-3" />
                                     Allocation Rejected
+                                  </span>
+                                )}
+                                {phaseAlloc.approvalStatus === 'DELETION_PENDING' && (
+                                  <span className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-100 to-rose-100 dark:from-red-900/40 dark:to-rose-900/40 border-2 border-red-400 dark:border-red-600 text-red-800 dark:text-red-200 rounded-full text-xs font-semibold shadow-sm">
+                                    <FaTimes className="w-3 h-3" />
+                                    Pending Deletion
                                   </span>
                                 )}
                                 {phaseAlloc.approvalStatus === 'APPROVED' && (
@@ -1452,6 +1520,21 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                                      formatHours(status.remaining)}
                                   </span>
                                 </div>
+
+                                {/* Request Change Button */}
+                                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedPhaseForRequest(phaseAlloc.id);
+                                      setShowHourRequestModal(true);
+                                    }}
+                                    className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                                  >
+                                    <FaEdit className="w-3 h-3" />
+                                    Request Hour Change
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1612,6 +1695,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                                           const currentHours = allocations.get(key) || 0;
                                           const hasUnsavedChanges = unsavedChanges.has(key);
                                           const error = errors.get(key);
+                                          const warning = warnings.get(key);
 
                                           // Find the corresponding weekly allocation to check status
                                           const weeklyAllocation = phaseAlloc.weeklyAllocations.find(
@@ -1639,6 +1723,7 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                                               currentHours={currentHours}
                                               hasUnsavedChanges={hasUnsavedChanges}
                                               error={error}
+                                              warning={warning}
                                               weeklyAllocation={weeklyAllocation}
                                               localStatus={localStatus}
                                               otherPhases={otherPhases}
@@ -1736,6 +1821,34 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
                                   </div>
                                 )}
 
+                                {phaseAlloc.approvalStatus === 'DELETION_PENDING' && (
+                                  <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-400 dark:border-red-600 rounded-lg p-6">
+                                    <div className="flex items-center justify-center mb-4">
+                                      <div className="w-12 h-12 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center">
+                                        <FaTimes className="w-6 h-6 text-red-600 dark:text-red-400" />
+                                      </div>
+                                    </div>
+                                    <h3 className="text-lg font-bold text-red-900 dark:text-red-100 mb-2">
+                                      Allocation Pending Deletion
+                                    </h3>
+                                    <p className="text-red-700 dark:text-red-300 text-sm mb-4">
+                                      Your Product Manager has requested to remove you from this phase. This allocation and all weekly planning are pending Growth Team approval for deletion.
+                                    </p>
+                                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg p-4 mb-4">
+                                      <p className="text-amber-900 dark:text-amber-100 text-sm font-medium mb-2">
+                                        What happens next?
+                                      </p>
+                                      <ul className="text-amber-800 dark:text-amber-200 text-sm space-y-1 list-disc list-inside">
+                                        <li>If approved: This allocation and all weekly plans will be permanently deleted</li>
+                                        <li>If rejected: Your allocation will return to approved status and you can continue planning</li>
+                                      </ul>
+                                    </div>
+                                    <p className="text-red-600 dark:text-red-400 text-sm italic">
+                                      Hour planning is disabled while deletion is pending.
+                                    </p>
+                                  </div>
+                                )}
+
                                 {/* Show existing planned hours (read-only) */}
                                 {phaseAlloc.weeklyAllocations.length > 0 && (
                                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4">
@@ -1779,6 +1892,30 @@ export default function WeeklyPlannerEnhanced({ phaseAllocations, includeComplet
         </div>
 
         <InstructionsPanel />
+
+        {/* Hour Change Request Modal */}
+        {showHourRequestModal && selectedPhaseForRequest && (
+          <CreateHourRequestModal
+            phaseAllocations={phaseAllocations}
+            userId={consultantId}
+            onClose={() => {
+              setShowHourRequestModal(false);
+              setSelectedPhaseForRequest(null);
+            }}
+            onRequestCreated={() => {
+              setShowHourRequestModal(false);
+              setSelectedPhaseForRequest(null);
+              // Refresh the page to show updated data
+              if (onDataChanged) {
+                onDataChanged();
+              } else {
+                window.location.reload();
+              }
+            }}
+            preFilledProjectId={phaseAllocations.find(pa => pa.id === selectedPhaseForRequest)?.phase.project.id}
+            preFilledPhaseAllocationId={selectedPhaseForRequest}
+          />
+        )}
         </div>
     </div>
   );

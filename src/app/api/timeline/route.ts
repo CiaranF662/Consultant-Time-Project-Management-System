@@ -42,13 +42,35 @@ function getSprintInfoForWeek(weekStart: Date, sprints: any[]): { sprint: any; w
 export async function GET(request: Request) {
   const auth = await requireGrowthTeam();
   if (isAuthError(auth)) return auth;
-  const { session, user } = auth;
 
   const { searchParams } = new URL(request.url);
-  const weeksToShow = parseInt(searchParams.get('weeks') || '12');
-  const startDate = searchParams.get('startDate') 
-    ? new Date(searchParams.get('startDate')!)
-    : startOfWeek(new Date(), { weekStartsOn: 1 });
+
+  // Helper to create UTC date from date string (avoids timezone interpretation issues)
+  const createUTCDate = (dateString: string | null): Date => {
+    if (!dateString) return new Date();
+    const date = new Date(dateString);
+    return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  };
+
+  // Parse start date and align to Monday (week start) in UTC
+  const rawStartDate = searchParams.get('startDate')
+    ? createUTCDate(searchParams.get('startDate')!)
+    : createUTCDate(new Date().toISOString());
+  const startDate = startOfWeek(rawStartDate, { weekStartsOn: 1 });
+
+  // Calculate weeks to show based on endDate if provided, otherwise use weeks parameter
+  let weeksToShow: number;
+  if (searchParams.get('endDate')) {
+    const rawEndDate = createUTCDate(searchParams.get('endDate')!);
+    const endDate = endOfWeek(rawEndDate, { weekStartsOn: 1 });
+
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Calculate weeks to fully cover the date range
+    weeksToShow = Math.max(1, Math.ceil(diffDays / 7));
+  } else {
+    weeksToShow = parseInt(searchParams.get('weeks') || '12');
+  }
 
   try {
     // Get all consultants with their PM status
@@ -65,14 +87,19 @@ export async function GET(request: Request) {
       }
     });
 
-    // Generate week ranges with explicit typing
+    // Generate week ranges with explicit typing (all in UTC to avoid timezone issues)
     const weeks: WeekInfo[] = [];
     for (let i = 0; i < weeksToShow; i++) {
       const weekStart = addWeeks(startDate, i);
       const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+
+      // Ensure dates are normalized to UTC midnight
+      const weekStartUTC = new Date(Date.UTC(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate()));
+      const weekEndUTC = new Date(Date.UTC(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate()));
+
       weeks.push({
-        weekStart,
-        weekEnd,
+        weekStart: weekStartUTC,
+        weekEnd: weekEndUTC,
         weekNumber: format(weekStart, 'w'),
         year: format(weekStart, 'yyyy'),
         label: format(weekStart, 'MMM d')
@@ -122,12 +149,13 @@ export async function GET(request: Request) {
       const weeklyData = weeks.map((week) => {
         const weekAllocations = consultantAllocations.filter(a => {
           const allocWeekStart = new Date(a.weekStartDate);
-          // More precise week matching to avoid date comparison issues
-          const weekStartTime = week.weekStart.getTime();
-          const weekEndTime = week.weekEnd.getTime();
-          const allocTime = allocWeekStart.getTime();
-          
-          return allocTime >= weekStartTime && allocTime <= weekEndTime;
+
+          // Normalize database date to UTC midnight for consistent comparison
+          const allocStartUTC = Date.UTC(allocWeekStart.getFullYear(), allocWeekStart.getMonth(), allocWeekStart.getDate());
+          const weekStartUTC = week.weekStart.getTime();
+          const weekEndUTC = week.weekEnd.getTime();
+
+          return allocStartUTC >= weekStartUTC && allocStartUTC <= weekEndUTC;
         });
 
         const totalHours = weekAllocations.reduce((sum, a) => sum + (a.approvedHours || 0), 0);

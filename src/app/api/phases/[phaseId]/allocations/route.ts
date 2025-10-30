@@ -802,14 +802,48 @@ export async function PUT(
       // Find consultant IDs to delete (were in existing but not in new)
       const consultantsToDelete = Array.from(existingConsultantIds).filter(id => !newConsultantIds.has(id));
 
-      // Delete only the allocations for consultants that were removed
+      // Handle deletions with approval workflow
       if (consultantsToDelete.length > 0) {
-        await tx.phaseAllocation.deleteMany({
-          where: {
-            phaseId,
-            consultantId: { in: consultantsToDelete }
+        for (const consultantId of consultantsToDelete) {
+          const allocationToDelete = existingAllocations.find(a => a.consultantId === consultantId);
+          if (!allocationToDelete) continue;
+
+          // Count weekly allocations for this allocation
+          const weeklyCount = allocationToDelete.weeklyAllocations?.length || 0;
+
+          // If allocation is APPROVED, require Growth Team approval for deletion
+          if (allocationToDelete.approvalStatus === 'APPROVED') {
+            // Set to DELETION_PENDING instead of deleting
+            await tx.phaseAllocation.update({
+              where: { id: allocationToDelete.id },
+              data: {
+                approvalStatus: 'DELETION_PENDING'
+              }
+            });
+          } else if (allocationToDelete.approvalStatus === 'PENDING') {
+            // PENDING allocations can be deleted directly
+            // But check if weekly allocations exist (shouldn't for PENDING, but be safe)
+            if (weeklyCount > 0) {
+              // If weekly allocations exist, also require approval
+              await tx.phaseAllocation.update({
+                where: { id: allocationToDelete.id },
+                data: {
+                  approvalStatus: 'DELETION_PENDING'
+                }
+              });
+            } else {
+              // No weekly allocations, safe to delete directly
+              await tx.phaseAllocation.delete({
+                where: { id: allocationToDelete.id }
+              });
+            }
+          } else {
+            // REJECTED, DELETION_PENDING, EXPIRED, FORFEITED - delete directly
+            await tx.phaseAllocation.delete({
+              where: { id: allocationToDelete.id }
+            });
           }
-        });
+        }
       }
 
       // Process each allocation: update existing or create new
@@ -845,6 +879,70 @@ export async function PUT(
         }
       }
     });
+
+    // Send notifications for deletion requests
+    try {
+      const deletionPendingAllocations = await prisma.phaseAllocation.findMany({
+        where: {
+          phaseId,
+          approvalStatus: 'DELETION_PENDING'
+        },
+        include: {
+          consultant: {
+            select: { id: true, name: true, email: true }
+          },
+          phase: {
+            include: {
+              project: {
+                include: {
+                  consultants: {
+                    where: { role: ProjectRole.PRODUCT_MANAGER },
+                    include: { user: true }
+                  }
+                }
+              }
+            }
+          },
+          weeklyAllocations: {
+            where: {
+              planningStatus: 'APPROVED'
+            }
+          }
+        }
+      });
+
+      if (deletionPendingAllocations.length > 0) {
+        const growthTeamIds = await getGrowthTeamMemberIds();
+
+        for (const allocation of deletionPendingAllocations) {
+          const consultantName = allocation.consultant?.name || allocation.consultant?.email || 'Consultant';
+          const pmName = allocation.phase?.project?.consultants?.[0]?.user?.name || 'Product Manager';
+          const phaseName = allocation.phase?.name || 'Phase';
+          const projectTitle = allocation.phase?.project?.title || 'Project';
+          const plannedHours = allocation.weeklyAllocations?.reduce((sum, weekly) => {
+            return sum + (weekly.approvedHours || weekly.proposedHours || 0);
+          }, 0) || 0;
+
+          if (growthTeamIds.length > 0) {
+            await createNotificationsForUsers(
+              growthTeamIds,
+              NotificationType.PHASE_ALLOCATION_PENDING,
+              'Phase Allocation Deletion Requires Approval',
+              `${pmName} requests to remove ${consultantName} from "${phaseName}" in ${projectTitle}. This allocation has ${allocation.totalHours}h allocated${plannedHours > 0 ? ` with ${plannedHours}h already planned` : ''}.`,
+              `/dashboard/hour-approvals`,
+              {
+                projectId: allocation.phase?.project?.id,
+                phaseId: allocation.phase?.id,
+                allocationId: allocation.id,
+                isDeletion: true
+              }
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to send deletion notifications:', error);
+    }
 
     // Fetch updated phase with allocations and send emails for new allocations
     const updatedPhase = await prisma.phase.findUnique({

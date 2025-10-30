@@ -329,7 +329,25 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
   };
 
   const updateConsultantHours = (consultantId: string, hours: number) => {
-    setConsultantHours(prev => ({ ...prev, [consultantId]: hours }));
+    // Real-time validation: Ensure hours are non-negative
+    if (hours < 0) {
+      hours = 0;
+    }
+
+    // Get consultant's limits
+    const consultant = consultants.find(c => c.id === consultantId);
+    if (consultant) {
+      const projectAllocated = consultant.allocatedHours || 0;
+      const currentAllocatedToPhases = allocatedToPhases[consultantId] || 0;
+      const availableHours = projectAllocated - currentAllocatedToPhases;
+      const maxAllowed = Math.min(availableHours, phaseLimits.maxHoursPerConsultant);
+
+      // Cap hours at maximum allowed (but don't prevent typing - just warn)
+      // This allows users to see the validation without blocking input
+      setConsultantHours(prev => ({ ...prev, [consultantId]: hours }));
+    } else {
+      setConsultantHours(prev => ({ ...prev, [consultantId]: hours }));
+    }
   };
 
   const getFilteredConsultants = () => {
@@ -727,6 +745,42 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
               {/* Selected Team Members with Professional Hour Allocation */}
               {selectedConsultantIds.length > 0 && (
                 <div className="mb-4">
+                  {/* Project Budget Summary - NEW: Provides context for total hours available */}
+                  <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-800/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                    <div className="flex items-center gap-2 mb-3">
+                      <FaCalculator className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">Project Budget Overview</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
+                        <div className="text-xs text-muted-foreground mb-1">Total Project Budget</div>
+                        <div className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                          {consultants.reduce((sum, c) => sum + (selectedConsultantIds.includes(c.id) ? (c.allocatedHours || 0) : 0), 0)}h
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">across selected consultants</div>
+                      </div>
+                      <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-orange-200 dark:border-orange-700">
+                        <div className="text-xs text-muted-foreground mb-1">Already Allocated</div>
+                        <div className="text-xl font-bold text-orange-600 dark:text-orange-400">
+                          {selectedConsultantIds.reduce((sum, id) => sum + (allocatedToPhases[id] || 0), 0)}h
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">to other phases</div>
+                      </div>
+                      <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-green-200 dark:border-green-700">
+                        <div className="text-xs text-muted-foreground mb-1">Available for Phase</div>
+                        <div className="text-xl font-bold text-green-600 dark:text-green-400">
+                          {selectedConsultantIds.reduce((sum, id) => {
+                            const consultant = consultants.find(c => c.id === id);
+                            const projectAllocated = consultant?.allocatedHours || 0;
+                            const currentAllocatedToPhases = allocatedToPhases[id] || 0;
+                            return sum + (projectAllocated - currentAllocatedToPhases);
+                          }, 0)}h
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">remaining to allocate</div>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="bg-white dark:bg-gray-900 rounded-lg border border-orange-100 dark:border-orange-800 p-4">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-6 h-6 bg-orange-600 text-white rounded-lg flex items-center justify-center">
@@ -781,18 +835,18 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                                   {/* Project allocation summary */}
                                   <div className="grid grid-cols-2 gap-4 text-xs">
                                     <div>
-                                      <span className="text-muted-foreground">Project:</span>
-                                      <span className="font-semibold text-blue-600 dark:text-blue-400 ml-1">{projectAllocated}h</span>
+                                      <span className="text-muted-foreground">Project Budget:</span>
+                                      <span className="font-semibold text-blue-600 dark:text-blue-400 ml-1">{projectAllocated}h total</span>
                                     </div>
                                     <div>
                                       <span className="text-muted-foreground">Available:</span>
                                       <span className={`font-semibold ml-1 ${availableHours > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                        {availableHours}h
+                                        {availableHours}h remaining
                                       </span>
                                     </div>
                                     <div>
                                       <span className="text-muted-foreground">Phase Maximum:</span>
-                                      <span className="font-semibold text-yellow-600 dark:text-yellow-400 ml-1">{phaseLimits.maxHoursPerConsultant}h</span>
+                                      <span className="font-semibold text-yellow-600 dark:text-yellow-400 ml-1">{phaseLimits.maxHoursPerConsultant}h capacity</span>
                                     </div>
                                   </div>
 
@@ -828,8 +882,9 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                                           ? 'border-purple-200 focus:border-purple-500 focus:ring-purple-500'
                                           : 'border-blue-200 focus:border-blue-500 focus:ring-blue-500'
                                       }`}
-                                      placeholder="0"
+                                      placeholder="Enter hours"
                                       disabled={isLoading}
+                                      required
                                     />
                                     <span className={`text-sm font-medium ${
                                       consultant?.role === 'PRODUCT_MANAGER' ? 'text-purple-700' : 'text-blue-700'
@@ -926,10 +981,11 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
                               <div className="flex gap-3 flex-shrink-0">
                                 {/* Project Availability */}
                                 <div className="text-right">
-                                  <div className="text-xs text-muted-foreground whitespace-nowrap">Project</div>
+                                  <div className="text-xs text-muted-foreground whitespace-nowrap">Available</div>
                                   <div className={`text-sm font-semibold ${availableHours > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                     {availableHours}h
                                   </div>
+                                  <div className="text-xs text-muted-foreground">from project</div>
                                 </div>
                                 {/* Phase Availability - Only show if sprints are selected */}
                                 {selectedSprintIds.length > 0 && (
@@ -1028,29 +1084,37 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-6 py-3 text-sm font-medium text-card-foreground bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200"
-                disabled={isLoading}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isLoading || !summary?.isConsecutive || selectedSprintIds.length === 0}
-                className="inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 border border-transparent rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-              >
-                {isLoading && (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                )}
-                <FaSave className="mr-2" />
-                Create Phase
-              </button>
-            </div>
           </form>
+        </div>
+
+        {/* Modal Footer - Fixed at bottom */}
+        <div className="bg-gray-50 dark:bg-gray-900 px-6 py-4 flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700">
+          <button
+            type="button"
+            onClick={onClose}
+            className="py-2 px-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-card-foreground hover:bg-gray-100 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-200"
+            disabled={isLoading}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              const form = modalContentRef.current?.querySelector('form');
+              if (form) {
+                form.requestSubmit();
+              }
+            }}
+            disabled={isLoading || !summary?.isConsecutive || selectedSprintIds.length === 0}
+            className="inline-flex items-center gap-2 py-2 px-6 border-2 border-transparent rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+          >
+            {isLoading && (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            )}
+            <FaSave />
+            Create Phase
+          </button>
         </div>
       </div>
     </div>

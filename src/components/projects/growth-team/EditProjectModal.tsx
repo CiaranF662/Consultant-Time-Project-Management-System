@@ -361,9 +361,22 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
       // Validation for consultant allocations
       if (consultantAllocations) {
         const allTeamMemberIds = [selectedProductManagerId, ...selectedConsultantIds].filter(Boolean);
+
+        // Check for missing allocations
         const consultantsWithoutAllocations = allTeamMemberIds.filter((id: string) => !consultantAllocations[id] || consultantAllocations[id] <= 0);
         if (consultantsWithoutAllocations.length > 0) {
           throw new Error('All selected team members must have allocated hours greater than 0');
+        }
+
+        // Check for allocations below minimum (phase commitments)
+        for (const id of allTeamMemberIds) {
+          const constraints = getConsultantConstraints(id);
+          const currentHours = consultantAllocations[id] || 0;
+          if (currentHours < constraints.minimumHours) {
+            const consultant = allConsultants.find(c => c.id === id);
+            const name = consultant?.name || consultant?.email || 'Consultant';
+            throw new Error(`${name}: Cannot set project hours below ${constraints.minimumHours}h (already allocated in phases)`);
+          }
         }
       }
 
@@ -467,13 +480,17 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
 
 
   const updateConsultantAllocation = (consultantId: string, hours: number) => {
+    // Always allow the update, but validate and show error if needed
     const validation = validateHourReduction(consultantId, hours);
+
+    // Set error state for display, but don't block the update
     if (!validation.valid) {
       setError(validation.message);
-      return;
+    } else {
+      setError(null);
     }
-    
-    setError(null);
+
+    // Always update the allocation - user can type any value
     setConsultantAllocations(prev => ({
       ...prev,
       [consultantId]: hours
@@ -1037,20 +1054,38 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                         </div>
                         <div className="flex flex-col items-end gap-2 flex-shrink-0">
                           <div className="flex items-center gap-3">
-                            <input
-                              type="number"
-                              min="0"
-                              value={consultantAllocations[selectedProductManagerId] || ''}
-                              onChange={(e) => updateConsultantAllocation(selectedProductManagerId, parseInt(e.target.value) || 0)}
-                              className={`w-20 px-2 py-1 rounded-lg border-2 ${
-                                consultantAvailability[selectedProductManagerId] &&
-                                (consultantAllocations[selectedProductManagerId] || 0) > Math.round(consultantAvailability[selectedProductManagerId].totalAvailable || 0)
-                                  ? 'border-red-500 dark:border-red-500'
-                                  : 'border-gray-200 dark:border-gray-600'
-                              } dark:bg-gray-900 text-foreground text-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50`}
-                              placeholder="0"
-                            />
-                            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">hours</span>
+                            {(() => {
+                              const constraints = getConsultantConstraints(selectedProductManagerId);
+                              const currentHours = consultantAllocations[selectedProductManagerId] || 0;
+                              const hasValidationError = currentHours < constraints.minimumHours;
+                              const exceedsAvailability = consultantAvailability[selectedProductManagerId] &&
+                                currentHours > Math.round(consultantAvailability[selectedProductManagerId].totalAvailable || 0);
+
+                              return (
+                                <>
+                                  <input
+                                    type="number"
+                                    min={constraints.minimumHours}
+                                    value={currentHours || ''}
+                                    onChange={(e) => updateConsultantAllocation(selectedProductManagerId, parseInt(e.target.value) || 0)}
+                                    className={`w-20 px-2 py-1 rounded-lg border-2 ${
+                                      hasValidationError
+                                        ? 'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20'
+                                        : exceedsAvailability
+                                        ? 'border-yellow-500 dark:border-yellow-500'
+                                        : 'border-gray-200 dark:border-gray-600'
+                                    } dark:bg-gray-900 text-foreground text-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50`}
+                                    placeholder={constraints.minimumHours > 0 ? String(constraints.minimumHours) : "0"}
+                                  />
+                                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">hours</span>
+                                  {constraints.minimumHours > 0 && (
+                                    <span className="text-xs text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap">
+                                      (min: {constraints.minimumHours}h)
+                                    </span>
+                                  )}
+                                </>
+                              );
+                            })()}
                             {(() => {
                               const constraints = getConsultantConstraints(selectedProductManagerId);
                               return constraints.canRemove ? (
@@ -1075,15 +1110,37 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                               );
                             })()}
                           </div>
-                          {consultantAvailability[selectedProductManagerId] &&
-                           (consultantAllocations[selectedProductManagerId] || 0) > Math.round(consultantAvailability[selectedProductManagerId].totalAvailable || 0) && (
-                            <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
-                              <FaExclamationTriangle className="w-3 h-3" />
-                              <span>
-                                Exceeds availability by {(consultantAllocations[selectedProductManagerId] || 0) - Math.round(consultantAvailability[selectedProductManagerId].totalAvailable || 0)}h
-                              </span>
-                            </div>
-                          )}
+                          {(() => {
+                            const constraints = getConsultantConstraints(selectedProductManagerId);
+                            const currentHours = consultantAllocations[selectedProductManagerId] || 0;
+                            const hasValidationError = currentHours < constraints.minimumHours;
+                            const exceedsAvailability = consultantAvailability[selectedProductManagerId] &&
+                              currentHours > Math.round(consultantAvailability[selectedProductManagerId].totalAvailable || 0);
+
+                            if (hasValidationError) {
+                              return (
+                                <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
+                                  <FaExclamationTriangle className="w-3 h-3" />
+                                  <span>
+                                    Cannot reduce below {constraints.minimumHours}h (already allocated in phases)
+                                  </span>
+                                </div>
+                              );
+                            }
+
+                            if (exceedsAvailability) {
+                              return (
+                                <div className="flex items-center gap-1 text-xs text-yellow-600 dark:text-yellow-400 whitespace-nowrap">
+                                  <FaExclamationTriangle className="w-3 h-3" />
+                                  <span>
+                                    Exceeds availability by {currentHours - Math.round(consultantAvailability[selectedProductManagerId].totalAvailable || 0)}h
+                                  </span>
+                                </div>
+                              );
+                            }
+
+                            return null;
+                          })()}
                         </div>
                       </div>
                     </div>
@@ -1103,16 +1160,8 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                               {consultant.name?.charAt(0) || consultant.email?.charAt(0) || 'U'}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-foreground flex items-center gap-2">
+                              <p className="font-semibold text-foreground">
                                 {consultant.name}
-                                {(() => {
-                                  const constraints = getConsultantConstraints(consultantId);
-                                  return constraints.minimumHours > 0 ? (
-                                    <span className="bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200 text-xs px-2 py-0.5 rounded-full font-medium" title={`${constraints.minimumHours}h committed across phases`}>
-                                      {constraints.minimumHours}h committed
-                                    </span>
-                                  ) : null;
-                                })()}
                               </p>
                               <div className="flex items-center gap-2 mt-1 flex-wrap">
                                 <p className="text-sm text-muted-foreground">{consultant.email}</p>
@@ -1128,20 +1177,38 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                           </div>
                           <div className="flex flex-col items-end gap-2 flex-shrink-0">
                             <div className="flex items-center gap-3">
-                              <input
-                                type="number"
-                                min="0"
-                                value={consultantAllocations[consultantId] || ''}
-                                onChange={(e) => updateConsultantAllocation(consultantId, parseInt(e.target.value) || 0)}
-                                className={`w-20 px-2 py-1 rounded-lg border-2 ${
-                                  availability &&
-                                  (consultantAllocations[consultantId] || 0) > Math.round(availability.totalAvailable || 0)
-                                    ? 'border-red-500 dark:border-red-500'
-                                    : 'border-gray-200 dark:border-gray-600'
-                                } dark:bg-gray-900 text-foreground text-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50`}
-                                placeholder="0"
-                              />
-                              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">hours</span>
+                              {(() => {
+                                const constraints = getConsultantConstraints(consultantId);
+                                const currentHours = consultantAllocations[consultantId] || 0;
+                                const hasValidationError = currentHours < constraints.minimumHours;
+                                const exceedsAvailability = availability &&
+                                  currentHours > Math.round(availability.totalAvailable || 0);
+
+                                return (
+                                  <>
+                                    <input
+                                      type="number"
+                                      min={constraints.minimumHours}
+                                      value={currentHours || ''}
+                                      onChange={(e) => updateConsultantAllocation(consultantId, parseInt(e.target.value) || 0)}
+                                      className={`w-20 px-2 py-1 rounded-lg border-2 ${
+                                        hasValidationError
+                                          ? 'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20'
+                                          : exceedsAvailability
+                                          ? 'border-yellow-500 dark:border-yellow-500'
+                                          : 'border-gray-200 dark:border-gray-600'
+                                      } dark:bg-gray-900 text-foreground text-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-opacity-50`}
+                                      placeholder={constraints.minimumHours > 0 ? String(constraints.minimumHours) : "0"}
+                                    />
+                                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">hours</span>
+                                    {constraints.minimumHours > 0 && (
+                                      <span className="text-xs text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap">
+                                        (min: {constraints.minimumHours}h)
+                                      </span>
+                                    )}
+                                  </>
+                                );
+                              })()}
                               {(() => {
                                 const constraints = getConsultantConstraints(consultantId);
                                 return constraints.canRemove ? (
@@ -1160,15 +1227,37 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
                                 );
                               })()}
                             </div>
-                            {availability &&
-                             (consultantAllocations[consultantId] || 0) > Math.round(availability.totalAvailable || 0) && (
-                              <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
-                                <FaExclamationTriangle className="w-3 h-3" />
-                                <span>
-                                  Exceeds availability by {(consultantAllocations[consultantId] || 0) - Math.round(availability.totalAvailable || 0)}h
-                                </span>
-                              </div>
-                            )}
+                            {(() => {
+                              const constraints = getConsultantConstraints(consultantId);
+                              const currentHours = consultantAllocations[consultantId] || 0;
+                              const hasValidationError = currentHours < constraints.minimumHours;
+                              const exceedsAvailability = availability &&
+                                currentHours > Math.round(availability.totalAvailable || 0);
+
+                              if (hasValidationError) {
+                                return (
+                                  <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
+                                    <FaExclamationTriangle className="w-3 h-3" />
+                                    <span>
+                                      Cannot reduce below {constraints.minimumHours}h (already allocated in phases)
+                                    </span>
+                                  </div>
+                                );
+                              }
+
+                              if (exceedsAvailability) {
+                                return (
+                                  <div className="flex items-center gap-1 text-xs text-yellow-600 dark:text-yellow-400 whitespace-nowrap">
+                                    <FaExclamationTriangle className="w-3 h-3" />
+                                    <span>
+                                      Exceeds availability by {currentHours - Math.round(availability.totalAvailable || 0)}h
+                                    </span>
+                                  </div>
+                                );
+                              }
+
+                              return null;
+                            })()}
                           </div>
                         </div>
                       </div>
@@ -1196,10 +1285,13 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
               />
             </div>
           )}
+
+          {/* Bottom spacing before footer */}
+          <div className="h-6"></div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex-shrink-0">
           <button
             type="button"
             onClick={handleDelete}

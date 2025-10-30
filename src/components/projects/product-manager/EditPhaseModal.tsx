@@ -24,6 +24,7 @@ interface EditPhaseModalProps {
 
 export default function EditPhaseModal({ phase, projectSprints, existingPhases = [], onClose, onDelete }: EditPhaseModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
   const [name, setName] = useState(phase.name);
   const [description, setDescription] = useState(phase.description || '');
   const [selectedSprintIds, setSelectedSprintIds] = useState<string[]>(phase.sprints?.map(s => s.id) || []);
@@ -100,6 +101,13 @@ export default function EditPhaseModal({ phase, projectSprints, existingPhases =
 
     return true;
   };
+
+  // Scroll to error when error changes
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [error]);
 
   const handleSprintSelection = (sprintId: string, checked: boolean) => {
     let newSelection: string[];
@@ -224,7 +232,7 @@ export default function EditPhaseModal({ phase, projectSprints, existingPhases =
         <div className="flex-1 overflow-y-auto">
           <form onSubmit={handleSubmit} className="space-y-6 p-6">
             {error && (
-              <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+              <div ref={errorRef} className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
                 <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
                   <FaExclamationTriangle className="w-4 h-4" />
                   <span className="text-sm font-medium">{error}</span>

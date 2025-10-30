@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { FaTimes, FaPlus, FaTrash, FaSave, FaUsers, FaClock, FaInfoCircle, FaUser, FaHourglassHalf, FaSearch, FaTimesCircle } from 'react-icons/fa';
+import { FaTimes, FaPlus, FaTrash, FaSave, FaUsers, FaClock, FaInfoCircle, FaUser, FaHourglassHalf, FaSearch, FaTimesCircle, FaExclamationTriangle } from 'react-icons/fa';
 import { generateColorFromString } from '@/lib/colors';
 import { sortConsultantIds, calculateAvailabilityStatus, type ConsultantAvailabilityStatus } from '@/lib/consultant-sorting';
 import ConsultantScheduleView from './ConsultantScheduleView';
@@ -34,7 +34,8 @@ interface PhaseAllocationFormProps {
     consultantId: string;
     consultantName: string;
     hours: number;
-    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
+    plannedHours?: number; // Add this to track already planned hours
+    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED' | 'DELETION_PENDING';
     rejectionReason?: string | null;
   }[];
 }
@@ -65,6 +66,18 @@ export default function PhaseAllocationForm({
   const [warnings, setWarnings] = useState<Record<string, string>>({});
   const [consultantAvailability, setConsultantAvailability] = useState<Record<string, number>>({});
   const [consultantAvailabilityStatus, setConsultantAvailabilityStatus] = useState<Record<string, ConsultantAvailabilityStatus>>({});
+  const [consultantPlannedHours, setConsultantPlannedHours] = useState<Record<string, number>>({});
+  const [deletionConfirmModal, setDeletionConfirmModal] = useState<{
+    isOpen: boolean;
+    consultantId: string | null;
+    consultantName: string;
+    plannedHours: number;
+  }>({
+    isOpen: false,
+    consultantId: null,
+    consultantName: '',
+    plannedHours: 0
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -158,13 +171,16 @@ export default function PhaseAllocationForm({
       // Load existing allocations into the new format
       const consultantIds = existingAllocations.map(ea => ea.consultantId);
       const hours: Record<string, number> = {};
+      const planned: Record<string, number> = {};
 
       existingAllocations.forEach(ea => {
         hours[ea.consultantId] = ea.hours;
+        planned[ea.consultantId] = ea.plannedHours || 0;
       });
 
       setSelectedConsultantIds(consultantIds);
       setConsultantHours(hours);
+      setConsultantPlannedHours(planned);
     }
   };
 
@@ -211,11 +227,36 @@ export default function PhaseAllocationForm({
   };
 
   const removeConsultant = (consultantId: string) => {
+    const plannedHours = consultantPlannedHours[consultantId] || 0;
+    const consultant = consultants.find(c => c.id === consultantId);
+    const consultantName = consultant?.name || consultant?.email || 'Consultant';
+
+    // If there are planned hours, show confirmation modal
+    if (plannedHours > 0) {
+      setDeletionConfirmModal({
+        isOpen: true,
+        consultantId,
+        consultantName,
+        plannedHours
+      });
+    } else {
+      // No planned hours, remove immediately
+      confirmRemoveConsultant(consultantId);
+    }
+  };
+
+  const confirmRemoveConsultant = (consultantId: string) => {
     setSelectedConsultantIds(prev => prev.filter(id => id !== consultantId));
     setConsultantHours(prev => {
       const newHours = { ...prev };
       delete newHours[consultantId];
       return newHours;
+    });
+    setDeletionConfirmModal({
+      isOpen: false,
+      consultantId: null,
+      consultantName: '',
+      plannedHours: 0
     });
   };
 
@@ -303,6 +344,19 @@ export default function PhaseAllocationForm({
     if (hasNegativeHours) {
       setError('Hours cannot be negative.');
       return false;
+    }
+
+    // Check for hours below planned hours
+    for (const consultantId of selectedConsultantIds) {
+      const currentHours = consultantHours[consultantId] || 0;
+      const plannedHours = consultantPlannedHours[consultantId] || 0;
+
+      if (currentHours < plannedHours) {
+        const consultant = consultants.find(c => c.id === consultantId);
+        const name = consultant?.name || consultant?.email || 'Consultant';
+        setError(`${name}: Cannot reduce phase allocation below ${plannedHours}h (already planned in weekly allocations). Please adjust or remove weekly plans first.`);
+        return false;
+      }
     }
 
     // Check for over-allocation
@@ -533,7 +587,7 @@ export default function PhaseAllocationForm({
                                   <p className="text-sm text-muted-foreground mb-2">{consultant?.email}</p>
 
                                   {/* Project allocation summary */}
-                                  <div className="flex items-center gap-4">
+                                  <div className="flex items-center gap-4 flex-wrap">
                                     <div className="text-xs">
                                       <span className="text-muted-foreground">Project:</span>
                                       <span className="font-semibold text-blue-600 dark:text-blue-400 ml-1">{projectAllocated}h</span>
@@ -548,40 +602,77 @@ export default function PhaseAllocationForm({
                                         {availableHours}h
                                       </span>
                                     </div>
+                                    {consultantPlannedHours[consultantId] > 0 && (
+                                      <div className="flex items-center gap-1 px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-200 rounded-full text-xs font-medium">
+                                        <FaClock className="w-2.5 h-2.5" />
+                                        <span>{consultantPlannedHours[consultantId]}h planned</span>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               </div>
 
                               <div className="flex items-center gap-3">
-                                <div className="text-right">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      step="0.5"
-                                      max={availableHours}
-                                      value={consultantHours[consultantId] ? consultantHours[consultantId] : ''}
-                                      onChange={(e) => updateConsultantHours(consultantId, parseFloat(e.target.value) || 0)}
-                                      className={`w-20 px-3 py-2 text-sm border-2 rounded-lg focus:ring-2 focus:ring-opacity-50 text-center transition-all duration-200 bg-white dark:bg-gray-900 text-foreground ${
-                                        isOverAllocated
-                                          ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500 bg-red-50 dark:bg-red-900/30'
-                                          : consultant?.role === 'PRODUCT_MANAGER'
-                                          ? 'border-purple-200 dark:border-purple-700 focus:border-purple-500 focus:ring-purple-500'
-                                          : 'border-blue-200 dark:border-blue-700 focus:border-blue-500 focus:ring-blue-500'
-                                      }`}
-                                      placeholder="0"
-                                      disabled={isSaving}
-                                    />
-                                    <span className={`text-sm font-medium ${
-                                      consultant?.role === 'PRODUCT_MANAGER' ? 'text-purple-700 dark:text-purple-300' : 'text-blue-700 dark:text-blue-300'
-                                    }`}>hours</span>
+                                <div className="relative">
+                                  <div className="flex items-center gap-2">
+                                    {(() => {
+                                      const currentHours = consultantHours[consultantId] || 0;
+                                      const plannedHours = consultantPlannedHours[consultantId] || 0;
+                                      const isBelowPlanned = currentHours < plannedHours;
+
+                                      return (
+                                        <>
+                                          <input
+                                            type="number"
+                                            min={plannedHours}
+                                            step="0.5"
+                                            max={availableHours}
+                                            value={currentHours || ''}
+                                            onChange={(e) => updateConsultantHours(consultantId, parseFloat(e.target.value) || 0)}
+                                            className={`w-20 px-3 py-2 text-sm border-2 rounded-lg focus:ring-2 focus:ring-opacity-50 text-center transition-all duration-200 bg-white dark:bg-gray-900 text-foreground ${
+                                              isBelowPlanned
+                                                ? 'border-amber-300 dark:border-amber-700 focus:border-amber-500 focus:ring-amber-500 bg-amber-50 dark:bg-amber-900/30'
+                                                : isOverAllocated
+                                                ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500 bg-red-50 dark:bg-red-900/30'
+                                                : consultant?.role === 'PRODUCT_MANAGER'
+                                                ? 'border-purple-200 dark:border-purple-700 focus:border-purple-500 focus:ring-purple-500'
+                                                : 'border-blue-200 dark:border-blue-700 focus:border-blue-500 focus:ring-blue-500'
+                                            }`}
+                                            placeholder={plannedHours > 0 ? String(plannedHours) : "0"}
+                                            disabled={isSaving}
+                                          />
+                                          <span className={`text-sm font-medium ${
+                                            consultant?.role === 'PRODUCT_MANAGER' ? 'text-purple-700 dark:text-purple-300' : 'text-blue-700 dark:text-blue-300'
+                                          }`}>hours</span>
+                                        </>
+                                      );
+                                    })()}
                                   </div>
 
-                                  {isOverAllocated && (
-                                    <div className="text-xs text-red-600 dark:text-red-400">
-                                      ⚠️ Over by {phaseHours - availableHours}h
-                                    </div>
-                                  )}
+                                  {(() => {
+                                    const currentHours = consultantHours[consultantId] || 0;
+                                    const plannedHours = consultantPlannedHours[consultantId] || 0;
+                                    const isBelowPlanned = currentHours < plannedHours;
+
+                                    if (isBelowPlanned) {
+                                      return (
+                                        <div className="absolute top-full left-0 mt-1 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1 whitespace-nowrap">
+                                          <FaExclamationTriangle className="w-3 h-3" />
+                                          Cannot reduce below {plannedHours}h
+                                        </div>
+                                      );
+                                    }
+
+                                    if (isOverAllocated) {
+                                      return (
+                                        <div className="absolute top-full left-0 mt-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
+                                          ⚠️ Over by {phaseHours - availableHours}h
+                                        </div>
+                                      );
+                                    }
+
+                                    return null;
+                                  })()}
                                 </div>
 
                                 <button
@@ -748,6 +839,65 @@ export default function PhaseAllocationForm({
           </button>
         </div>
       </div>
+
+      {/* Deletion Confirmation Modal */}
+      {deletionConfirmModal.isOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full p-6 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="flex-shrink-0 w-12 h-12 bg-red-100 dark:bg-red-900/50 rounded-full flex items-center justify-center">
+                <FaExclamationTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                  Confirm Deletion
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  This action will delete planned hours
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-6">
+              <p className="text-sm text-gray-900 dark:text-gray-100 mb-3">
+                You are about to remove <span className="font-semibold text-amber-900 dark:text-amber-100">{deletionConfirmModal.consultantName}</span> from this phase.
+              </p>
+              <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+                <FaClock className="w-4 h-4" />
+                <span className="text-sm font-medium">
+                  {deletionConfirmModal.plannedHours}h of weekly planning will be deleted
+                </span>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              This allocation and all associated weekly plans will be sent for Growth Team approval before final deletion.
+            </p>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeletionConfirmModal({ isOpen: false, consultantId: null, consultantName: '', plannedHours: 0 })}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (deletionConfirmModal.consultantId) {
+                    confirmRemoveConsultant(deletionConfirmModal.consultantId);
+                  }
+                }}
+                className="px-4 py-2 text-sm font-semibold text-white bg-red-600 dark:bg-red-700 border border-transparent rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors flex items-center gap-2"
+              >
+                <FaTimes className="w-4 h-4" />
+                Remove Consultant
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

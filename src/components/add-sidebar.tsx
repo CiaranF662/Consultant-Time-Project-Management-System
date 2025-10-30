@@ -328,7 +328,7 @@ export default function Sidebar({ children }: SidebarProps) {
       `}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border bg-sidebar/50 backdrop-blur-sm">
+          <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border bg-sidebar/50 backdrop-blur-sm overflow-visible">
             {isCollapsed ? (
               <div className="flex flex-col items-center gap-2 w-full">
                 {/* Collapsed Logo Icon */}

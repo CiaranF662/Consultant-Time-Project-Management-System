@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { FaCheckCircle, FaExclamationTriangle, FaClock, FaChartPie, FaPlay, FaEdit, FaHourglassHalf, FaTimesCircle, FaExternalLinkAlt, FaChevronDown, FaChevronUp, FaLock, FaExchangeAlt } from 'react-icons/fa';
-import { getPhaseStatus, getStatusColorClasses, getProgressBarColor, formatHours } from '@/lib/phase-status';
+import { getPhaseStatus, getStatusColorClasses, formatHours } from '@/lib/phase-status';
 import { generateColorFromString } from '@/lib/colors';
 import { formatDate } from '@/lib/dates';
 import { isPhaseLocked } from '@/lib/phase-lock';
@@ -12,7 +12,7 @@ interface PhaseAllocation {
   id: string;
   consultantId: string;
   totalHours: number;
-  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELETION_PENDING' | 'EXPIRED' | 'FORFEITED';
   rejectionReason?: string | null;
   weeklyAllocations?: Array<{
     id: string;
@@ -30,7 +30,7 @@ interface IndividualAllocation {
   consultantName: string;
   hours: number;
   plannedHours: number;
-  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'FORFEITED';
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELETION_PENDING' | 'EXPIRED' | 'FORFEITED';
   rejectionReason?: string | null;
   unplannedExpiredHours?: {
     id: string;
@@ -142,13 +142,15 @@ export default function PhaseStatusCard({
   // Check pending and rejected allocations
   const pendingAllocations = phase.allocations?.filter(allocation => allocation.approvalStatus === 'PENDING') || [];
   const rejectedAllocations = phase.allocations?.filter(allocation => allocation.approvalStatus === 'REJECTED') || [];
+  const deletionPendingAllocations = phase.allocations?.filter(allocation => allocation.approvalStatus === 'DELETION_PENDING') || [];
   const expiredAllocations = phase.allocations?.filter(allocation => allocation.approvalStatus === 'EXPIRED') || [];
   const forfeitedAllocations = phase.allocations?.filter(allocation => allocation.approvalStatus === 'FORFEITED') || [];
   const hasPendingApprovals = pendingAllocations.length > 0;
   const hasRejectedAllocations = rejectedAllocations.length > 0;
+  const hasDeletionPending = deletionPendingAllocations.length > 0;
   const hasExpiredAllocations = expiredAllocations.length > 0;
   const hasForfeitedAllocations = forfeitedAllocations.length > 0;
-  const needsAttention = hasPendingApprovals || hasRejectedAllocations || hasExpiredAllocations;
+  const needsAttention = hasPendingApprovals || hasRejectedAllocations || hasDeletionPending || hasExpiredAllocations;
 
   const getStatusIcon = (status: string, size = 'w-5 h-5') => {
     switch (status) {
@@ -247,6 +249,14 @@ export default function PhaseStatusCard({
                       <FaTimesCircle className="w-3 h-3 text-red-600 dark:text-red-400" />
                       <span className="text-xs font-medium text-red-700 dark:text-red-300">
                         {rejectedAllocations.length} rejected
+                      </span>
+                    </div>
+                  )}
+                  {hasDeletionPending && (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-full">
+                      <FaTimesCircle className="w-3 h-3 text-red-600 dark:text-red-400" />
+                      <span className="text-xs font-medium text-red-700 dark:text-red-300">
+                        {deletionPendingAllocations.length} pending deletion
                       </span>
                     </div>
                   )}
@@ -374,10 +384,15 @@ export default function PhaseStatusCard({
               </span>
             </div>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div 
-                className={`h-2 rounded-full transition-all ${getProgressBarColor(phaseStatus.status, phaseStatus.details.overall.isOnTrack)}`}
-                style={{ 
-                  width: `${Math.min(phaseStatus.details.work.workCompletionPercentage, 100)}%` 
+              <div
+                className={`h-2 rounded-full transition-all ${
+                  phaseStatus.details.work.workCompletionPercentage >= 100 ? 'bg-green-500' :
+                  phaseStatus.details.work.workCompletionPercentage >= 75 ? 'bg-blue-500' :
+                  phaseStatus.details.work.workCompletionPercentage >= 50 ? 'bg-yellow-500' :
+                  phaseStatus.details.work.workCompletionPercentage > 0 ? 'bg-orange-500' : 'bg-gray-400'
+                }`}
+                style={{
+                  width: `${Math.min(phaseStatus.details.work.workCompletionPercentage, 100)}%`
                 }}
               />
             </div>
@@ -424,13 +439,14 @@ export default function PhaseStatusCard({
                   className={`relative overflow-hidden rounded-lg ${
                     allocation.approvalStatus === 'PENDING' ? 'bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700' :
                     allocation.approvalStatus === 'REJECTED' ? 'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700' :
+                    allocation.approvalStatus === 'DELETION_PENDING' ? 'bg-red-50 dark:bg-red-900/30 border-2 border-red-400 dark:border-red-600' :
                     isExpired ? 'bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600' :
                     isForfeited ? 'bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600' :
                     'bg-gray-50 dark:bg-gray-700/50 border border-transparent dark:border-gray-600'
                   } ${isClickable ? 'cursor-pointer hover:ring-2 hover:ring-blue-500 dark:hover:ring-blue-400 transition-all' : ''}`}
                   onClick={isClickable ? () => onExpiredAllocationClick!(allocation) : undefined}
                 >
-                  {/* Diagonal stripes for pending/rejected/expired allocations */}
+                  {/* Diagonal stripes for pending/rejected/deletion pending allocations */}
                   {allocation.approvalStatus === 'PENDING' && (
                     <div className="absolute inset-0 pointer-events-none opacity-20"
                          style={{
@@ -453,6 +469,19 @@ export default function PhaseStatusCard({
                              transparent 8px,
                              rgba(239, 68, 68, 0.3) 8px,
                              rgba(239, 68, 68, 0.3) 16px
+                           )`
+                         }}>
+                    </div>
+                  )}
+                  {allocation.approvalStatus === 'DELETION_PENDING' && (
+                    <div className="absolute inset-0 pointer-events-none opacity-25"
+                         style={{
+                           backgroundImage: `repeating-linear-gradient(
+                             45deg,
+                             transparent,
+                             transparent 8px,
+                             rgba(239, 68, 68, 0.4) 8px,
+                             rgba(239, 68, 68, 0.4) 16px
                            )`
                          }}>
                     </div>
@@ -489,10 +518,16 @@ export default function PhaseStatusCard({
                         Rejected
                       </span>
                     )}
+                    {allocation.approvalStatus === 'DELETION_PENDING' && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-red-200 dark:bg-red-900/50 text-red-800 dark:text-red-300 rounded-full text-xs font-medium border border-red-400 dark:border-red-600">
+                        <FaTimesCircle className="w-2 h-2" />
+                        Pending Deletion
+                      </span>
+                    )}
                     {(hasUnplannedExpired || (allocation.approvalStatus === 'EXPIRED' && allocation.plannedHours < allocation.hours)) && !hasUnplannedForfeited && !hasUnplannedReallocated && (
                       <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-300 rounded-full text-xs font-medium">
                         <FaExclamationTriangle className="w-2 h-2" />
-                        Expired - Click to Handle
+                        {isClickable ? 'Expired - Click to Handle' : 'Expired'}
                       </span>
                     )}
                     {hasUnplannedForfeited && !hasUnplannedExpired && (
