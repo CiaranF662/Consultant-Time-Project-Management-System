@@ -42,20 +42,26 @@ function getSprintInfoForWeek(weekStart: Date, sprints: any[]): { sprint: any; w
 export async function GET(request: Request) {
   const auth = await requireGrowthTeam();
   if (isAuthError(auth)) return auth;
-  const { session, user } = auth;
 
   const { searchParams } = new URL(request.url);
 
-  // Parse start date and align to Monday (week start)
+  // Helper to create UTC date from date string (avoids timezone interpretation issues)
+  const createUTCDate = (dateString: string | null): Date => {
+    if (!dateString) return new Date();
+    const date = new Date(dateString);
+    return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  };
+
+  // Parse start date and align to Monday (week start) in UTC
   const rawStartDate = searchParams.get('startDate')
-    ? new Date(searchParams.get('startDate')!)
-    : new Date();
+    ? createUTCDate(searchParams.get('startDate')!)
+    : createUTCDate(new Date().toISOString());
   const startDate = startOfWeek(rawStartDate, { weekStartsOn: 1 });
 
   // Calculate weeks to show based on endDate if provided, otherwise use weeks parameter
   let weeksToShow: number;
   if (searchParams.get('endDate')) {
-    const rawEndDate = new Date(searchParams.get('endDate')!);
+    const rawEndDate = createUTCDate(searchParams.get('endDate')!);
     const endDate = endOfWeek(rawEndDate, { weekStartsOn: 1 });
 
     const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
@@ -81,14 +87,19 @@ export async function GET(request: Request) {
       }
     });
 
-    // Generate week ranges with explicit typing
+    // Generate week ranges with explicit typing (all in UTC to avoid timezone issues)
     const weeks: WeekInfo[] = [];
     for (let i = 0; i < weeksToShow; i++) {
       const weekStart = addWeeks(startDate, i);
       const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+
+      // Ensure dates are normalized to UTC midnight
+      const weekStartUTC = new Date(Date.UTC(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate()));
+      const weekEndUTC = new Date(Date.UTC(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate()));
+
       weeks.push({
-        weekStart,
-        weekEnd,
+        weekStart: weekStartUTC,
+        weekEnd: weekEndUTC,
         weekNumber: format(weekStart, 'w'),
         year: format(weekStart, 'yyyy'),
         label: format(weekStart, 'MMM d')
@@ -139,14 +150,10 @@ export async function GET(request: Request) {
         const weekAllocations = consultantAllocations.filter(a => {
           const allocWeekStart = new Date(a.weekStartDate);
 
-          // Normalize all dates to UTC midnight for consistent comparison across timezones
-          const normalizeToUTC = (date: Date) => {
-            return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
-          };
-
-          const weekStartUTC = normalizeToUTC(week.weekStart);
-          const weekEndUTC = normalizeToUTC(week.weekEnd);
-          const allocStartUTC = normalizeToUTC(allocWeekStart);
+          // Normalize database date to UTC midnight for consistent comparison
+          const allocStartUTC = Date.UTC(allocWeekStart.getFullYear(), allocWeekStart.getMonth(), allocWeekStart.getDate());
+          const weekStartUTC = week.weekStart.getTime();
+          const weekEndUTC = week.weekEnd.getTime();
 
           return allocStartUTC >= weekStartUTC && allocStartUTC <= weekEndUTC;
         });
