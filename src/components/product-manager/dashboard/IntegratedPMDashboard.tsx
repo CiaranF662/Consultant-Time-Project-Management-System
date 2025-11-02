@@ -33,7 +33,6 @@ export default function IntegratedPMDashboard({ userId, userName }: IntegratedPM
         setConsultantData(data);
       }
     } catch (error) {
-      console.error('Error fetching consultant data:', error);
     } finally {
       setLoadingConsultantData(false);
     }

@@ -85,7 +85,6 @@ export async function PATCH(
             data: { totalHours: request.requestedHours },
           });
         }
-        // Note: SHIFT type changes would require more complex logic to transfer hours between consultants
       }
 
       return request;

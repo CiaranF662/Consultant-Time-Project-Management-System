@@ -7,8 +7,6 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const role = searchParams.get('role');
   const status = searchParams.get('status');
-
-  // --- THIS IS THE FIX: Build a dynamic 'where' clause ---
   const whereClause: { role?: UserRole; status?: UserStatus } = {};
 
   if (role && Object.values(UserRole).includes(role as UserRole)) {

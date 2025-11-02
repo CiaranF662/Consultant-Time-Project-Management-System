@@ -93,10 +93,6 @@ function log(level: LogLevel, message: string, context?: LogContext, error?: Err
       console.log(formattedLog);
   }
 
-  // In production, you might also want to:
-  // - Send to external service (e.g., Sentry, LogRocket, Datadog)
-  // - Store in database for audit trail
-  // - Send alerts for critical errors
 }
 
 /**

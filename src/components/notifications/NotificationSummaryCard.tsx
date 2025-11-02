@@ -26,11 +26,8 @@ export default function NotificationSummaryCard({ className = '' }: Notification
       const response = await axios.get('/api/notifications?limit=1&unreadOnly=true');
       setUnreadCount(response.data.unreadCount || 0);
     } catch (error) {
-      console.error('Error fetching notification summary:', error);
       // Log more details for debugging
       if (axios.isAxiosError(error)) {
-        console.error('Response data:', error.response?.data);
-        console.error('Response status:', error.response?.status);
       }
       // Set safe defaults on error
       setUnreadCount(0);

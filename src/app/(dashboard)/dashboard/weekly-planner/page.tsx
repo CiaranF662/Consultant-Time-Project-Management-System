@@ -30,8 +30,8 @@ async function getPhaseAllocationsForPlanner(userId: string, includeCompleted: b
       // Include child reallocations (pending hours being added to this allocation)
       childAllocations: {
         where: {
-          consultantId: userId, // Only child allocations for the same consultant
-          approvalStatus: 'PENDING' // Only pending child reallocations
+          consultantId: userId, 
+          approvalStatus: 'PENDING' 
         },
         select: {
           id: true,

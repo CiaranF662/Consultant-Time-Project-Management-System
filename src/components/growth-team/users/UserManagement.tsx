@@ -48,7 +48,6 @@ export default function UserManagement({ initialData }: UserManagementProps) {
       setUsers(allUsersRes.data);
       setPendingUsers(pendingUsersRes.data);
     } catch (error) {
-      console.error('Failed to fetch users:', error);
     } finally {
       setLoading(false);
     }

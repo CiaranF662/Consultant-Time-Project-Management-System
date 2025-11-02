@@ -49,7 +49,7 @@ export async function PATCH(
           // Create in-app notification for the approved user
           await createNotification({
             userId: updatedUser.id,
-            type: 'USER_APPROVAL_NEEDED', // We can reuse this type for approval notifications
+            type: 'USER_APPROVAL_NEEDED', 
             title: 'Growth Team Access Approved',
             message: 'Your Growth Team access has been approved! You now have full access to Growth Team features and will receive Growth Team notifications.',
             actionUrl: '/dashboard',

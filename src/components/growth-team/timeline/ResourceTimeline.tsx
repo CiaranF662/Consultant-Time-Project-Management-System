@@ -91,7 +91,6 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
   useEffect(() => {
     // Listen for custom events that indicate data has changed
     const handleDataUpdate = () => {
-      console.log('Timeline data update detected, refetching...');
       fetchTimelineData();
     };
 
@@ -156,7 +155,6 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
         };
       }));
     } catch (error) {
-      console.error('Failed to fetch timeline data:', error);
     } finally {
       setLoading(false);
     }
@@ -481,10 +479,7 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
 
       // Write and download with cellStyles option enabled
       XLSX.writeFile(workbook, filename, { cellStyles: true });
-
-      console.log('Excel file exported successfully');
     } catch (error) {
-      console.error('Failed to export to Excel:', error);
       alert('Failed to export data. Please try again.');
     }
   };

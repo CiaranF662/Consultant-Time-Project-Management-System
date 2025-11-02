@@ -173,7 +173,6 @@ export default function EditPhaseModal({ phase, projectSprints, existingPhases =
 
       onClose();
     } catch (error: any) {
-      console.error('Error updating phase:', error);
       setError(error.response?.data?.error || 'Failed to update phase');
     } finally {
       setIsLoading(false);
@@ -193,7 +192,6 @@ export default function EditPhaseModal({ phase, projectSprints, existingPhases =
       await axios.delete(`/api/phases/${phase.id}`);
       onDelete();
     } catch (error: any) {
-      console.error('Error deleting phase:', error);
       setError(error.response?.data?.error || 'Failed to delete phase');
       setIsLoading(false);
     }

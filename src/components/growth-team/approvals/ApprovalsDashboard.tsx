@@ -189,14 +189,11 @@ export default function ApprovalsDashboard({
           const response = await fetch('/api/approvals/weekly-allocations');
           if (response.ok) {
             const data = await response.json();
-            console.log('Weekly allocations data:', data);
             setWeeklyAllocations(data);
           } else {
-            console.error('Failed to fetch weekly allocations:', response.status, response.statusText);
           }
         }
       } catch (error) {
-        console.error('Error fetching approvals:', error);
       }
       setLoading(false);
     };
@@ -237,7 +234,6 @@ export default function ApprovalsDashboard({
         showNotification('error', error.error || 'Failed to process approval');
       }
     } catch (error) {
-      console.error('Error processing phase approval:', error);
       showNotification('error', 'Failed to process approval');
     }
 
@@ -278,7 +274,6 @@ export default function ApprovalsDashboard({
         throw new Error(error.error || 'Failed to process approval');
       }
     } catch (error) {
-      console.error('Error processing weekly approval:', error);
       showNotification('error', 'Failed to process approval');
       throw error; // Re-throw so modal knows it failed
     } finally {
@@ -333,7 +328,6 @@ export default function ApprovalsDashboard({
         showNotification('error', error.error || 'Failed to process batch approval');
       }
     } catch (error) {
-      console.error('Error processing batch approval:', error);
       showNotification('error', 'Failed to process batch approval');
     } finally {
       setProcessingIds(prev => {
@@ -370,7 +364,6 @@ export default function ApprovalsDashboard({
         showNotification('error', error.error || 'Failed to process hour change request');
       }
     } catch (error) {
-      console.error('Error processing hour change approval:', error);
       showNotification('error', 'Failed to process hour change request');
     }
 

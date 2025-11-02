@@ -138,7 +138,6 @@ export default function ProductManagerDashboard() {
       if (error instanceof Error && error.name === 'AbortError') {
         return; // Request was cancelled, ignore
       }
-      console.error('Error fetching notifications:', error);
     }
     setLoadingNotifications(false);
   };
@@ -149,12 +148,10 @@ export default function ProductManagerDashboard() {
       // Fetch projects managed by this PM
       const managedProjectsResponse = await fetch('/api/projects/managed');
       const managedProjects = managedProjectsResponse.ok ? await managedProjectsResponse.json() : [];
-      console.log('Managed projects response:', { ok: managedProjectsResponse.ok, status: managedProjectsResponse.status, projects: managedProjects });
 
       // Fetch ALL projects the PM is involved in (both managed and as consultant)
       const allProjectsResponse = await fetch('/api/projects');
       const allProjects = allProjectsResponse.ok ? await allProjectsResponse.json() : [];
-      console.log('All projects response:', { ok: allProjectsResponse.ok, status: allProjectsResponse.status, projects: allProjects });
 
       setProjects(managedProjects); // Keep managed projects for the main display
 
@@ -373,7 +370,7 @@ export default function ProductManagerDashboard() {
         });
       }
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      // Error fetching dashboard data
     }
     setLoading(false);
   };

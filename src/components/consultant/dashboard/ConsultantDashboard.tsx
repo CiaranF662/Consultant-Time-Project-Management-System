@@ -101,7 +101,6 @@ export default function ConsultantDashboard({ data, userId, userName }: Consulta
         if (error instanceof Error && error.name === 'AbortError') {
           return; // Request was cancelled, ignore
         }
-        console.error('Error fetching notifications:', error);
       }
       setLoadingNotifications(false);
     };

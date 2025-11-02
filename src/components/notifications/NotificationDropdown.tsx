@@ -113,7 +113,6 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
       setNotifications(response.data.notifications || []);
       setUnreadCount(response.data.unreadCount || 0);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
       // Set safe defaults on error
       setNotifications([]);
       setUnreadCount(0);
@@ -145,7 +144,6 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
       // Trigger localStorage event for cross-tab communication
       localStorage.setItem('notifications-updated', Date.now().toString());
     } catch (error) {
-      console.error('Error marking notification as read:', error);
       // Revert optimistic update on error
       const targetNotification = notifications.find(n => n.id === notificationId);
       if (targetNotification) {
@@ -176,7 +174,6 @@ export default function NotificationDropdown({ onClose, onNotificationUpdate }: 
       // Trigger localStorage event for cross-tab communication
       localStorage.setItem('notifications-updated', Date.now().toString());
     } catch (error) {
-      console.error('Error marking all as read:', error);
       // Revert optimistic update on error
       setNotifications(previousNotifications);
       setUnreadCount(previousUnreadCount);

@@ -97,7 +97,7 @@ async function getHourApprovalsData() {
         });
       }
 
-      // Debug: Log product manager data
+      
       console.log('Allocation:', allocation.id, 'PM:', allocation.phase?.project?.productManager);
 
       return {

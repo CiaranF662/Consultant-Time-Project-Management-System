@@ -121,14 +121,6 @@ export default function ReallocationFormModal({
 
     const finalReason = selectedReason === 'Other' ? customReason : selectedReason;
 
-    console.log('Full expiredAllocation object:', expiredAllocation);
-    console.log('Submitting reallocation:', {
-      selectedPhaseId,
-      finalReason,
-      consultantId: expiredAllocation.consultantId,
-      hours: expiredAllocation.unplannedHours
-    });
-
     try {
       // First, check if consultant already has an allocation in the target phase
       // Only look for PARENT allocations (not child reallocations)
@@ -144,11 +136,9 @@ export default function ReallocationFormModal({
       if (existingAllocation) {
         // Add to existing allocation
         totalHoursForNewAllocation = existingAllocation.totalHours + expiredAllocation.unplannedHours;
-        console.log(`Consultant already has ${existingAllocation.totalHours}h in target phase. Adding ${expiredAllocation.unplannedHours}h for total of ${totalHoursForNewAllocation}h`);
       } else {
         // No existing allocation, create new one
         totalHoursForNewAllocation = expiredAllocation.unplannedHours;
-        console.log(`Creating new allocation of ${totalHoursForNewAllocation}h`);
       }
 
       // POST endpoint expects flat object with reallocation metadata
@@ -160,14 +150,10 @@ export default function ReallocationFormModal({
         reallocatedFromUnplannedId: expiredAllocation.unplannedExpiredHoursId
       };
 
-      console.log('POST payload:', JSON.stringify(payload, null, 2));
-
       // 1. Create or update phase allocation with PENDING status
       // This will go through the existing phase allocation approval workflow
       // The API will implement hybrid logic based on whether existing allocation is APPROVED or PENDING
       const response = await axios.post(`/api/phases/${selectedPhaseId}/allocations`, payload);
-
-      console.log('Created new allocation:', response.data);
 
       // 2. Mark the UnplannedExpiredHours as REALLOCATED (if we have the ID)
       if (expiredAllocation.unplannedExpiredHoursId) {
@@ -180,15 +166,11 @@ export default function ReallocationFormModal({
             notes: finalReason
           }
         );
-        console.log('Marked unplanned hours as reallocated');
-      } else {
-        console.log('No UnplannedExpiredHours record to mark - skipping PATCH');
       }
 
       onSuccess();
       onClose();
     } catch (err: any) {
-      console.error('Error creating reallocation request:', err);
       setError(err.response?.data?.error || 'Failed to create reallocation request');
       setIsSubmitting(false);
     }

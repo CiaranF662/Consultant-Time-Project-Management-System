@@ -420,7 +420,6 @@ export default function WeeklyPlannerEnhanced({ consultantId, phaseAllocations, 
       showNotification('success', `✓ ${phaseName} allocations saved successfully!`);
       
     } catch (err: any) {
-      console.error('Failed to save phase allocations:', err);
       // Mark first failed key with error
       if (phaseKeys.length > 0) {
         setErrors(prev => new Map(prev.set(phaseKeys[0], 'Failed to save phase allocations')));

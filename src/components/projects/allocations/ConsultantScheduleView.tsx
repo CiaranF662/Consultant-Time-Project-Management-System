@@ -121,7 +121,6 @@ export default function ConsultantScheduleView({
         weekEnd: new Date(w.weekEnd)
       })));
     } catch (err) {
-      console.error('Error fetching consultant availability:', err);
       setError('Failed to load consultant availability');
     } finally {
       setIsLoading(false);

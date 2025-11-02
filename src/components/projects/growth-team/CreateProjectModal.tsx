@@ -110,8 +110,6 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
       return;
     }
 
-    console.log(`Fetching availability: startDate=${startDate}, duration=${durationInWeeks} weeks`);
-
     setLoadingAvailability(true);
     try {
         const start = new Date(startDate);
@@ -177,7 +175,6 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
 
         setConsultantAvailability(availabilityMap);
       } catch (err) {
-        console.error('Failed to fetch consultant availability:', err);
         setConsultantAvailability({});
       } finally {
         setLoadingAvailability(false);

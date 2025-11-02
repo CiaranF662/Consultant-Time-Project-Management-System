@@ -21,7 +21,7 @@ import { generateColorFromString } from '@/lib/colors';
 import { formatDate, formatLongDate } from '@/lib/dates';
 import { ComponentLoading } from '@/components/ui/LoadingSpinner';
 
-// Define comprehensive types
+
 interface PhaseAllocation {
   id: string;
   consultantId: string;
@@ -487,7 +487,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ projec
                       // Filter out allocations that have been reallocated with 0 planned hours
                       // These allocations no longer have any valid work in this phase
                       const visibleAllocations = phase.phaseAllocations.filter(allocation => {
-                        // If allocation has been reallocated AND has no planned hours, hide it
+                        // If allocation has been reallocated and has no planned hours, hide it
                         if (allocation.unplannedExpiredHours?.status === 'REALLOCATED' && allocation.plannedHours === 0) {
                           return false;
                         }

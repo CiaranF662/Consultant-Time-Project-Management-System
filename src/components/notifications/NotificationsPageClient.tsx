@@ -131,7 +131,6 @@ export default function NotificationsPageClient({
       setUnreadCount(data.unreadCount);
       setError('');
     } catch (err: any) {
-      console.error('Error fetching notifications:', err);
       setError('Failed to load notifications');
     } finally {
       setIsLoadingMore(false);
@@ -152,7 +151,6 @@ export default function NotificationsPageClient({
 
       setUnreadCount(prev => isRead ? prev - 1 : prev + 1);
     } catch (err) {
-      console.error('Error updating notification:', err);
     }
   };
 
@@ -168,7 +166,6 @@ export default function NotificationsPageClient({
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
       setSelectedNotifications(prev => prev.filter(id => id !== notificationId));
     } catch (err) {
-      console.error('Error deleting notification:', err);
     }
   };
 
@@ -191,7 +188,6 @@ export default function NotificationsPageClient({
       setSelectedNotifications([]);
       await fetchNotifications(true);
     } catch (err) {
-      console.error('Error performing bulk action:', err);
     } finally {
       setIsBulkActionLoading(false);
     }

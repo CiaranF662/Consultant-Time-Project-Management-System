@@ -14,7 +14,7 @@ export default function UserApprovalsPage() {
   const fetchPendingUsers = async () => {
     setIsLoading(true);
     try {
-      // --- THIS IS THE FIX: Added the query parameter to filter by status ---
+      
       const { data } = await axios.get('/api/users?status=PENDING');
       setPendingUsers(data);
     } catch (err) {
@@ -30,10 +30,9 @@ export default function UserApprovalsPage() {
 
   const handleApproval = async (userId: string, newStatus: UserStatus) => {
     try {
-      // Note: A 'REJECTED' status would require more logic (e.g., deleting the user)
-      // For now, we are only handling the approval action.
+      
       await axios.patch(`/api/admin/user-approvals/${userId}`, { status: newStatus });
-      fetchPendingUsers(); // Refresh the list
+      fetchPendingUsers(); 
     } catch (err) {
       alert(`Failed to update user status.`);
     }

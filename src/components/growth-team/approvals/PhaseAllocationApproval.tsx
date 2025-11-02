@@ -189,7 +189,6 @@ export default function PhaseAllocationApproval({
       setRejectionAllocationName('');
       setIsRejectionForDeletion(false);
     } catch (error) {
-      console.error('Failed to reject allocation:', error);
     } finally {
       setIsSubmittingRejection(false);
     }

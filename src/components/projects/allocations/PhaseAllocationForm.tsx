@@ -159,7 +159,6 @@ export default function PhaseAllocationForm({
 
       setAllocatedToPhases(allocatedToPhasesMap);
     } catch (error) {
-      console.error('Failed to fetch project consultants:', error);
       setError('Failed to load project team data.');
     } finally {
       setIsLoading(false);
@@ -207,7 +206,6 @@ export default function PhaseAllocationForm({
       setConsultantAvailability(availabilityMap);
       setConsultantAvailabilityStatus(statusMap);
     } catch (error) {
-      console.error('Failed to fetch consultant availability:', error);
       // Don't show error to user, just log it - availability is informational
     }
   };
@@ -393,7 +391,6 @@ export default function PhaseAllocationForm({
       onSaved();
       onClose();
     } catch (error: any) {
-      console.error('Failed to save phase allocations:', error);
       setError(error.response?.data?.error || 'Failed to save allocations. Please try again.');
     } finally {
       setIsSaving(false);

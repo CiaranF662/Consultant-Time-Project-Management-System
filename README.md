@@ -247,16 +247,38 @@ openssl rand -base64 32
 
 ### Step 5: Initialize the Database
 
+**Generate Prisma Client** (creates TypeScript types from schema):
 ```bash
-# Generate Prisma Client
 npx prisma generate
+```
 
-# Push schema to database (creates tables)
+**Push schema to database** (creates all tables, enums, and relationships):
+```bash
 npx prisma db push
+```
 
-# Seed database with initial data (optional)
+**Seed database with sample data** (creates demo users, projects, and allocations):
+```bash
 npx prisma db seed
 ```
+
+**Verify database setup**:
+```bash
+npx prisma studio
+```
+This opens a visual database browser at http://localhost:5555
+
+#### Database Commands Reference
+
+| Command | Purpose |
+|---------|---------|
+| `npx prisma generate` | Generate Prisma Client from schema |
+| `npx prisma db push` | Push schema changes to database |
+| `npx prisma db pull` | Pull schema from existing database |
+| `npx prisma db seed` | Run seed script to populate data |
+| `npx prisma studio` | Open visual database editor |
+| `npx prisma migrate dev` | Create and apply migrations (for production) |
+| `npx prisma migrate deploy` | Apply migrations in production |
 
 ### Step 6: Start Development Server
 
@@ -345,7 +367,7 @@ public/                           # Static assets
 
 - `.env` - Local development (gitignored)
 - `.env.example` - Template for required variables
-- `.env.production` - Production overrides (optional)
+
 
 ### npm Scripts
 
@@ -877,6 +899,29 @@ await sendEmail({
   html: emailTemplate
 });
 ```
+
+---
+
+## Database Export & Backup
+
+#### Option 1: Prisma Schema + Seed (Recommended)
+
+✅ **Already included in this repository:**
+- `prisma/schema.prisma` - Complete database structure
+- `prisma/seed.ts` - Sample data for testing
+
+**Lecturers can recreate the database by running:**
+```bash
+npm install
+npx prisma generate
+npx prisma db push
+npx prisma db seed
+```
+
+This creates a fully functional database with sample data!
+
+
+
 
 ---
 

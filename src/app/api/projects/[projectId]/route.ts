@@ -102,8 +102,6 @@ export async function GET(
       return new NextResponse(JSON.stringify({ error: 'Project not found or not authorized' }), { status: 404 });
     }
 
-    // Debug: Log consultant data to see what's being retrieved
-    console.log('Consultant data from database:', JSON.stringify(project.consultants, null, 2));
 
     // Transform the data to match frontend expectations
     const transformedProject = {

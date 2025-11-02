@@ -12,7 +12,6 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  // Add state to manage the selected role, defaulting to CONSULTANT
   const [role, setRole] = useState<UserRole>(UserRole.CONSULTANT);
   const [error, setError] = useState('');
   const [registrationSuccess, setRegistrationSuccess] = useState(false);

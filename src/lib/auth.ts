@@ -6,7 +6,6 @@ import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from "bcryptjs";
 import { prisma } from './prisma';
 
-// Remove the declare module blocks - they're now in next-auth.d.ts
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),

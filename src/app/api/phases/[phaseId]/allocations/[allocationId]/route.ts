@@ -107,8 +107,8 @@ export async function PATCH(
         prisma.phaseAllocation.update({
           where: { id: allocationId },
           data: {
-            totalHours: totalPlanned, // Reduce to only the planned hours
-            approvalStatus: 'APPROVED' // Set back to APPROVED (no longer EXPIRED)
+            totalHours: totalPlanned, 
+            approvalStatus: 'APPROVED' 
           }
         })
       ]);
@@ -207,8 +207,8 @@ export async function PATCH(
         prisma.phaseAllocation.update({
           where: { id: allocationId },
           data: {
-            totalHours: totalPlanned, // Reduce to only the planned hours
-            approvalStatus: 'APPROVED' // Set back to APPROVED (no longer EXPIRED)
+            totalHours: totalPlanned, 
+            approvalStatus: 'APPROVED' 
           }
         })
       ]);
@@ -227,7 +227,7 @@ export async function PATCH(
 
         await createNotificationsForUsers(
           growthTeamIds,
-          NotificationType.PHASE_ALLOCATION_PENDING, // Needs GT approval
+          NotificationType.PHASE_ALLOCATION_PENDING, 
           'Reallocation Request Pending Approval',
           `${pmName} requests to reallocate ${unplannedHours.toFixed(1)}h for ${consultantName} from "${allocation.phase.name}" to "${targetPhase?.name}". ${totalPlanned.toFixed(1)}h remain in original phase.`,
           `/dashboard/hour-approvals`,

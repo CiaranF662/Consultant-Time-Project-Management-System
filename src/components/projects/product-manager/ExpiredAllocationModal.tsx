@@ -87,7 +87,6 @@ export default function ExpiredAllocationModal({
       onForfeit();
       onClose();
     } catch (err: any) {
-      console.error('Error forfeiting allocation:', err);
       setError(err.response?.data?.error || 'Failed to forfeit allocation');
       setIsProcessing(false);
     }

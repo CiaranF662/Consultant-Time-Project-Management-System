@@ -268,7 +268,6 @@ export default function WeeklyPlanApproval({
       setRejectionAllocationId(null);
       setRejectionAllocationName('');
     } catch (error) {
-      console.error('Failed to reject weekly allocation:', error);
     } finally {
       setIsSubmittingRejection(false);
     }
@@ -321,7 +320,6 @@ export default function WeeklyPlanApproval({
       setModifyOriginalHours(0);
       setModifyMaxHours(undefined);
     } catch (error) {
-      console.error('Failed to modify weekly allocation:', error);
     } finally {
       setIsSubmittingModify(false);
     }

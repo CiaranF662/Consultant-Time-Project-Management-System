@@ -159,7 +159,6 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
       setAllocatedToPhases(allocatedToPhasesMap);
       setExistingPhases(phases);
     } catch (error) {
-      console.error('Failed to fetch project consultants:', error);
       setError('Failed to load project team data.');
     }
   };
@@ -211,7 +210,6 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
 
       setSprintAvailability(availabilityMap);
     } catch (error) {
-      console.error('Failed to fetch sprint availability:', error);
     }
   };
 
@@ -504,7 +502,6 @@ export default function PhaseCreationModal({ project, onClose, onPhaseCreated }:
 
       onPhaseCreated();
     } catch (error: any) {
-      console.error('Error creating phase:', error);
       setError(error.response?.data?.error || 'Failed to create phase');
     } finally {
       setIsLoading(false);

@@ -83,7 +83,7 @@ export async function POST(
         status: 'REALLOCATED'
       },
       include: {
-        phaseAllocation: true // The original allocation
+        phaseAllocation: true 
       }
     });
 
@@ -146,13 +146,11 @@ export async function POST(
         return parentAllocation;
       });
 
-      console.log(`[SCENARIO 1 REJECTION] Reverted reallocation to expired state in original phase`);
+      console.log(`Reverted reallocation to expired state in original phase`);
     }
-    // If rejecting a reallocation (old system), we need to revert the original allocation
     else if (action === 'reject' && isReallocation) {
-      // Perform revert in a transaction to ensure atomicity
       updatedAllocation = await prisma.$transaction(async (tx) => {
-        // 1. Delete the rejected reallocation (this new allocation that was rejected)
+        // 1. Delete the rejected reallocation 
         await tx.phaseAllocation.delete({
           where: { id: allocationId }
         });
@@ -162,8 +160,8 @@ export async function POST(
         await tx.phaseAllocation.update({
           where: { id: isReallocation.phaseAllocationId },
           data: {
-            totalHours: originalTotalHours, // Add back the unplanned hours
-            approvalStatus: 'EXPIRED' // Set back to EXPIRED so PM can handle again
+            totalHours: originalTotalHours, 
+            approvalStatus: 'EXPIRED' 
           }
         });
 
@@ -355,7 +353,6 @@ export async function POST(
       });
     }
 
-    // Safety check - should never happen but TypeScript needs it
     if (!updatedAllocation) {
       return new NextResponse(JSON.stringify({ error: 'Failed to process allocation' }), { status: 500 });
     }

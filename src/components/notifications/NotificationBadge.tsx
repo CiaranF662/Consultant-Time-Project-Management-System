@@ -86,7 +86,6 @@ export default function NotificationBadge({ className = '' }: NotificationBadgeP
       const response = await axios.get('/api/notifications?limit=1&unreadOnly=true');
       setUnreadCount(response.data.unreadCount || 0);
     } catch (error) {
-      console.error('Error fetching unread count:', error);
       // Set count to 0 on error to prevent component from breaking
       setUnreadCount(0);
     }

@@ -71,7 +71,6 @@ export default function WeeklyPlanningView() {
         setCurrentWeekAllocations(weeklyData);
       }
     } catch (error) {
-      console.error('Error fetching weekly planning data:', error);
     }
     setLoading(false);
   };

@@ -75,7 +75,6 @@ export default function GrowthTeamDashboard({ data, userRole, currentUserId }: G
         if (error instanceof Error && error.name === 'AbortError') {
           return; // Request was cancelled, ignore
         }
-        console.error('Error fetching approvals summary:', error);
       }
       setLoadingApprovals(false);
     };
@@ -93,7 +92,6 @@ export default function GrowthTeamDashboard({ data, userRole, currentUserId }: G
         if (error instanceof Error && error.name === 'AbortError') {
           return; // Request was cancelled, ignore
         }
-        console.error('Error fetching notifications:', error);
       }
       setLoadingNotifications(false);
     };

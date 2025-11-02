@@ -33,10 +33,8 @@ export async function POST(request: Request) {
         name,
         email,
         password: hashedPassword,
-        role: role, // Assign the role from the form
-        // Set status based on the selected role
+        role: role, 
         status: role === UserRole.GROWTH_TEAM ? UserStatus.PENDING : UserStatus.APPROVED,
-        // Email is not verified yet
         emailVerified: null,
       },
     });

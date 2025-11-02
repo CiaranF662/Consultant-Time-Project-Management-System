@@ -29,7 +29,6 @@ export default function ApprovalsSummaryCard() {
           setSummary(data);
         }
       } catch (error) {
-        console.error('Error fetching approvals summary:', error);
       }
       setLoading(false);
     };

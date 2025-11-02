@@ -129,8 +129,7 @@ export async function GET(
       totalAllocated: totalAllocated,
       totalPlanned: totalPlanned,
       totalUsed: totalUsed,
-      totalRemaining: project.budgetedHours - totalAllocated, // Fixed: remaining = budget - allocated
-      // Four progress percentages for comprehensive tracking
+      totalRemaining: project.budgetedHours - totalAllocated, 
       allocationPercentage: project.budgetedHours > 0 ? (totalAllocated / project.budgetedHours) * 100 : 0,
       planningVsAllocationPercentage: totalAllocated > 0 ? (totalPlanned / totalAllocated) * 100 : 0,
       planningVsBudgetPercentage: project.budgetedHours > 0 ? (totalPlanned / project.budgetedHours) * 100 : 0,

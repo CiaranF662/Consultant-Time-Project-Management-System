@@ -162,7 +162,6 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
         
         setConsultantCommitments(commitmentsMap);
       } catch (err) {
-        console.error('Failed to fetch consultant commitments:', err);
         setConsultantCommitments({});
       } finally {
         setLoadingCommitments(false);
@@ -245,7 +244,6 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
 
         setConsultantAvailability(availabilityMap);
       } catch (err) {
-        console.error('Failed to fetch consultant availability:', err);
         setConsultantAvailability({});
       } finally {
         setLoadingAvailability(false);
@@ -404,7 +402,6 @@ export default function EditProjectModal({ project, onClose }: EditProjectModalP
       onClose();
       router.refresh();
     } catch (err: any) {
-      console.error('Error updating project consultants:', err);
       if (err.response?.status === 403) {
         setError('You do not have permission to update project consultants. Only Growth Team members can manage project team assignments.');
       } else {

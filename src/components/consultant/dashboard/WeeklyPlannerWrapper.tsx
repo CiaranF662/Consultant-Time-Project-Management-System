@@ -24,7 +24,6 @@ export default function WeeklyPlannerWrapper({
       setPhaseAllocations(response.data.phaseAllocations);
       // WeeklyPlannerEnhanced expects weeklyAllocations nested within phaseAllocations
     } catch (error) {
-      console.error('Failed to refresh allocation data:', error);
     } finally {
       setIsLoading(false);
     }

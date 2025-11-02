@@ -118,7 +118,6 @@ export default function ConsultantCapacityOverview() {
       });
 
     } catch (error) {
-      console.error('Error fetching capacity data:', error);
     } finally {
       setLoading(false);
     }

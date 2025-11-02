@@ -64,7 +64,6 @@ export default function BudgetTracker({
       setBudgetData(response.data);
     } catch (err) {
       setError('Failed to load budget data');
-      console.error('Budget fetch error:', err);
     } finally {
       setIsLoading(false);
     }
