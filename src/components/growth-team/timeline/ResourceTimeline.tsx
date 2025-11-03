@@ -8,6 +8,10 @@ import { FaSearch, FaTimes, FaFileExcel } from 'react-icons/fa';
 import * as XLSX from 'xlsx-js-style';
 import ExportTimelineModal from './ExportTimelineModal';
 import './timeline-animations.css';
+import { toZonedTime } from 'date-fns-tz';
+
+// South African Standard Time (UTC+2, no DST)
+const TIMEZONE = 'Africa/Johannesburg';
 
 interface ResourceTimelineProps {
   consultants: Array<{
@@ -143,10 +147,13 @@ export default function ResourceTimeline({ consultants, weeks, onConsultantClick
 
       // Use API weeks for headers to ensure perfect alignment
       setWeekHeaders(apiWeeks.map((w: any) => {
-        const weekDate = new Date(w.weekStart);
-        const today = new Date();
-        const isCurrentWeek = weekDate <= today && today <= new Date(w.weekEnd);
-        const isPastWeek = new Date(w.weekEnd) < today;
+        // Convert UTC dates to SAST for consistent comparison
+        const weekStart = toZonedTime(new Date(w.weekStart), TIMEZONE);
+        const weekEnd = toZonedTime(new Date(w.weekEnd), TIMEZONE);
+        const today = toZonedTime(new Date(), TIMEZONE);
+
+        const isCurrentWeek = weekStart <= today && today <= weekEnd;
+        const isPastWeek = weekEnd < today;
 
         return {
           label: w.label,

@@ -2,8 +2,12 @@ import { NextResponse } from 'next/server';
 import { requireGrowthTeam, isAuthError } from '@/lib/api-auth';
 import { UserRole } from '@prisma/client';
 import { startOfWeek, endOfWeek, addWeeks, format } from 'date-fns';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 
 import { prisma } from "@/lib/prisma";
+
+// South African Standard Time (UTC+2, no DST)
+const TIMEZONE = 'Africa/Johannesburg';
 
 // Add type definition for week structure
 type WeekInfo = {
@@ -45,23 +49,21 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
 
-  // Helper to create UTC date from date string (avoids timezone interpretation issues)
-  const createUTCDate = (dateString: string | null): Date => {
-    if (!dateString) return new Date();
-    const date = new Date(dateString);
-    return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  // Helper to get current date in SAST timezone
+  const getSASTDate = (): Date => {
+    return toZonedTime(new Date(), TIMEZONE);
   };
 
-  // Parse start date and align to Monday (week start) in UTC
+  // Parse start date and align to Monday (week start) in SAST
   const rawStartDate = searchParams.get('startDate')
-    ? createUTCDate(searchParams.get('startDate')!)
-    : createUTCDate(new Date().toISOString());
+    ? toZonedTime(new Date(searchParams.get('startDate')!), TIMEZONE)
+    : getSASTDate();
   const startDate = startOfWeek(rawStartDate, { weekStartsOn: 1 });
 
   // Calculate weeks to show based on endDate if provided, otherwise use weeks parameter
   let weeksToShow: number;
   if (searchParams.get('endDate')) {
-    const rawEndDate = createUTCDate(searchParams.get('endDate')!);
+    const rawEndDate = toZonedTime(new Date(searchParams.get('endDate')!), TIMEZONE);
     const endDate = endOfWeek(rawEndDate, { weekStartsOn: 1 });
 
     const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
@@ -87,15 +89,15 @@ export async function GET(request: Request) {
       }
     });
 
-    // Generate week ranges with explicit typing (all in UTC to avoid timezone issues)
+    // Generate week ranges in SAST timezone
     const weeks: WeekInfo[] = [];
     for (let i = 0; i < weeksToShow; i++) {
       const weekStart = addWeeks(startDate, i);
       const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
 
-      // Ensure dates are normalized to UTC midnight
-      const weekStartUTC = new Date(Date.UTC(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate()));
-      const weekEndUTC = new Date(Date.UTC(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate()));
+      // Convert to UTC for database storage while preserving the SAST time values
+      const weekStartUTC = fromZonedTime(weekStart, TIMEZONE);
+      const weekEndUTC = fromZonedTime(weekEnd, TIMEZONE);
 
       weeks.push({
         weekStart: weekStartUTC,
@@ -150,12 +152,17 @@ export async function GET(request: Request) {
         const weekAllocations = consultantAllocations.filter(a => {
           const allocWeekStart = new Date(a.weekStartDate);
 
-          // Normalize database date to UTC midnight for consistent comparison
-          const allocStartUTC = Date.UTC(allocWeekStart.getFullYear(), allocWeekStart.getMonth(), allocWeekStart.getDate());
-          const weekStartUTC = week.weekStart.getTime();
-          const weekEndUTC = week.weekEnd.getTime();
+          // Convert both dates to SAST for comparison
+          const allocStartSAST = toZonedTime(allocWeekStart, TIMEZONE);
+          const weekStartSAST = toZonedTime(week.weekStart, TIMEZONE);
+          const weekEndSAST = toZonedTime(week.weekEnd, TIMEZONE);
 
-          return allocStartUTC >= weekStartUTC && allocStartUTC <= weekEndUTC;
+          // Compare dates by setting to start of day to avoid time-of-day issues
+          const allocStartDay = new Date(allocStartSAST.getFullYear(), allocStartSAST.getMonth(), allocStartSAST.getDate()).getTime();
+          const weekStartDay = new Date(weekStartSAST.getFullYear(), weekStartSAST.getMonth(), weekStartSAST.getDate()).getTime();
+          const weekEndDay = new Date(weekEndSAST.getFullYear(), weekEndSAST.getMonth(), weekEndSAST.getDate()).getTime();
+
+          return allocStartDay >= weekStartDay && allocStartDay <= weekEndDay;
         });
 
         const totalHours = weekAllocations.reduce((sum, a) => sum + (a.approvedHours || 0), 0);
